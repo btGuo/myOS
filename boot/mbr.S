@@ -35,14 +35,14 @@ s:  mov dh, [si]
 	mov eax, LOADER_START_SECTOR
 	mov bx, LOADER_BASE_ADDR
 	mov cx, 4
-	call rd_disk
+	call rd_disk_16
 
 	jmp LOADER_BASE_ADDR
 ;读取硬盘
 ;eax 起始lba地址
 ;bx  写入地址
 ;cx  读取扇区数
-rd_disk:
+rd_disk_16:
 	mov esi, eax
 	mov di,  cx
 ;第一步：确定通道, 写入扇区数

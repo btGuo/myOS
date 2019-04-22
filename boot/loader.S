@@ -1,12 +1,14 @@
 %include "boot.inc"
 section loader vstart=LOADER_BASE_ADDR
+;栈位于loader 下方
 LOADER_STACK_TOP equ LOADER_BASE_ADDR
 jmp loader_start
+;全局描述符表
 gdt:
 	dq 0
 	dq 0x00_c_f_9_8_000000_ffff
 	dq 0x00_c_f_9_2_000000_ffff
-	dq 0x00_c_f_9_2_008000_0007
+	dq 0x00_c_f_9_2_0b8000_0007
 
 GDT_SIZE  equ $ - gdt
 GDT_LIMIT equ GDT_SIZE - 1
@@ -45,6 +47,7 @@ loader_start:
 	inc di
 	loop .s
 
+;==============================================================
 ;int 0x15 eax = E820
 ;第一次调用，ebx置0
 	xor ebx, ebx
@@ -79,6 +82,7 @@ loader_start:
 	loop .find_max_mem
 	jmp .mem_get_ok
 
+;==============================================================
 ;int 0x15 ax = 0xe801
 .e801_mem_get:
 	mov ax, 0xe801
@@ -100,6 +104,7 @@ loader_start:
 	mov ebx, eax
 	jmp .mem_get_ok
 
+;==============================================================
 .88_mem_get:
 	mov ah, 0x88
 	int 0x15
@@ -117,9 +122,11 @@ loader_start:
 .error_hlt:
 	jmp $
 
+;成功获取内存
 .mem_get_ok:
 	mov [total_mem_bytes], edx 
 
+;===============================================================
 ;打开A20	
 	in al, 0x92
 	or al, 00000010B
@@ -141,10 +148,16 @@ p_mode_start:
 	mov ds, ax
 	mov es, ax
 	mov fs, ax
+	mov ss, ax
 	mov esp, LOADER_STACK_TOP
 	mov ax, SELECTOR_VIDEO
 	mov gs, ax
-	
+
+	mov eax, KERNEL_START_SECTOR
+	mov ebx, KERNEL_BIN_BASE_ADDR
+	mov ecx, 200
+	call rd_disk_32
+
 	call setup_page
 	sgdt [gdt_ptr]
 	mov ebx, [gdt_ptr + 2]
@@ -155,16 +168,20 @@ p_mode_start:
 
 	mov eax, PAGE_DIR_TABLE_POS
 	mov cr3, eax
-
+;开启页模式
 	mov eax, cr0
 	or  eax, 0x80000000
 	mov cr0, eax
 
 	lgdt [gdt_ptr]
 
-	mov byte [gs:160], 'V'
-	jmp $
+	call kernel_init
+	mov esp, 0xc009f000
 
+	jmp KERNEL_ENTRY_POINT
+
+;=====================================================================
+;开启分页
 setup_page:
 ;清空页目录
 	mov ecx, 0x1000
@@ -207,4 +224,124 @@ setup_page:
 	loop .create_kernel_pde
 
 	ret
+
+;========================================================================
+;读取硬盘
+;eax 起始lba地址
+;ebx  写入地址
+;ecx  读取扇区数
+;内容同rd_disk_16
+rd_disk_32:
+	mov esi, eax
+	mov edi, ecx
+;第一步：确定通道, 写入扇区数
+	mov dx, 0x1f2
+	mov al, cl
+	out dx, al
+
+	mov eax, esi
+;第二步：写入lba地址
+;dx 起始端口	
+	mov dx, 0x1f3
+	mov cx, 3
+.s: out dx, al
+	inc dx
+	shr eax, 8 
+	loop .s
+
+;清空高位
+	and al, 0x0f
+;设置属性位 1110
+	or  al, 0xe0
+	out dx, al
+
+;第三步：向端口写入读命令
+	mov dx, 0x1f7
+	mov al, 0x20
+	out dx, al
+
+;第四步：等待硬盘准备
+.not_ready:
+;空操作，减少打扰硬盘
+	nop
+	in al, dx
+;取第三位和第七位
+	and al, 0x88
+
+	cmp al, 0x08
+	jnz .not_ready
+
+	mov eax, edi
+	mov edx, 256
+	mul edx
+	mov ecx, eax
+	
+	mov dx, 0x1f0
+
+.go_on_read:
+	in ax, dx
+	mov [ebx], ax
+	add ebx, 2
+	loop .go_on_read
+	ret
+
+;==================================================================
+kernel_init:
+	xor eax, eax
+	xor ebx, ebx
+	xor ecx, ecx
+	xor edx, edx
+	
+;获取每个Program header table 大小
+	mov dx, [KERNEL_BIN_BASE_ADDR + 42]
+;获取Program header table 偏移地址
+	mov ebx, [KERNEL_BIN_BASE_ADDR + 28]
+;得到基地址
+	add ebx, KERNEL_BIN_BASE_ADDR
+;获取Program header table 长度
+	mov cx, [KERNEL_BIN_BASE_ADDR + 44]
+
+;遍历Program header table
+
+.each_segment:
+	cmp byte [ebx], PT_NULL
+	je .PTNULL
+;段在文件中大小
+	push dword [ebx + 16]
+;段在文件中偏移地址
+	mov eax, [ebx + 4]
+	add eax, KERNEL_BIN_BASE_ADDR
+;压入源地址
+	push eax
+;压入目的地地址
+	push dword [ebx + 8]
+
+	call mem_cpy
+	add esp, 12
+;空节, 进入下一条目
+.PTNULL:
+	add ebx, edx
+	loop .each_segment
+	ret
+
+;复制内存三个参数 desc, src, count
+;=====================================================================
+mem_cpy:
+	push ebp
+	mov ebp, esp
+;关键ecx入栈，外层循环用到
+	push ecx
+
+	cld
+	mov edi, [ebp + 8]
+	mov esi, [ebp + 12]
+	mov ecx, [ebp + 16]
+	rep movsb
+
+	pop ecx
+	pop ebp
+	ret
+
 	message db "hello loader"
+
+
