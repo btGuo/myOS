@@ -1,6 +1,8 @@
 #include"interrupt.h"
 #include"stdint.h"
 #include"global.h"
+#include"io.h"
+#include"print.h"
 
 #define IDT_DESC_CNT 0x21
 #define PIC_M_CTRL 0x20
@@ -19,6 +21,8 @@ struct gate_desc{
 static void make_idt_desc(struct gate_desc *p_gdesc, uint8_t attr, intr_handler function);
 static struct gate_desc idt[IDT_DESC_CNT];
 
+char *intr_name[IDT_DESC_CNT];
+intr_handler idt_table[IDT_DESC_CNT];
 extern intr_handler intr_entry_table[IDT_DESC_CNT];
 
 static void pic_init(void){
@@ -36,7 +40,7 @@ static void pic_init(void){
 	outb(PIC_M_DATA, 0xfe);
 	outb(PIC_S_DATA, 0xff);
 
-	put_str("pic_init done\n");
+	put_str("   pic_init done\n");
 }
 
 static void make_idt_desc(struct gate_desc *p_gdesc, uint8_t attr, intr_handler function){
@@ -51,12 +55,29 @@ static void idt_desc_init(void){
 	int i;
 	for(i = 0; i < IDT_DESC_CNT; ++i)
 		make_idt_desc(&idt[i], IDT_DESC_ATTR_DPL0, intr_entry_table[i]);
-	put_str("idt_desc_init done\n");
+	put_str("   idt_desc_init done\n");
+}
+
+static void general_intr_handler(uint8_t vec_nr){
+	if(vec_nr == 0x27 || vec_nr == 0x2f){
+		return;
+	}
+	put_str("int vector : 0x");
+	put_char(vec_nr + '0');
+	put_char('\n');
+}
+
+static void exception_init(void){
+	int i;
+	for(i = 0; i < IDT_DESC_CNT; ++i){
+		idt_table[i] = general_intr_handler;
+	}
 }
 
 void idt_init(){
 	put_str("idt_init start\n");
 	idt_desc_init();
+	exception_init();
 	pic_init();
 
 	uint64_t idt_operand = ((sizeof(idt) - 1) | 
@@ -64,3 +85,4 @@ void idt_init(){
 	asm volatile("lidt %0"::"m"(idt_operand));
 	put_str("idt_init done\n");
 }
+

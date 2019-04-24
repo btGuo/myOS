@@ -1,6 +1,29 @@
 SELECTOR_VIDEO equ 0x0018
 
 [bits 32]
+section .text
+;=======================================================
+;打印字符串
+global put_str
+put_str:
+	push ebx
+	push edx
+	xor edx, edx
+	mov ebx, [esp + 12]
+.goon:
+	mov dl, [ebx]
+	cmp dl, 0
+	jz .str_over
+	push edx
+	call put_char
+	add esp, 4
+	inc ebx
+	jmp .goon
+.str_over:
+	pop edx
+	pop ebx
+	ret
+
 global put_char
 ;注意标号位置
 ;========================================================
@@ -107,24 +130,4 @@ put_char:
 	out dx, al
 .put_char_done:
 	popad
-	ret
-;=======================================================
-;打印字符串
-global put_str:
-	push ebx
-	push edx
-	xor edx, edx
-	mov ebx, [esp + 12]
-.goon:
-	mov dl, [ebx]
-	cmp dl, 0
-	jz .str_over
-	push edx
-	call put_char
-	add esp, 4
-	inc ebx
-	jmp .goon
-.str_over:
-	pop ebx
-	pop edx
 	ret

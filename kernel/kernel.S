@@ -4,9 +4,9 @@
 %define ZERO push 0
 
 extern put_str
-
+extern idt_table
+;这里.data放前面，后面的会合并过来，形成表
 section .data
-intr_str db "interrupt occur!", 0xa, 0
 global intr_entry_table
 intr_entry_table:
 
@@ -16,21 +16,37 @@ intr%1entry:
 	
 ;中断例程
 	%2
-	push intr_str
-	call put_str
-	add esp, 4
+	push ds
+	push es
+	push fs
+	push gs
+	pushad
 ;向8259发送信号
 	mov al, 0x20
 	out 0xa0, al
 	out 0x20, al
-;跳过error_code
-	add esp, 4
-	iret
+
+	push %1
+	call [idt_table + %1 * 4]
+	jmp intr_exit
 
 section .data
 	dd intr%1entry
 
 %endmacro
+
+section .text
+global intr_exit
+intr_exit:
+	add esp, 4
+	popad
+	pop gs
+	pop fs
+	pop es
+	pop ds
+	add exp, 4
+	iretd
+
 ;前32个中断向量，5个一组
 VECTOR 0x00, ZERO
 VECTOR 0x01, ZERO

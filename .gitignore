@@ -1,5 +1,4 @@
 test.c
 note.txt
 hd.img
-*.bin
-*.o
+build/
