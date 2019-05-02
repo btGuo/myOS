@@ -10,6 +10,10 @@
 #define PIC_S_CTRL 0xa0
 #define PIC_S_DATA 0xa1
 
+#define EFLAGS_IF 0x00000200
+//无法直接访问eflags入栈后再出栈
+#define GET_EFLAGS(EFLAGS_VAR) asm volatile("pushfl; popl %0" : "=g"(EFLAGS_VAR))
+
 struct gate_desc{
 	uint16_t func_offset_low_word;
 	uint16_t selector;
@@ -51,9 +55,7 @@ static void make_idt_desc(struct gate_desc *p_gdesc, uint8_t attr, intr_handler 
 	p_gdesc->func_offset_high_word = ((uint32_t)function & 0xffff0000) >> 16;
 }
 
-static void idt_desc_init(void){
-	int i;
-	for(i = 0; i < IDT_DESC_CNT; ++i)
+static void idt_desc_init(void){ int i; for(i = 0; i < IDT_DESC_CNT; ++i)
 		make_idt_desc(&idt[i], IDT_DESC_ATTR_DPL0, intr_entry_table[i]);
 	put_str("   idt_desc_init done\n");
 }
@@ -71,7 +73,27 @@ static void exception_init(void){
 	int i;
 	for(i = 0; i < IDT_DESC_CNT; ++i){
 		idt_table[i] = general_intr_handler;
+		intr_name[i] = "unknown";
 	}
+	intr_name[0] = "#DE Divide Error";
+	intr_name[1] = "#DB Debug Exception";
+	intr_name[2] = "NMT Interrupt";
+	intr_name[3] = "#BP Breakpoint Exception";
+	intr_name[4] = "#OF overflow Exception";
+	intr_name[5] = "#BR Bound Range Exceeded Exception";
+	intr_name[6] = "#UD Invalid Opcode Exception";
+	intr_name[7] = "#NM Device not Available Exception";
+	intr_name[8] = "#DF Double Fault Exception";
+	intr_name[9] = "Coprocessor Segment Overrun";
+	intr_name[10] = "#TS Invalid TSS Exception";
+	intr_name[11] = "#NP Segment Not Present";
+	intr_name[12] = "#SS Stack Fault Exception";
+	intr_name[13] = "#GP General Protection Exception";
+	intr_name[14] = "#PF Page-Fault Exception";
+	intr_name[16] = "#MF x87 FPU Floating-Point Error";
+	intr_name[17] = "#AC Alignment Check Exception";
+	intr_name[18] = "#MC Machine-Check Exception";
+	intr_name[19] = "#XF SIMD Floating-Point Exception";
 }
 
 void idt_init(){
@@ -86,3 +108,29 @@ void idt_init(){
 	put_str("idt_init done\n");
 }
 
+enum intr_status intr_enable(){
+	if(INTR_ON == intr_get_status()){
+		return INTR_ON;
+	}else{
+		asm volatile("sti");
+		return INTR_OFF;
+	}
+}
+
+enum intr_status intr_disable(){
+	if(intr_get_status() == INTR_ON){
+		asm volatile("cli":::"memory");
+		return INTR_ON;
+	}else{
+		return INTR_OFF;
+	}
+}
+enum intr_status intr_set_status(enum intr_status status){
+	return status & INTR_ON ? intr_enable(): intr_disable();
+}
+
+enum intr_status intr_get_status(){
+	uint32_t eflags = 0;
+	GET_EFLAGS(eflags);
+	return (eflags & EFLAGS_IF) ? INTR_ON : INTR_OFF;
+}	

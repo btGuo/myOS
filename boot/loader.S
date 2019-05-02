@@ -198,8 +198,10 @@ setup_page:
 	mov [PAGE_DIR_TABLE_POS], eax
 
 ;创建页表0项
-;指向低端1M空间
-	mov ecx, 0x100
+;指向低端2M空间
+;低端1M用于内核
+;剩下的1M - 2M用于内核页目录和页表
+	mov ecx, 0x200
 	mov edx, 0x7
 	mov ebx, PAGE_TABLE_POS
 	mov esi, 0

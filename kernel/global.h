@@ -9,4 +9,6 @@
 #define IDT_DESC_ATTR_DPL0 0x8e
 #define IDT_DESC_ATTR_DPL3 0xee
 
+#define NULL (void*)0
+
 #endif

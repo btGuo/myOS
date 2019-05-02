@@ -44,7 +44,7 @@ intr_exit:
 	pop fs
 	pop es
 	pop ds
-	add exp, 4
+	add esp, 4
 	iretd
 
 ;前32个中断向量，5个一组
