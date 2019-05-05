@@ -134,3 +134,7 @@ enum intr_status intr_get_status(){
 	GET_EFLAGS(eflags);
 	return (eflags & EFLAGS_IF) ? INTR_ON : INTR_OFF;
 }	
+
+void register_handler(uint8_t vec_nr, intr_handler function){
+	idt_table[vec_nr] = function;
+}

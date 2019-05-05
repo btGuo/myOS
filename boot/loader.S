@@ -199,9 +199,7 @@ setup_page:
 
 ;创建页表0项
 ;指向低端2M空间
-;低端1M用于内核
-;剩下的1M - 2M用于内核页目录和页表
-	mov ecx, 0x200
+	mov ecx, 0x100
 	mov edx, 0x7
 	mov ebx, PAGE_TABLE_POS
 	mov esi, 0
@@ -211,19 +209,22 @@ setup_page:
 	add edx, 0x1000
 	loop .create_pte
 
-;从页目录第768项开始
+;从页目录第769项开始
 	mov esi, 0x300
 	mov ebx, PAGE_DIR_TABLE_POS
 ;从页表第一项开始
 	mov edx, PAGE_TABLE_POS
 	or  edx, 0x7
-;256项
-	mov ecx, 0x100
+;255项
+	mov ecx, 0x0ff
 .create_kernel_pde:
 	mov [ebx + esi * 4], edx
 	inc esi
 	add edx, 0x1000
 	loop .create_kernel_pde
+
+	sub eax, 0x1000
+	mov [PAGE_DIR_TABLE_POS + 4092], eax
 
 	ret
 

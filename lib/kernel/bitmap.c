@@ -31,6 +31,7 @@ int bitmap_scan(struct bitmap *bmap, uint32_t len){
 			cnt = 0;
 			start = i + 1;
 		}
+		mask <<= 1;
 	}
 	return -1;
 }
@@ -45,5 +46,11 @@ void bitmap_set(struct bitmap *bmap, uint32_t bit_idx, int8_t value){
 		bmap->bits[bit_idx/8] &= ~mask;
 }
 	
+void bitmap_set_range(struct bitmap *bmap, uint32_t bit_idx_start, \
+		int8_t value, int32_t cnt){
+	while(cnt--){
+		bitmap_set(bmap, bit_idx_start + cnt, value);
+	}
+}
 
 
