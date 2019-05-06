@@ -16,20 +16,18 @@ DEPS = $(SRCS:%.c=$(BUILD_DIR)/%.d)
 
 OBJS +=$(BUILD_DIR)/kernel.o
 
-#$(warning $(OBJS))
-
 -include $(DEPS)
 
-all:$(OUT) 
+all:$(OUT)
+
+$(OUT):$(OBJS)
+	$(LD) $(LDFLAGS) $^ -o $@
 
 $(BUILD_DIR)/kernel.o:kernel.S
 	$(AS) $(ASFLAGS) $< -o $@
 
 $(BUILD_DIR)/%.o:%.c
 	$(CC) $(CFLAGS) $< -o $@ -MMD -MP
-
-$(OUT):$(OBJS)
-	$(LD) $(LDFLAGS) $^ -o $@
 
 .PHONY: clean
 

@@ -5,6 +5,7 @@
 
 typedef void thread_func(void*);
 void schedule();
+void print_thread();
 
 #define PG_SIZE 4096
 #define MAIN_PCB 0xc009e000

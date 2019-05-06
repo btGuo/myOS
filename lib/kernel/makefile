@@ -19,14 +19,14 @@ OBJS += $(BUILD_DIR)/print.o
 
 all:$(OUT)
 
+$(OUT):$(OBJS)
+	$(LD) $(LDFLAGS) $^ -o $@
+
 $(BUILD_DIR)/%.o:%.c
 	$(CC) $(CFLAGS) $< -o $@ -MMD -MP
 
 $(BUILD_DIR)/print.o:print.S
 	$(AS) $(ASFLAGS) $< -o $@
-
-$(OUT):$(OBJS)
-	$(LD) $(LDFLAGS) $^ -o $@
 
 .PHONY: clean
 

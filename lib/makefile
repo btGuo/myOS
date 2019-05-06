@@ -17,11 +17,11 @@ DEPS = $(SRCS:%.c=$(BUILD_DIR)/%.d)
 
 all:$(OUT)
 
-$(BUILD_DIR)/%.o:%.c
-	$(CC) $(CFLAGS) $< -o $@ -MMD -MP
-
 $(OUT):$(OBJS)
 	$(LD) $(LDFLAGS) $^ -o $@
+
+$(BUILD_DIR)/%.o:%.c
+	$(CC) $(CFLAGS) $< -o $@ -MMD -MP
 
 .PHONY: clean
 

@@ -4,7 +4,15 @@
 #include"global.h"
 #include"memory.h"
 
+void print_thread(struct task_struct *task){
+	put_str("vaddr :");put_int(task);put_char('\n');
+	put_str("self_kstack :");put_int(task->self_kstack);put_char('\n');
+	put_str("priority :");put_int(task->priority);put_char('\n');
+	put_str("name :");put_str(task->name);put_char('\n');
+}
+
 static void kernel_thread(thread_func *function, void *func_arg){
+	//这里打开中断
 	intr_enable();
 	function(func_arg);
 }
@@ -59,7 +67,7 @@ void schedule(){
 		curr_thread->ticks = curr_thread->priority;
 		curr_thread->status = TASK_READY;
 		list_del(&curr_thread->ready_tag);
-		list_add_tail(&thread_ready_list, &curr_thread->ready_tag);
+		list_add_tail(&curr_thread->ready_tag, &thread_ready_list);
 	}else{
 	}
 	struct task_struct *prev = curr_thread;

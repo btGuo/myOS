@@ -1,8 +1,10 @@
 #ifndef __KERNEL_LIST_H
 #define __KERNEL_LIST_H
 #include"global.h"
+#include"print.h"
+#include"stdint.h"
 
-#define offsetof(type, member) ((int)&((type*)0)->member)
+#define offsetof(type, member) ((int)(&((type*)0)->member))
 #define list_entry(type, member, ptr)({ \
 	const typeof(((type*)0)->member) *__mptr = (ptr); \
 	(type *)((char *)__mptr - offsetof(type, member));})
@@ -73,6 +75,18 @@ static inline bool elem_find(struct list_head *head, struct list_head *elem)
 		tmp = tmp->next;
 	}
 	return false;
+}
+
+static inline void for_each(struct list_head *head)
+{
+	struct list_head *tmp = head->next;
+	put_str("print list\n");
+	while(tmp != head)
+	{
+		put_int(tmp);put_char('\n');
+		tmp = tmp->next;
+	}
+	put_str("end print list\n");
 }
 
 #endif

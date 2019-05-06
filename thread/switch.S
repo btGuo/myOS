@@ -11,7 +11,7 @@ switch_to:
 	mov [eax], esp
 ;准备下个环境
 	mov eax, [esp + 24]
-	mov esp, eax
+	mov esp, [eax]
 	pop ebp
 	pop ebx
 	pop edi

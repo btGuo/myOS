@@ -19,14 +19,14 @@ OBJS += $(BUILD_DIR)/switch.o
 
 all:$(OUT)
 
+$(OUT):$(OBJS)
+	$(LD) $(LDFLAGS) $^ -o $@
+
 $(BUILD_DIR)/switch.o:switch.S
 	$(AS) $(ASFLAGS) $< -o $@
 
 $(BUILD_DIR)/%.o:%.c
 	$(CC) $(CFLAGS) $< -o $@ -MMD -MP
-
-$(OUT):$(OBJS)
-	$(LD) $(LDFLAGS) $^ -o $@
 
 .PHONY: clean
 

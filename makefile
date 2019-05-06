@@ -13,30 +13,30 @@ LDFALGS = -Ttext $(ENTRY_POINT) -e main -Map $(BUILD_DIR)/kernel.map \
 SUBDIRS = device kernel lib thread lib/kernel
 OBJS =$(BUILD_DIR)/main.o $(BUILD_DIR)/_kernel.o $(BUILD_DIR)/_thread.o $(BUILD_DIR)/_lib.o  \
 	   $(BUILD_DIR)/_device.o $(BUILD_DIR)/_lib_kernel.o
+OUT = $(BUILD_DIR)/kernel.bin
 
 -include $(BUILD_DIR)/main.d
 
 $(BUILD_DIR)/main.o:./kernel/main.c
 	$(CC) $(CFLAGS) $< -o $@ -MMD -MP
 
-subdir:
-	for dir in $(SUBDIRS); do $(MAKE) -C $$dir;done
+$(OUT):$(OBJS)
+	$(LD) $(LDFALGS) -o $(OUT) $(OBJS)
 
-.PHONY:all mk_dir build hd clean subdir
-
-hd:
-	dd if=build/kernel.bin of=hd.img seek=9 count=200 bs=512 \
+hd.img:$(OUT)
+	dd if=$(OUT) of=hd.img seek=9 count=200 bs=512 \
 		conv=notrunc
 
-mk_dir:
-		if[[ ! -d $(BUILD_DIR) ]];then mkdir $(BUILD_DIR);fi
+all :subdir $(OUT) hd.img
 
-build:$(OBJS)
-	$(LD) $(LDFALGS) -o $(BUILD_DIR)/kernel.bin $(OBJS)
+.PHONY:mk_dir clean subdir
+
+subdir:
+	@for dir in $(SUBDIRS); do $(MAKE) -C $$dir all;done
+
+mk_dir:
+	if[[ ! -d $(BUILD_DIR) ]];then mkdir $(BUILD_DIR);fi
 
 clean:
 	cd $(BUILD_DIR) && rm -rf ./*
-
-all :subdir build hd 
-
 

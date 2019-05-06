@@ -65,8 +65,14 @@ static void general_intr_handler(uint8_t vec_nr){
 		return;
 	}
 	put_str("int vector : 0x");
-	put_char(vec_nr + '0');
+	put_int(vec_nr);
 	put_char('\n');
+	if(vec_nr == 0xe){
+		int page_fault_vaddr = 0;
+		asm("movl %%cr2, %0":"=r"(page_fault_vaddr));
+		put_str("page fault address is"); put_int(page_fault_vaddr); put_char('\n');
+	}
+	while(1);
 }
 
 static void exception_init(void){
