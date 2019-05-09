@@ -10,13 +10,16 @@ void k_thread_c(void *);
 void k_thread_d(void *);
 int main()
 {
-	put_str("hello kernel\n");
+	int a = 10;
+	char *p = "hello kernel";
+	char *p2 = "hello print";
+	printk("%s#######%snum is%d\n", p, p2, a), 
 	init_all();
-	thread_start("k_thread_a", 4, k_thread_a, "/");
-	thread_start("k_thread_b", 4, k_thread_b, "*");
-	thread_start("k_thread_c", 4, k_thread_c, "@");
-	thread_start("k_thread_d", 4, k_thread_d, "-");
-	intr_enable();
+//	thread_start("k_thread_a", 4, k_thread_a, "/");
+//	thread_start("k_thread_b", 4, k_thread_b, "*");
+//	thread_start("k_thread_c", 4, k_thread_c, "@");
+//	thread_start("k_thread_d", 4, k_thread_d, "-");
+//	intr_enable();
 	while(1);
 	return 0;
 }
