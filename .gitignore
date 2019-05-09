@@ -2,3 +2,4 @@ test.c
 note.txt
 hd.img
 build/
+run.sh

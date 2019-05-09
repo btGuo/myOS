@@ -27,7 +27,7 @@ hd.img:$(OUT)
 	dd if=$(OUT) of=hd.img seek=9 count=200 bs=512 \
 		conv=notrunc
 
-all :mk_dir subdir $(OUT) hd.img
+all :mk_dir subdir $(OUT) hd.img boch
 
 .PHONY:mk_dir clean subdir
 
