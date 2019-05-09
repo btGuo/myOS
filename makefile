@@ -27,7 +27,7 @@ hd.img:$(OUT)
 	dd if=$(OUT) of=hd.img seek=9 count=200 bs=512 \
 		conv=notrunc
 
-all :subdir $(OUT) hd.img
+all :mk_dir subdir $(OUT) hd.img
 
 .PHONY:mk_dir clean subdir
 
@@ -35,7 +35,7 @@ subdir:
 	@for dir in $(SUBDIRS); do $(MAKE) -C $$dir all;done
 
 mk_dir:
-	if[[ ! -d $(BUILD_DIR) ]];then mkdir $(BUILD_DIR);fi
+	if [ ! -d "$(BUILD_DIR)" ]; then mkdir $(BUILD_DIR); fi
 
 clean:
 	cd $(BUILD_DIR) && rm -rf ./*
