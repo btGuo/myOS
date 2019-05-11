@@ -46,8 +46,8 @@ intr_exit:
 	pop ds
 	add esp, 4
 	iretd
-
-;前32个中断向量，5个一组
+;================================================================
+;前32个中断向量，5个一组; intel 保留
 VECTOR 0x00, ZERO
 VECTOR 0x01, ZERO
 VECTOR 0x02, ZERO
@@ -92,5 +92,26 @@ VECTOR 0x1d, ZERO
 
 VECTOR 0x1e, ZERO
 VECTOR 0x1f, ZERO
-VECTOR 0x20, ZERO
+;=================================================================
+;以下中断号对应外中断
 
+VECTOR 0x20, ZERO 			;时钟中断
+VECTOR 0x21, ZERO 			;键盘中断
+VECTOR 0x22, ZERO 			;级联用
+VECTOR 0x23, ZERO 			;串口1
+VECTOR 0x24, ZERO 			;串口2
+
+VECTOR 0x25, ZERO 			;并口2 
+VECTOR 0x26, ZERO 			;软盘 
+VECTOR 0x27, ZERO 
+VECTOR 0x28, ZERO 
+VECTOR 0x29, ZERO 
+
+VECTOR 0x2a, ZERO 
+VECTOR 0x2b, ZERO 
+VECTOR 0x2c, ZERO 
+VECTOR 0x2d, ZERO 
+VECTOR 0x2e, ZERO 
+
+VECTOR 0x2f, ZERO
+VECTOR 0x20, ZERO

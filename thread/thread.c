@@ -1,12 +1,51 @@
-#include"thread.h"
-#include"stdint.h"
-#include"string.h"
-#include"global.h"
-#include"memory.h"
+#include "string.h"
+#include "memory.h"
+#include "interrupt.h"
+#include "thread.h"
+
+struct task_struct *main_thread;
+struct task_struct *curr_thread;
+LIST_HEAD(thread_all_list);
+LIST_HEAD(thread_ready_list);
+
+struct intr_stack{
+	uint32_t vec_no;
+	uint32_t edi;
+	uint32_t esi;
+	uint32_t ebp;
+	uint32_t esp_dummy;
+	uint32_t ebx;
+	uint32_t edx;
+	uint32_t ecx;
+	uint32_t eax;
+	uint32_t gs;
+	uint32_t fs;
+	uint32_t es;
+	uint32_t ds;
+
+	uint32_t err_code;
+	void (*eip)(void);
+	uint32_t cs;
+	uint32_t eflags;
+	void *esp;
+	uint32_t ss;
+};
+
+struct thread_stack{
+	uint32_t ebp;
+	uint32_t ebx;
+	uint32_t edi;
+	uint32_t esi;
+	void (*eip)(thread_func *func, void *func_arg);
+
+	void (*unused_retaddr);
+	thread_func *function;
+	void *func_arg;
+};
 
 void print_thread(struct task_struct *task){
-	put_str("vaddr :");put_int(task);put_char('\n');
-	put_str("self_kstack :");put_int(task->self_kstack);put_char('\n');
+	put_str("vaddr :");put_int((uint32_t)task);put_char('\n');
+	put_str("self_kstack :");put_int((uint32_t)task->self_kstack);put_char('\n');
 	put_str("priority :");put_int(task->priority);put_char('\n');
 	put_str("name :");put_str(task->name);put_char('\n');
 }
@@ -46,12 +85,28 @@ void init_thread(struct task_struct *pthread, char *name, int prio){
 
 struct tack_struct* thread_start(char *name, int prio, \
 		thread_func function, void *func_arg){
-	struct task_struct *thread = get_kernel_pages(1);
+	struct task_struct *thread = (struct task_struct*)get_kernel_pages(1);
 	init_thread(thread, name, prio);
 	thread_create(thread, function, func_arg);
 	list_add_tail(&thread->all_tag, &thread_all_list);	
 	list_add_tail(&thread->ready_tag, &thread_ready_list);
 	return thread; 
+}
+//当前任务被阻塞, 需要重新调度
+void thread_block(enum task_status stat){
+	ASSERT(stat == TASK_BLOCKED || stat == TASK_WATTING ||
+			stat == TASK_HANGING);
+	enum intr_status old_stat = intr_disable();
+	curr_thread->status = stat;
+	schedule();
+	intr_set_status(old_stat);
+}
+
+void thread_unblock(struct task_struct *nthread){
+	enum intr_status old_stat = intr_disable();
+	list_add(&nthread->ready_tag, &thread_ready_list);
+	nthread->status = TASK_READY;
+	intr_set_status(old_stat);
 }
 
 static void make_main_thread(void){

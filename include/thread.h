@@ -6,6 +6,8 @@
 typedef void thread_func(void*);
 void schedule();
 void print_thread();
+void thread_block();
+void thread_unblock();
 
 #define PG_SIZE 4096
 #define MAIN_PCB 0xc009e000
@@ -20,40 +22,6 @@ enum task_status{
 	TASK_DIED
 };
 
-struct intr_stack{
-	uint32_t vec_no;
-	uint32_t edi;
-	uint32_t esi;
-	uint32_t ebp;
-	uint32_t esp_dummy;
-	uint32_t ebx;
-	uint32_t edx;
-	uint32_t ecx;
-	uint32_t eax;
-	uint32_t gs;
-	uint32_t fs;
-	uint32_t es;
-	uint32_t ds;
-
-	uint32_t err_code;
-	void (*eip)(void);
-	uint32_t cs;
-	uint32_t eflags;
-	void *esp;
-	uint32_t ss;
-};
-
-struct thread_stack{
-	uint32_t ebp;
-	uint32_t ebx;
-	uint32_t edi;
-	uint32_t esi;
-	void (*eip)(thread_func *func, void *func_arg);
-
-	void (*unused_retaddr);
-	thread_func *function;
-	void *func_arg;
-};
 /*
  * 程序控制任务块
  * self_kstack 		内核栈指针
@@ -80,9 +48,6 @@ struct task_struct{
 	uint32_t stack_magic;
 };
 
-struct task_struct *main_thread;
-struct task_struct *curr_thread;
-static LIST_HEAD(thread_all_list);
-static LIST_HEAD(thread_ready_list);
+
 
 #endif

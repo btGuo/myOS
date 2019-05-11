@@ -16,10 +16,15 @@ struct list_head{
 
 typedef bool function(struct list_head*, int arg);
 
-#define LIST_HEAD_INIT(name){ &(name), &(name) }
+#define __LIST_HEAD_INIT(name){ &(name), &(name) }
 
 #define LIST_HEAD(name) \
-	struct list_head name = LIST_HEAD_INIT(name)
+	struct list_head name = __LIST_HEAD_INIT(name)
+
+#define LIST_HEAD_INIT(name)\
+do{ (name).next=&(name);    \
+	(name).prev=&(name);   \
+}while(0)
 
 
 static inline void __list_add(struct list_head *new,
@@ -83,7 +88,7 @@ static inline void for_each(struct list_head *head)
 	put_str("print list\n");
 	while(tmp != head)
 	{
-		put_int(tmp);put_char('\n');
+		put_int((uint32_t)tmp);put_char('\n');
 		tmp = tmp->next;
 	}
 	put_str("end print list\n");

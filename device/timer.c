@@ -13,6 +13,7 @@
 #define PIT_CONTROL_PORT 0x43
 
 static void intr_timer_handler(void);
+extern struct task_struct *curr_thread;
 
 uint32_t jiffies;
 static void frequency_set(uint8_t counter_port, \

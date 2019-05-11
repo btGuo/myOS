@@ -4,7 +4,7 @@
 #include"io.h"
 #include"print.h"
 
-#define IDT_DESC_CNT 0x21
+#define IDT_DESC_CNT 0x30
 #define PIC_M_CTRL 0x20
 #define PIC_M_DATA 0x21
 #define PIC_S_CTRL 0xa0
@@ -41,7 +41,7 @@ static void pic_init(void){
 	outb(PIC_S_DATA, 0x02);
 	outb(PIC_S_DATA, 0x01);
 	/* ocw1 */
-	outb(PIC_M_DATA, 0xfe);
+	outb(PIC_M_DATA, 0xfd);
 	outb(PIC_S_DATA, 0xff);
 
 	put_str("   pic_init done\n");
@@ -64,8 +64,11 @@ static void general_intr_handler(uint8_t vec_nr){
 	if(vec_nr == 0x27 || vec_nr == 0x2f){
 		return;
 	}
+	put_char('\n');
 	put_str("int vector : 0x");
 	put_int(vec_nr);
+	put_char('\n');
+	put_str(intr_name[vec_nr]);
 	put_char('\n');
 	if(vec_nr == 0xe){
 		int page_fault_vaddr = 0;
