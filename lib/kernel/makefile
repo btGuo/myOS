@@ -5,7 +5,7 @@ OUT = $(BUILD_DIR)/_lib_kernel.o
 AS = nasm
 ASFLAGS = -f elf
 CC = gcc
-CFLAGS = $(LIB) -c -fno-builtin -m32
+CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall
 LD = ld
 LDFLAGS = -m elf_i386 -r
 

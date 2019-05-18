@@ -2,7 +2,6 @@
 #define __THREAD_SYNC_H
 #include "list.h"
 #include "stdint.h"
-#include "thread.h"
 #include "global.h"
 
 struct semaphore{
@@ -16,11 +15,14 @@ struct mutex_lock{
 	uint32_t holder_repeat_nr;
 };
 
+
 struct spin_lock{
 	struct task_struct *holder;
 	uint8_t value;
 };
 
+void mutex_lock_acquire(struct mutex_lock *lock);
+void mutex_lock_release(struct mutex_lock *lock);
 #endif
 
 

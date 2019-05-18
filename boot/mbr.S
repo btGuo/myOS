@@ -37,7 +37,7 @@ s:  mov dh, [si]
 	mov cx, 4
 	call rd_disk_16
 
-	jmp LOADER_BASE_ADDR
+	jmp LOADER_START_ADDR
 ;读取硬盘
 ;eax 起始lba地址
 ;bx  写入地址

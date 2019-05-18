@@ -5,21 +5,26 @@
 #include "console.h"
 #include "print.h"
 #include "list.h"
+#include "process.h"
+#include "interrupt.h"
+#include "stdint.h"
 
 void k_thread_a(void *);
 void k_thread_b(void *);
-void k_thread_c(void *);
-void k_thread_d(void *);
+void u_prog_a(void);
+void u_prog_b(void);
+
+int a = 0, b = 0;
+
 int main()
 {
+
 	init_all();
-	thread_start("k_thread_a", 6, k_thread_a, "thA_");
-	thread_start("k_thread_b", 6, k_thread_b, "thB_");
-	//thread_start("k_thread_c", 6, k_thread_c, "thC_");
-	//thread_start("k_thread_d", 6, k_thread_d, "thD_");
+	process_execute(u_prog_a, "user_prog_a");
+	printk("%s\n", "done prepare");
+	
 	intr_enable();
 	while(1);
-	
 	return 0;
 }
 
@@ -27,27 +32,22 @@ void k_thread_a(void *arg){
 	char *para = arg;
 	while(1){
 		printk("%s", para);
-		//console_write(para);
 	}
 }
 void k_thread_b(void *arg){
 	char *para = arg;
 	while(1){
 		printk("%s", para);
-		//console_write(para);
 	}
 }
-void k_thread_c(void *arg){
-	char *para = arg;
+void u_prog_a(void){
 	while(1){
-		printk("%s", para);
-		//console_write(para);
+		printk("%s", "aaa");
 	}
 }
-void k_thread_d(void *arg){
-	char *para = arg;
+
+void u_prog_b(void){
 	while(1){
-		printk("%s", para);
-		//console_write(para);
+		++b;
 	}
 }

@@ -186,7 +186,7 @@
 #=======================================================================
 #cpu: model=core2_penryn_t9600, count=1, ips=50000000, reset_on_triple_fault=1, ignore_bad_msrs=1, msrs="msrs.def"
 #cpu: cpuid_limit_winnt=0
- cpu: model= pentium, count=1, ips=10000000, reset_on_triple_fault=1, ignore_bad_msrs=0
+#cpu: model= pentium, count=1, ips=50000000, reset_on_triple_fault=1
 
 #=======================================================================
 # CPUID:
@@ -350,7 +350,7 @@
 # used all allocated host memory and wants more.
 #
 #=======================================================================
-memory: guest=128,host=64
+memory: guest=512,host=256
 
 #=======================================================================
 # ROMIMAGE:
@@ -481,7 +481,8 @@ vgaromimage: file=$BXSHARE/VGABIOS-lgpl-latest
 #   keyboard: keymap=gui/keymaps/x11-pc-de.map
 #   keyboard: user_shortcut=ctrl-alt-del
 #=======================================================================
-#keyboard: type=mf, serial_delay=250
+keyboard: type=mf, serial_delay=250
+keyboard: keymap=/usr/local/share/bochs/keymaps/x11-pc-de.map
 
 #=======================================================================
 # MOUSE:

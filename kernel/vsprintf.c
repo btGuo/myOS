@@ -31,6 +31,7 @@ void to_num(int num, char *dest, char mode){
 	*dest = '\0';
 }
 //简单到不能再简单的格式化字符串 @_@
+//debug
 void vsprintf(char *buf, const char *fmt, va_list args){
 	char *dest = buf;
 	while(*fmt){

@@ -1,6 +1,5 @@
 #include "console.h"
 #include "sync.h"
-#include "thread.h"
 #include "print.h"
 
 static struct mutex_lock console_lock;

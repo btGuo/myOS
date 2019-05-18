@@ -2,46 +2,12 @@
 #include "memory.h"
 #include "interrupt.h"
 #include "thread.h"
+#include "process.h"
 
 struct task_struct *main_thread;
-struct task_struct *curr_thread;
+struct task_struct *curr;
 LIST_HEAD(thread_all_list);
 LIST_HEAD(thread_ready_list);
-
-struct intr_stack{
-	uint32_t vec_no;
-	uint32_t edi;
-	uint32_t esi;
-	uint32_t ebp;
-	uint32_t esp_dummy;
-	uint32_t ebx;
-	uint32_t edx;
-	uint32_t ecx;
-	uint32_t eax;
-	uint32_t gs;
-	uint32_t fs;
-	uint32_t es;
-	uint32_t ds;
-
-	uint32_t err_code;
-	void (*eip)(void);
-	uint32_t cs;
-	uint32_t eflags;
-	void *esp;
-	uint32_t ss;
-};
-
-struct thread_stack{
-	uint32_t ebp;
-	uint32_t ebx;
-	uint32_t edi;
-	uint32_t esi;
-	void (*eip)(thread_func *func, void *func_arg);
-
-	void (*unused_retaddr);
-	thread_func *function;
-	void *func_arg;
-};
 
 void print_thread(struct task_struct *task){
 	put_str("vaddr :");put_int((uint32_t)task);put_char('\n');
@@ -97,7 +63,7 @@ void thread_block(enum task_status stat){
 	ASSERT(stat == TASK_BLOCKED || stat == TASK_WATTING ||
 			stat == TASK_HANGING);
 	enum intr_status old_stat = intr_disable();
-	curr_thread->status = stat;
+	curr->status = stat;
 	schedule();
 	intr_set_status(old_stat);
 }
@@ -114,21 +80,24 @@ static void make_main_thread(void){
 	init_thread(main_thread, "idle", 31);
 	list_add_tail(&main_thread->all_tag, &thread_all_list);
 	list_add_tail(&main_thread->ready_tag, &thread_ready_list);
-	curr_thread = main_thread;
+	curr = main_thread;
 }
 
 void schedule(){
-	if(curr_thread->status == TASK_RUNNING ){
-		curr_thread->ticks = curr_thread->priority;
-		curr_thread->status = TASK_READY;
-		list_del(&curr_thread->ready_tag);
-		list_add_tail(&curr_thread->ready_tag, &thread_ready_list);
+	if(curr->status == TASK_RUNNING ){
+		curr->ticks = curr->priority;
+		curr->status = TASK_READY;
+		list_del(&curr->ready_tag);
+		list_add_tail(&curr->ready_tag, &thread_ready_list);
 	}else{
+
 	}
-	struct task_struct *prev = curr_thread;
-	curr_thread = list_entry(struct task_struct, ready_tag, thread_ready_list.next);
-	curr_thread->status = TASK_RUNNING;
-	switch_to(prev, curr_thread);
+	struct task_struct *prev = curr;
+	curr = list_entry(struct task_struct, ready_tag, thread_ready_list.next);
+	curr->status = TASK_RUNNING;
+	process_activate(curr);	
+	put_str("in schedule\n");
+	switch_to(prev, curr);
 }
 				
 void thread_init(){

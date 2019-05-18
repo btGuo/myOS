@@ -1,17 +1,57 @@
 #ifndef __THREAD_THREAD_H
 #define __THREAD_THREAD_H
-#include"stdint.h"
-#include"list.h"
+#include "stdint.h"
+#include "list.h"
+#include "memory.h"
 
 typedef void thread_func(void*);
 void schedule();
 void print_thread();
 void thread_block();
 void thread_unblock();
+struct tack_struct* thread_start(char *name, int prio, \
+		thread_func function, void *func_arg);
+
+void init_thread(struct task_struct *pthread, char *name, int prio);
 
 #define PG_SIZE 4096
 #define MAIN_PCB 0xc009e000
 #define STACK_MAGIC 0x21436587
+
+struct intr_stack{
+	uint32_t vec_no;
+	uint32_t edi;
+	uint32_t esi;
+	uint32_t ebp;
+	uint32_t esp_dummy;
+	uint32_t ebx;
+	uint32_t edx;
+	uint32_t ecx;
+	uint32_t eax;
+	uint32_t gs;
+	uint32_t fs;
+	uint32_t es;
+	uint32_t ds;
+
+	uint32_t err_code;
+	void (*eip)(void);
+	uint32_t cs;
+	uint32_t eflags;
+	void *esp;
+	uint32_t ss;
+};
+
+struct thread_stack{
+	uint32_t ebp;
+	uint32_t ebx;
+	uint32_t edi;
+	uint32_t esi;
+	void (*eip)(thread_func *func, void *func_arg);
+
+	void (*unused_retaddr);
+	thread_func *function;
+	void *func_arg;
+};
 
 enum task_status{
 	TASK_RUNNING,
@@ -45,6 +85,7 @@ struct task_struct{
 	struct list_head all_tag;
 	char name[16];
 	uint32_t *pg_dir;
+	struct virtual_addr userprog_vaddr;
 	uint32_t stack_magic;
 };
 

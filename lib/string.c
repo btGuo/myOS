@@ -1,11 +1,17 @@
 #include"string.h"
 #include"debug.h"
+#include"print.h" 
 
 void memset(void *dest, uint8_t value, uint32_t size){
 	ASSERT(dest != NULL && size >= 0);
 	uint8_t *tmp = (uint8_t*)dest;
-	while(size--)
+	put_char('\n');put_int(dest);put_char('\n');
+	put_str("total size is:");put_int(size);put_char('\n');
+	while(size--){
+	//	put_int((uint32_t)tmp);put_char(' ');
 		*tmp++ = value;
+	}
+	put_str("done memset\n");
 }
 
 void memcpy(void *dest, void *src, uint32_t size){

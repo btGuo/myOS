@@ -1,9 +1,11 @@
 BUILD_DIR = ../build
 LIB = -I ../include
-OUT = $(BUILD_DIR)/_device.o
+OUT = $(BUILD_DIR)/_userprog.o
 
+AS = nasm
+ASFLAGS = -f elf
 CC = gcc
-CFLAGS = $(LIB) -c -fno-builtin -m32  -Wall
+CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall
 LD = ld
 LDFLAGS = -m elf_i386 -r
 
@@ -21,9 +23,7 @@ $(OUT):$(OBJS)
 $(BUILD_DIR)/%.o:%.c
 	$(CC) $(CFLAGS) $< -o $@ -MMD -MP
 
-
-.PHONY: clean 
+.PHONY: clean
 
 clean:
-	rm $(OBJS) $(DEPS) 
-
+	rm $(OBJS) $(DEPS)

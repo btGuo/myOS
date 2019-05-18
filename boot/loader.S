@@ -2,12 +2,11 @@
 section loader vstart=LOADER_BASE_ADDR
 ;栈位于loader 下方
 LOADER_STACK_TOP equ LOADER_BASE_ADDR
-jmp loader_start
-;全局描述符表
+;全局描述符表, 0x900
 gdt:
 	dq 0
-	dq 0x00_c_f_9_8_000000_ffff
-	dq 0x00_c_f_9_2_000000_ffff
+	dq 0x00_c_f_9_8_000000_ffff  ;code
+	dq 0x00_c_f_9_2_000000_ffff  ;data
 	dq 0x00_c_f_9_2_0b8000_0007
 
 GDT_SIZE  equ $ - gdt
@@ -18,7 +17,7 @@ SELECTOR_DATA  equ 0x0010
 SELECTOR_VIDEO equ 0x0018
 
 	times 60 dq 0
-
+;0xb00
 total_mem_bytes dd 0
 
 gdt_ptr:
@@ -28,6 +27,7 @@ gdt_ptr:
 ards_buf times 244 db 0
 ards_nr  dw 0		
 
+;0xc00
 loader_start:
 ;打印字符串
 ;cx 字符串长度

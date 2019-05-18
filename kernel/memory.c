@@ -1,9 +1,12 @@
-#include"memory.h"
-#include"stdint.h"
-#include"print.h"
+#include "memory.h"
+#include "stdint.h"
+#include "print.h"
+#include "string.h"
+#include "thread.h"
 
 struct virtual_addr kernel_vaddr;
 struct pool kernel_pool, user_pool;
+extern struct task_struct *curr;
 
 static void mem_pool_init(uint32_t all_mem){
 	put_str("memory pool init start\n");
@@ -48,6 +51,9 @@ static void mem_pool_init(uint32_t all_mem){
 	kernel_vaddr.vaddr_start = VADDR_START;
 	bitmap_init(&kernel_vaddr.vaddr_bitmap);
 
+	mutex_lock_init(&kernel_pool.lock);
+	mutex_lock_init(&user_pool.lock);
+
 	put_str("memory pool init done\n");
 }
 //分配多页虚拟内存
@@ -61,36 +67,44 @@ static void* vaddr_get(enum pool_flags pf, uint32_t pg_cnt){
 		bitmap_set_range(&kernel_vaddr.vaddr_bitmap, bit_idx_start, 1, pg_cnt);
 		vaddr_start = kernel_vaddr.vaddr_start + bit_idx_start * PG_SIZE;
 	}else{
+		bit_idx_start = bitmap_scan(&curr->userprog_vaddr.vaddr_bitmap, \
+			   	pg_cnt);
+		if(bit_idx_start == -1)
+			return NULL;
+		bitmap_set_range(&curr->userprog_vaddr.vaddr_bitmap, \
+			   	bit_idx_start, 1, pg_cnt);
+		vaddr_start = curr->userprog_vaddr.vaddr_start + \
+					  bit_idx_start * PG_SIZE;
 	}
 	return (void*)vaddr_start;
 }
 //分配一页物理内存
 static void* palloc(struct pool *m_pool){
-//	put_str("palloc start\n");
 	int idx = bitmap_scan(&m_pool->pool_bitmap, 1);
 	if(idx == -1){
 		return NULL;
 	}
 	bitmap_set(&m_pool->pool_bitmap, idx, 1);
 	uint32_t phy_addr = idx * PG_SIZE + m_pool->phy_addr_start;
-//	put_str("palloc end\n");
 	return (void*)phy_addr;
 }
 
-uint32_t *pte_ptr(uint32_t vaddr){
-	return (uint32_t*)(0xffc00000 + ((vaddr & 0xffc00000) >> 10) + ((vaddr & 0x003ff000) >> 10));
+inline uint32_t *pte_ptr(uint32_t vaddr){
+	return (uint32_t*)(0xffc00000 + ((vaddr & 0xffc00000) >> 10) + \
+			((vaddr & 0x003ff000) >> 10));
 }
 
-uint32_t *pde_ptr(uint32_t vaddr){
+inline uint32_t *pde_ptr(uint32_t vaddr){
 	return (uint32_t*)(PAGE_DIR_TABLE_POS + ((vaddr & 0xffc00000) >> 20));
 }
 //映射一页物理内存和虚拟内存
 static void page_table_add(void *_vaddr, void *_paddr){
-//	put_str("page_table_add start\n");
 	uint32_t vaddr = (uint32_t)_vaddr;
 	uint32_t paddr = (uint32_t)_paddr;
 	uint32_t *pde = pde_ptr(vaddr);
 	uint32_t *pte = pte_ptr(vaddr);
+	put_int((uint32_t)pde);put_char(' ');
+	put_int((uint32_t)pte);put_char(' ');
 
 	if(*pde & 0x00000001){
 	//页表存在
@@ -105,11 +119,10 @@ static void page_table_add(void *_vaddr, void *_paddr){
 		memset((void*)((int)pte & 0xfffff000), 0, PG_SIZE);
 		*pte = (paddr | 0x7);
 	}
-//	put_str("page_table_add end\n");
 }
 //分配多页内存,顶层接口
+//先寻找物理内存和虚拟内存，映射后返回地址
 void *malloc_page(enum pool_flags pf, uint32_t pg_cnt){
-//	put_str("malloc_page start\n");
 	struct pool *mem_pool = NULL;
 	if(pf == PF_KERNEL){
 		ASSERT(pg_cnt > 0 && pg_cnt < kernel_pool.pool_size / PG_SIZE);
@@ -126,16 +139,15 @@ void *malloc_page(enum pool_flags pf, uint32_t pg_cnt){
 		return NULL;
 	while(pg_cnt--){
 		void *paddr = palloc(mem_pool);
-		//put_str("paddr is:");put_int((uint32_t)paddr);put_char('\n');
 		if(paddr == NULL)
 			return NULL;
 		page_table_add((void*)vaddr, paddr);
 		vaddr += PG_SIZE;
 	}
-//	put_str("malloc_page end\n");
 	return vaddr_start;
 }
 
+//申请内核内存
 void *get_kernel_pages(uint32_t pg_cnt){
 	void *vaddr = malloc_page(PF_KERNEL, pg_cnt);
 	if(vaddr != NULL)
@@ -143,9 +155,55 @@ void *get_kernel_pages(uint32_t pg_cnt){
 	return vaddr;
 }
 
+//申请用户内存
+//此处要上锁
+void *get_user_pages(uint32_t pg_cnt){
+	mutex_lock_acquire(&user_pool.lock);
+	void *vaddr = malloc_page(PF_USER, pg_cnt);
+	if(vaddr != NULL)
+		memset(vaddr, 0, pg_cnt * PG_SIZE);
+	mutex_lock_release(&user_pool.lock);
+	return vaddr;
+}
+//指定虚拟内存，只映射一页
+void *get_a_page(enum pool_flags pf, uint32_t vaddr){
+	put_int(vaddr);
+	struct pool *mem_pool = pf & PF_KERNEL ? &kernel_pool :&user_pool;
+	mutex_lock_acquire(&mem_pool->lock);
+	int32_t bit_idx = -1;
+	if(curr->pg_dir != NULL && pf == PF_USER){
+
+		put_str("in get_a_page\n");
+		bit_idx = (vaddr - curr->userprog_vaddr.vaddr_start) / PG_SIZE;
+		bitmap_set(&curr->userprog_vaddr.vaddr_bitmap, bit_idx, 1);
+
+	}else if(curr->pg_dir == NULL && pf == PF_KERNEL){
+
+		bit_idx = (vaddr - kernel_vaddr.vaddr_start) / PG_SIZE;
+		bitmap_set(&kernel_vaddr.vaddr_bitmap, bit_idx, 1);
+
+	}else{
+		PANIC("get_a_page: error");
+	}
+
+	void *paddr = palloc(mem_pool);
+	if(paddr == NULL)
+		return NULL;
+	page_table_add((void*)vaddr, paddr);
+	mutex_lock_release(&mem_pool->lock);
+	return (void*)vaddr;
+}
+
+uint32_t addr_v2p(uint32_t vaddr){
+	uint32_t *pte = pte_ptr(vaddr);
+	return ((*pte & 0xfffff000) + (vaddr & 0x00000fff));
+}
+
 void mem_init(){
 	put_str("mem_init start\n");
-	uint32_t all_mem = *((uint32_t*)0xb03);
+	mutex_lock_init(&user_pool.lock);
+	mutex_lock_init(&kernel_pool.lock);
+	uint32_t all_mem = *((uint32_t*)0xb00);
 	mem_pool_init(all_mem);
 	put_str("mem_init done\n");
 }

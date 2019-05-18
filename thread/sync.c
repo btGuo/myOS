@@ -1,8 +1,9 @@
 #include "sync.h"
 #include "interrupt.h"
 #include "print.h"
+#include "thread.h"
 extern struct list_head thread_ready_list;
-extern struct task_struct *curr_thread;
+extern struct task_struct *curr;
 
 void sema_init(struct semaphore *sema, uint8_t value){
 	sema->value = value;
@@ -19,8 +20,8 @@ void sema_down(struct semaphore *sema){
 	enum intr_status old_stat = intr_disable();
 	while(sema->value == 0){
 		//先删除后加入, 顺序很重要
-		list_del(&curr_thread->ready_tag);
-		list_add_tail(&curr_thread->ready_tag, &sema->waiters);
+		list_del(&curr->ready_tag);
+		list_add_tail(&curr->ready_tag, &sema->waiters);
 		thread_block(TASK_BLOCKED);
 	}
 	--sema->value;
@@ -39,8 +40,8 @@ void sema_up(struct semaphore *sema){
 }	
 
 void mutex_lock_acquire(struct mutex_lock *lock){
-	if(lock->holder != curr_thread){
-		lock->holder = curr_thread;
+	if(lock->holder != curr){
+		lock->holder = curr;
 		sema_down(&lock->semaphore);
 	}
 	++lock->holder_repeat_nr;
