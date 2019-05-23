@@ -4,7 +4,7 @@
 #include"io.h"
 #include"print.h"
 
-#define IDT_DESC_CNT 0x30
+#define IDT_DESC_CNT 0x81
 #define PIC_M_CTRL 0x20
 #define PIC_M_DATA 0x21
 #define PIC_S_CTRL 0xa0
@@ -13,6 +13,7 @@
 #define EFLAGS_IF 0x00000200
 //无法直接访问eflags入栈后再出栈
 #define GET_EFLAGS(EFLAGS_VAR) asm volatile("pushfl; popl %0" : "=g"(EFLAGS_VAR))
+
 
 struct gate_desc{
 	uint16_t func_offset_low_word;
@@ -27,7 +28,9 @@ static struct gate_desc idt[IDT_DESC_CNT];
 
 char *intr_name[IDT_DESC_CNT];
 intr_handler idt_table[IDT_DESC_CNT];
+
 extern intr_handler intr_entry_table[IDT_DESC_CNT];
+extern uint32_t syscall_handler(void);
 
 static void pic_init(void){
 	/* 初始化主片，ICW1 - ICW4 */
@@ -55,8 +58,14 @@ static void make_idt_desc(struct gate_desc *p_gdesc, uint8_t attr, intr_handler 
 	p_gdesc->func_offset_high_word = ((uint32_t)function & 0xffff0000) >> 16;
 }
 
-static void idt_desc_init(void){ int i; for(i = 0; i < IDT_DESC_CNT; ++i)
+static void idt_desc_init(void){ 
+	int i; 
+	for(i = 0; i < IDT_DESC_CNT; ++i)
+	{
 		make_idt_desc(&idt[i], IDT_DESC_ATTR_DPL0, intr_entry_table[i]);
+		if(i == IDT_DESC_CNT - 1)
+			make_idt_desc(&idt[i], IDT_DESC_ATTR_DPL3, syscall_handler);
+	}
 	put_str("   idt_desc_init done\n");
 }
 

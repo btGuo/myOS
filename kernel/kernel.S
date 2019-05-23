@@ -115,3 +115,33 @@ VECTOR 0x2e, ZERO
 
 VECTOR 0x2f, ZERO
 VECTOR 0x30, ZERO
+
+;=================================================================
+
+[bits 32]
+extern syscall_table
+section .text
+global syscall_handler
+syscall_handler:
+	
+	push 0 ;没什么用的, 对齐中断栈中err_code
+	push ds
+	push es
+	push fs
+	push gs
+	pushad
+
+	push 0x80 ;同上
+	;压入函数参数
+	push edx
+	push ecx
+	push ebx
+
+	call [syscall_table + eax * 4]
+	;跳过参数
+	add esp, 12
+
+	;写入返回值
+	mov [esp + 8 * 4], eax
+	jmp intr_exit
+
