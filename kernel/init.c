@@ -1,12 +1,13 @@
-#include"init.h"
-#include"print.h"
-#include"interrupt.h"
-#include"timer.h"
-#include"memory.h"
-#include"thread.h"
-#include"console.h"
-#include"keyboard.h"
-#include"tss.h"
+#include "init.h"
+#include "print.h"
+#include "interrupt.h"
+#include "timer.h"
+#include "memory.h"
+#include "thread.h"
+#include "console.h"
+#include "keyboard.h"
+#include "tss.h"
+#include "syscall.h"
 
 void init_all(){
 	put_str("init_all start\n");
@@ -17,5 +18,6 @@ void init_all(){
 	console_init();
 	keyboard_init();
 	tss_init();
+	sys_call_init();
 	put_str("init_all done\n");
 }

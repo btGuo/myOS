@@ -65,7 +65,6 @@ void create_user_vaddr_bitmap(struct task_struct *user_prog){
 	//以页为单位申请空间
 	uint32_t cnt = DIV_ROUND_UP((0xc0000000 - USER_VADDR_START) /\
 		   	PG_SIZE / 8, PG_SIZE);
-	printk("%d\n", cnt);
 	user_prog->userprog_vaddr.vaddr_bitmap.bits = get_kernel_pages(cnt);
 	user_prog->userprog_vaddr.vaddr_bitmap.byte_len = cnt;
 	bitmap_init(&user_prog->userprog_vaddr.vaddr_bitmap);
@@ -77,6 +76,7 @@ void process_execute(void *filename, char *name){
 	create_user_vaddr_bitmap(thread);
 	thread_create(thread, start_process, filename);
 	thread->pg_dir= create_page_dir();
+	block_desc_init(thread->u_block_desc);
 	
 	enum intr_status old_stat = intr_disable();
 	list_add_tail(&thread->ready_tag, &thread_ready_list);

@@ -22,6 +22,12 @@ static void kernel_thread(thread_func *function, void *func_arg){
 	function(func_arg);
 }
 
+static pid_t allocate_pid(void){
+	static pid_t next_pid = 0;
+	++next_pid;
+	return next_pid;
+}
+
 void thread_create(struct task_struct *pthread, thread_func function, void *func_arg){
 	pthread->self_kstack -= sizeof(struct intr_stack);
 	pthread->self_kstack -= sizeof(struct thread_stack);
@@ -46,6 +52,7 @@ void init_thread(struct task_struct *pthread, char *name, int prio){
 	pthread->ticks = prio;
 	pthread->priority = prio;
 	pthread->self_kstack = (uint32_t*)((uint32_t)pthread + PG_SIZE);
+	pthread->pid = allocate_pid();
 	pthread->stack_magic = STACK_MAGIC;
 }
 

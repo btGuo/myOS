@@ -10,12 +10,6 @@ void sema_init(struct semaphore *sema, uint8_t value){
 	LIST_HEAD_INIT(sema->waiters);
 }
 
-void mutex_lock_init(struct mutex_lock *lock){
-	lock->holder = NULL;
-	sema_init(&lock->semaphore, 1);
-	lock->holder_repeat_nr = 0;
-}
-
 void sema_down(struct semaphore *sema){
 	enum intr_status old_stat = intr_disable();
 	while(sema->value == 0){
@@ -39,6 +33,13 @@ void sema_up(struct semaphore *sema){
 	intr_set_status(old_stat);
 }	
 
+
+void mutex_lock_init(struct mutex_lock *lock){
+	lock->holder = NULL;
+	sema_init(&lock->semaphore, 1);
+	lock->holder_repeat_nr = 0;
+}
+
 void mutex_lock_acquire(struct mutex_lock *lock){
 	if(lock->holder != curr){
 		lock->holder = curr;
@@ -57,3 +58,15 @@ void mutex_lock_release(struct mutex_lock *lock){
 	sema_up(&lock->semaphore);
 }
 
+void spin_lock_init(struct spin_lock *lock){
+	lock->value = 0;
+}
+
+void spin_lock_acquire(struct spin_lock *lock){
+	while(lock->value);
+	lock->value = 1;
+}
+
+void spin_lock_release(struct spin_lock *lock){
+	lock->value = 0;
+}

@@ -13,6 +13,7 @@ struct tack_struct* thread_start(char *name, int prio, \
 		thread_func function, void *func_arg);
 
 void init_thread(struct task_struct *pthread, char *name, int prio);
+typedef uint32_t pid_t;
 
 #define PG_SIZE 4096
 #define MAIN_PCB 0xc009e000
@@ -86,7 +87,8 @@ struct task_struct{
 	char name[16];
 	uint32_t *pg_dir;
 	struct virtual_addr userprog_vaddr;
-	uint32_t pid;
+	pid_t pid;
+	struct mem_block_desc u_block_desc[DESC_CNT];
 	uint32_t stack_magic;
 };
 

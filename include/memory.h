@@ -4,6 +4,7 @@
 #include "bitmap.h"
 #include "debug.h"
 #include "sync.h"
+#include "list.h"
 
 #define PG_SIZE 4096
 #define MEM_BITMAP_BASE 0xc009a000
@@ -27,11 +28,22 @@ enum pool_flags{
 	PF_USER = 2
 };
 
+struct mem_block_desc{
+	uint32_t block_size;
+	uint32_t blocks;
+	struct list_head free_list;
+};
+
+#define DESC_CNT 7
 extern struct pool kernel_pool, user_pool;
 void mem_init(void);
 void *get_kernel_pages(uint32_t pg_cnt);
 void *get_user_pages(uint32_t pg_cnt);
 void *get_a_page(enum pool_flags pf, uint32_t vaddr);
 uint32_t addr_v2p(uint32_t vaddr);
+
+void block_desc_init(struct mem_block_desc *blk_desc);
+typedef struct list_head mem_block;
+void *sys_malloc(uint32_t size);
 
 #endif

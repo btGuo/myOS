@@ -1,5 +1,8 @@
 #include "syscall.h"
 #include "print.h"
+#include "thread.h"
+#include "string.h"
+#include "console.h"
 
 #define __NR_setup	0	/* used only by init, to get system going */
 #define __NR_exit	1
@@ -122,14 +125,24 @@ typedef void* syscall;
 syscall syscall_table[syscall_nr];
 extern struct task_struct *curr;
 
+//不需要分号
+_syscall0(uint32_t, getpid)
+_syscall1(uint32_t, write, char*, str)
+_syscall1(void*, malloc, uint32_t, size)
+
 uint32_t sys_getpid(void){
 	return curr->pid;
+}
+
+uint32_t sys_write(char *str){
+	console_write(str);
+	return strlen(str);
 }
 
 void sys_call_init(void){
 	put_str("sys_call init\n");
 	syscall_table[__NR_getpid] = sys_getpid;
+	syscall_table[__NR_write] = sys_write;
 	put_str("sys_call init done\n");
 }
 
-_syscall0(uint32_t, getpid)
