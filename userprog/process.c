@@ -12,7 +12,6 @@ extern struct list_head thread_ready_list;
 extern struct list_head thread_all_list;
 
 void start_process(void *filename_){
-	put_str("in start_process\n");
 	void *function = filename_;
 
 	curr->self_kstack += sizeof(struct thread_stack);
@@ -28,17 +27,8 @@ void start_process(void *filename_){
 	proc_stack->esp = (void *) ((uint32_t)get_a_page(PF_USER, \
 			   	USER_STAKC_VADDR) + PG_SIZE);
 
-	asm volatile("movl %0, %%esp; \
-				  add $4, %%esp; 	\
-				  popal;   \
-				  mov $0x33, %%ax;   \
-				  mov %%ax, %%fs;   \
-				  mov %%ax, %%gs;   \
-				  mov %%ax, %%es;   \
-				  mov %%ax, %%ds;   \
-				  add $32, %%esp; \
-				  add $4, %%esp;  \
-				  iret;"::"g"(proc_stack):"memory");
+	asm volatile("movl %0, %%esp; jmp intr_exit;"\
+			::"g"(proc_stack):"memory");
 }
 
 void page_dir_activate(struct task_struct *p_thread){

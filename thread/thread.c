@@ -77,7 +77,7 @@ void thread_unblock(struct task_struct *nthread){
 
 static void make_main_thread(void){
 	main_thread = (struct task_struct *)MAIN_PCB;
-	init_thread(main_thread, "idle", 31);
+	init_thread(main_thread, "main", 31);
 	list_add_tail(&main_thread->all_tag, &thread_all_list);
 	list_add_tail(&main_thread->ready_tag, &thread_ready_list);
 	curr = main_thread;
@@ -96,7 +96,6 @@ void schedule(){
 	curr = list_entry(struct task_struct, ready_tag, thread_ready_list.next);
 	curr->status = TASK_RUNNING;
 	process_activate(curr);	
-	put_str("in schedule\n");
 	switch_to(prev, curr);
 }
 				

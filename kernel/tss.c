@@ -70,10 +70,10 @@ void tss_init(){
 			(uint32_t)&tss, tss_size - 1, 0x89, 0x80);	
 
 	*((struct gdt_desc *)(GDT_BASE + 0x28)) = make_gdt_desc(\
-			0, 0x000fffff, 0x98, 0xc0);
+			0, 0x000fffff, 0xf8, 0xc0);
 
 	*((struct gdt_desc *)(GDT_BASE + 0x30)) = make_gdt_desc(\
-			0, 0x000fffff, 0x92, 0xc0);
+			0, 0x000fffff, 0xf2, 0xc0);
 
 	uint64_t gdt_operand = ((8 * 7 -1) | \
 			((uint64_t)(uint32_t)0xc0000900 << 16));
