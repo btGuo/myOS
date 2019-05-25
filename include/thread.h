@@ -9,10 +9,10 @@ void schedule();
 void print_thread();
 void thread_block();
 void thread_unblock();
-struct tack_struct* thread_start(char *name, int prio, \
-		thread_func function, void *func_arg);
-
+struct tack_struct* thread_start(char *name, int prio, thread_func function, void *func_arg);
 void init_thread(struct task_struct *pthread, char *name, int prio);
+void thread_yield(void);
+
 typedef uint32_t pid_t;
 
 #define PG_SIZE 4096

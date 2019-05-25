@@ -3,6 +3,7 @@
 #include "print.h"
 #include "string.h"
 #include "thread.h"
+#include "interrupt.h"
 
 struct virtual_addr kernel_vaddr;
 struct pool kernel_pool, user_pool;
@@ -68,7 +69,6 @@ static void mem_pool_init(uint32_t all_mem){
 //分配多页虚拟内存
 static void* vaddr_get(enum pool_flags pf, uint32_t pg_cnt){
 	int vaddr_start = 0, bit_idx_start = -1;
-	uint32_t cnt = 0;
 	if(pf == PF_KERNEL){
 		bit_idx_start = bitmap_scan(&kernel_vaddr.vaddr_bitmap, pg_cnt);
 		if(bit_idx_start == -1)
@@ -87,6 +87,7 @@ static void* vaddr_get(enum pool_flags pf, uint32_t pg_cnt){
 	}
 	return (void*)vaddr_start;
 }
+
 //分配一页物理内存
 static void* palloc(struct pool *m_pool){
 	int idx = bitmap_scan(&m_pool->pool_bitmap, 1);
@@ -98,8 +99,17 @@ static void* palloc(struct pool *m_pool){
 	return (void*)phy_addr;
 }
 
+//释放一页物理页
 void pfree(uint32_t paddr){
-	
+	struct pool *mem_pool;
+	uint32_t idx = 0;
+	if(paddr >= user_pool.phy_addr_start){
+		mem_pool = &user_pool;
+	}else {
+		mem_pool = &kernel_pool;
+	}
+	idx = paddr - mem_pool->phy_addr_start;
+	bitmap_set(&mem_pool->pool_bitmap, idx, 0);
 }
 
 
@@ -132,6 +142,13 @@ static void page_table_add(void *_vaddr, void *_paddr){
 		*pte = (paddr | 0x7);
 	}
 }
+
+static void page_table_pte_remove(uint32_t vaddr){
+	uint32_t *pte = pte_ptr(vaddr);
+	*pte &= (~ 1);
+	asm volatile("invlpg %0" : : "m"(vaddr) : "memory");
+}
+
 //分配多页内存,顶层接口
 //先寻找物理内存和虚拟内存，映射后返回地址
 void *malloc_page(enum pool_flags pf, uint32_t pg_cnt){
@@ -159,6 +176,17 @@ void *malloc_page(enum pool_flags pf, uint32_t pg_cnt){
 	return vaddr_start;
 }
 
+void mfree_page(enum pool_flags pf, void *_vaddr, uint32_t pg_cnt){
+	uint32_t vaddr = (uint32_t)_vaddr;
+	uint32_t paddr = addr_v2p(vaddr);
+	while(pg_cnt--){
+		pfree(paddr);
+		page_table_pte_remove(vaddr);
+
+		vaddr += PG_SIZE;
+		paddr = addr_v2p(vaddr);
+	}
+}
 //申请内核内存
 void *get_kernel_pages(uint32_t pg_cnt){
 	void *vaddr = malloc_page(PF_KERNEL, pg_cnt);
@@ -232,7 +260,7 @@ static struct meta *block2meta(mem_block *blk){
 void *sys_malloc(uint32_t size){
 	enum pool_flags pf;
 	uint32_t pool_size = 0;
-	struct block_desc *blk_desc = NULL;
+	struct mem_block_desc *blk_desc = NULL;
 	mem_block *blk;
 	struct pool * mem_pool;
 
@@ -257,7 +285,7 @@ void *sys_malloc(uint32_t size){
 	if(size > 1024){
 		uint32_t pg_cnt = DIV_ROUND_UP(size + sizeof(struct meta), \
 				PG_SIZE);
-		a = malloc_page(pg_cnt);
+		a = malloc_page(pf, pg_cnt);
 		if(a == NULL){
 			mutex_lock_release(&mem_pool->lock);
 			return NULL;
@@ -295,7 +323,7 @@ void *sys_malloc(uint32_t size){
 			uint32_t i;
 			//加入自由链表
 			for(i = 0; i < a->cnt; ++i){
-				blk = meta2block(a);
+				blk = meta2block(a, i);
 				list_add(blk, &blk_desc[idx].free_list);
 			}
 
@@ -326,6 +354,7 @@ void sys_free(void *ptr){
 	mem_block *blk = ptr;
 	struct meta *m = block2meta(blk);
 	if(m->desc == NULL && m->large){
+		mfree_page(pf, m, m->cnt);
 	}else {
 		list_add_tail(blk, &m->desc->free_list);
 	}
@@ -333,8 +362,6 @@ void sys_free(void *ptr){
 	mutex_lock_release(&mem_pool->lock);
 }
 
-void mfree_page(enum pool_flags pf, void *_vaddr, uint32_t pg_cnt){
-}
 void mem_init(){
 	put_str("mem_init start\n");
 	mutex_lock_init(&user_pool.lock);

@@ -44,8 +44,8 @@ static void pic_init(void){
 	outb(PIC_S_DATA, 0x02);
 	outb(PIC_S_DATA, 0x01);
 	/* ocw1 */
-	outb(PIC_M_DATA, 0xfe);
-	outb(PIC_S_DATA, 0xff);
+	outb(PIC_M_DATA, 0xf8);
+	outb(PIC_S_DATA, 0xbf);
 
 	put_str("   pic_init done\n");
 }

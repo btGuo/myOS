@@ -6,6 +6,7 @@
 
 struct task_struct *main_thread;
 struct task_struct *curr;
+struct task_struct *idle_thread;
 LIST_HEAD(thread_all_list);
 LIST_HEAD(thread_ready_list);
 
@@ -26,6 +27,13 @@ static pid_t allocate_pid(void){
 	static pid_t next_pid = 0;
 	++next_pid;
 	return next_pid;
+}
+
+static void idle(void){
+	while(1){
+		thread_block(TASK_BLOCKED);
+		asm volatile ("sti;hlt" : : : "memory");
+	}
 }
 
 void thread_create(struct task_struct *pthread, thread_func function, void *func_arg){
@@ -90,6 +98,14 @@ static void make_main_thread(void){
 	curr = main_thread;
 }
 
+void thread_yield(void){
+	enum intr_status old_stat = intr_disable();
+	list_add_tail(&curr->ready_tag, &thread_ready_list);
+	curr->status = TASK_READY;
+	schedule();
+	intr_set_status(old_stat);
+}
+
 void schedule(){
 	if(curr->status == TASK_RUNNING ){
 		curr->ticks = curr->priority;
@@ -100,6 +116,9 @@ void schedule(){
 
 	}
 	struct task_struct *prev = curr;
+	if(list_empty(&thread_ready_list)){
+		thread_unblock(idle_thread);
+	}
 	curr = list_entry(struct task_struct, ready_tag, thread_ready_list.next);
 	curr->status = TASK_RUNNING;
 	process_activate(curr);	
@@ -109,5 +128,6 @@ void schedule(){
 void thread_init(){
 	put_str("init_thread start\n");
 	make_main_thread();
+	idle_thread = thread_start("idle", 10, idle, NULL);
 	put_str("init_thread done\n");
 }

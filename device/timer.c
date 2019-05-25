@@ -12,6 +12,8 @@
 #define COUNTER0_PORT 0x40
 #define PIT_CONTROL_PORT 0x43
 
+#define mil_sec_per_intr (1000 / IRQ0_FREQUENCY)
+
 static void intr_timer_handler(void);
 extern struct task_struct *curr;
 
@@ -40,4 +42,17 @@ static void intr_timer_handler(void){
 	}else{
 		--curr->ticks;
 	}
+}
+
+static void ticks_to_sleep(uint32_t sleep_ticks){
+	uint32_t start_tick = jiffies;
+	while(jiffies - start_tick < sleep_ticks){
+		thread_yield();
+	}
+}
+
+void mtime_sleep(uint32_t m_secs){
+	uint32_t sleep_ticks = DIV_ROUND_UP(m_secs, mil_sec_per_intr);
+	ASSERT(sleep_ticks > 0);
+	ticks_to_sleep(sleep_ticks);
 }
