@@ -19,13 +19,13 @@ struct pool{
 };
 
 struct virtual_addr{
-	struct bitmap vaddr_bitmap;
+//	struct bitmap vaddr_bitmap;
 	uint32_t vaddr_start;
 };
 
 enum pool_flags{
-	PF_KERNEL = 1,
-	PF_USER = 2
+	PF_KERNEL,
+	PF_USER
 };
 
 struct mem_block_desc{

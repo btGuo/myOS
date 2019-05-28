@@ -7,6 +7,9 @@
 
 struct virtual_addr kernel_vaddr;
 struct pool kernel_pool, user_pool;
+
+//内核内存池和用户内存池, 0为内核内存池，1为用户内存池
+struct pool pool[2];
 extern struct task_struct *curr;
 
 //元数据块，表示两种内存，以页为单位分配时，desc为null，large为true;
@@ -56,17 +59,28 @@ static void mem_pool_init(uint32_t all_mem){
 	bitmap_init(&kernel_pool.pool_bitmap);
 	bitmap_init(&user_pool.pool_bitmap);
 
-	kernel_vaddr.vaddr_bitmap.byte_len = kbm_len;
-	kernel_vaddr.vaddr_bitmap.bits = (void*)(MEM_BITMAP_BASE + kbm_len + ubm_len);
+//	kernel_vaddr.vaddr_bitmap.byte_len = kbm_len;
+//	kernel_vaddr.vaddr_bitmap.bits = (void*)(MEM_BITMAP_BASE + kbm_len + ubm_len);
 	kernel_vaddr.vaddr_start = VADDR_START;
-	bitmap_init(&kernel_vaddr.vaddr_bitmap);
+//	bitmap_init(&kernel_vaddr.vaddr_bitmap);
 
 	mutex_lock_init(&kernel_pool.lock);
 	mutex_lock_init(&user_pool.lock);
 
 	put_str("memory pool init done\n");
 }
+
+inline uint32_t *pte_ptr(uint32_t vaddr){
+	return (uint32_t*)(0xffc00000 + ((vaddr & 0xffc00000) >> 10) + \
+			((vaddr & 0x003ff000) >> 10));
+}
+
+inline uint32_t *pde_ptr(uint32_t vaddr){
+	return (uint32_t*)(PAGE_DIR_TABLE_POS + ((vaddr & 0xffc00000) >> 20));
+}
+
 //分配多页虚拟内存
+/*
 static void* vaddr_get(enum pool_flags pf, uint32_t pg_cnt){
 	int vaddr_start = 0, bit_idx_start = -1;
 	if(pf == PF_KERNEL){
@@ -87,6 +101,59 @@ static void* vaddr_get(enum pool_flags pf, uint32_t pg_cnt){
 	}
 	return (void*)vaddr_start;
 }
+*/
+
+//寻找pg_cnt 个连续虚拟页
+static void *vaddr_get(enum pool_flags pf, uint32_t pg_cnt){
+	//起始虚拟地址
+	uint32_t start_addr = pf == PF_KERNEL ?
+		kernel_vaddr.vaddr_start :
+		curr->userprog_vaddr.vaddr_start;
+	//记录当前遍历到的虚拟地址
+	uint32_t vaddr = start_addr;
+
+	uint32_t *pde = pde_ptr(start_addr);
+	//最后一个页目录项不能用
+	//用户虚拟内存最高为0xc0000000
+	uint32_t *pde_end = (pf == PF_KERNEL) ?
+		 pde_ptr(0xffffffff) : pde_ptr(0xbfffffff);
+
+	uint32_t *pte = pte_ptr(start_addr);
+	uint32_t *pte_end = NULL;
+	uint32_t cnt = 0;
+	
+	while(pde != pde_end){
+		if(*pde & 0x00000001){
+
+			pte_end = pte + 1024;
+			while(pte != pte_end){
+				vaddr += 4096;
+
+				if(!(*pte & 0x00000001)){
+
+					++cnt;
+					if(cnt == pg_cnt)
+						return (void *)start_addr;
+
+				}else {
+					cnt = 0;
+					start_addr = vaddr;
+				}
+				++pte;
+			}
+		}else {
+			//页目录为空，直接计数
+			vaddr += 4096 * 1024;
+			cnt += 1024;
+			if(cnt >= pg_cnt)
+				return (void *)start_addr;
+		}
+		++pde;
+	}
+
+	return NULL;
+}
+
 
 //分配一页物理内存
 static void* palloc(struct pool *m_pool){
@@ -113,14 +180,6 @@ void pfree(uint32_t paddr){
 }
 
 
-inline uint32_t *pte_ptr(uint32_t vaddr){
-	return (uint32_t*)(0xffc00000 + ((vaddr & 0xffc00000) >> 10) + \
-			((vaddr & 0x003ff000) >> 10));
-}
-
-inline uint32_t *pde_ptr(uint32_t vaddr){
-	return (uint32_t*)(PAGE_DIR_TABLE_POS + ((vaddr & 0xffc00000) >> 20));
-}
 //映射一页物理内存和虚拟内存
 static void page_table_add(void *_vaddr, void *_paddr){
 	uint32_t vaddr = (uint32_t)_vaddr;
@@ -145,7 +204,9 @@ static void page_table_add(void *_vaddr, void *_paddr){
 
 static void page_table_pte_remove(uint32_t vaddr){
 	uint32_t *pte = pte_ptr(vaddr);
+	//p位置0
 	*pte &= (~ 1);
+	//刷新TLB
 	asm volatile("invlpg %0" : : "m"(vaddr) : "memory");
 }
 
@@ -176,6 +237,8 @@ void *malloc_page(enum pool_flags pf, uint32_t pg_cnt){
 	return vaddr_start;
 }
 
+//释放多页内存，顶层接口
+//pf其实不需要
 void mfree_page(enum pool_flags pf, void *_vaddr, uint32_t pg_cnt){
 	uint32_t vaddr = (uint32_t)_vaddr;
 	uint32_t paddr = addr_v2p(vaddr);
@@ -187,6 +250,7 @@ void mfree_page(enum pool_flags pf, void *_vaddr, uint32_t pg_cnt){
 		paddr = addr_v2p(vaddr);
 	}
 }
+
 //申请内核内存
 void *get_kernel_pages(uint32_t pg_cnt){
 	void *vaddr = malloc_page(PF_KERNEL, pg_cnt);
@@ -205,10 +269,12 @@ void *get_user_pages(uint32_t pg_cnt){
 	mutex_lock_release(&user_pool.lock);
 	return vaddr;
 }
+
 //指定虚拟内存，只映射一页
 void *get_a_page(enum pool_flags pf, uint32_t vaddr){
 	struct pool *mem_pool = pf & PF_KERNEL ? &kernel_pool :&user_pool;
 	mutex_lock_acquire(&mem_pool->lock);
+/*
 	int32_t bit_idx = -1;
 	if(curr->pg_dir != NULL && pf == PF_USER){
 
@@ -223,6 +289,7 @@ void *get_a_page(enum pool_flags pf, uint32_t vaddr){
 	}else{
 		PANIC("get_a_page: error");
 	}
+*/
 
 	void *paddr = palloc(mem_pool);
 	if(paddr == NULL)
@@ -357,6 +424,7 @@ void sys_free(void *ptr){
 		mfree_page(pf, m, m->cnt);
 	}else {
 		list_add_tail(blk, &m->desc->free_list);
+		//链表满时应该归还内存
 	}
 	
 	mutex_lock_release(&mem_pool->lock);

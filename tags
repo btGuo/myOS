@@ -1,0 +1,622 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+AS	boot/makefile	/^AS = nasm$/;"	m
+AS	kernel/makefile	/^AS = nasm$/;"	m
+AS	lib/kernel/makefile	/^AS = nasm$/;"	m
+AS	lib/makefile	/^AS = nasm$/;"	m
+AS	makefile	/^AS = nasm$/;"	m
+AS	thread/makefile	/^AS = nasm$/;"	m
+AS	userprog/makefile	/^AS = nasm$/;"	m
+ASFLAGS	kernel/makefile	/^ASFLAGS = -f elf$/;"	m
+ASFLAGS	lib/kernel/makefile	/^ASFLAGS = -f elf$/;"	m
+ASFLAGS	lib/makefile	/^ASFLAGS = -f elf$/;"	m
+ASFLAGS	makefile	/^ASFLAGS = -f elf$/;"	m
+ASFLAGS	thread/makefile	/^ASFLAGS = -f elf$/;"	m
+ASFLAGS	userprog/makefile	/^ASFLAGS = -f elf$/;"	m
+ASSERT	include/debug.h	10;"	d
+ASSERT	include/debug.h	8;"	d
+BITMAP_MASK	include/bitmap.h	/^static const uint8_t BITMAP_MASK = 1;$/;"	v
+BIT_DEV_DEV	device/ide.c	26;"	d	file:
+BIT_DEV_LBA	device/ide.c	25;"	d	file:
+BIT_DEV_MBS	device/ide.c	24;"	d	file:
+BIT_STAT_BSY	device/ide.c	19;"	d	file:
+BIT_STAT_DRDY	device/ide.c	20;"	d	file:
+BIT_STAT_DRQ	device/ide.c	21;"	d	file:
+BUILD_DIR	device/makefile	/^BUILD_DIR = ..\/build$/;"	m
+BUILD_DIR	kernel/makefile	/^BUILD_DIR = ..\/build$/;"	m
+BUILD_DIR	lib/kernel/makefile	/^BUILD_DIR = ..\/..\/build$/;"	m
+BUILD_DIR	lib/makefile	/^BUILD_DIR = ..\/build$/;"	m
+BUILD_DIR	lib/user/makefile	/^BUILD_DIR = ..\/..\/build$/;"	m
+BUILD_DIR	makefile	/^BUILD_DIR = $(PWD)\/build$/;"	m
+BUILD_DIR	thread/makefile	/^BUILD_DIR = ..\/build$/;"	m
+BUILD_DIR	userprog/makefile	/^BUILD_DIR = ..\/build$/;"	m
+CC	device/makefile	/^CC = gcc$/;"	m
+CC	kernel/makefile	/^CC = gcc$/;"	m
+CC	lib/kernel/makefile	/^CC = gcc$/;"	m
+CC	lib/makefile	/^CC = gcc$/;"	m
+CC	lib/user/makefile	/^CC = gcc$/;"	m
+CC	makefile	/^CC = gcc$/;"	m
+CC	thread/makefile	/^CC = gcc$/;"	m
+CC	userprog/makefile	/^CC = gcc$/;"	m
+CFLAGS	device/makefile	/^CFLAGS = $(LIB) -c -fno-builtin -m32  -Wall$/;"	m
+CFLAGS	kernel/makefile	/^CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall$/;"	m
+CFLAGS	lib/kernel/makefile	/^CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall$/;"	m
+CFLAGS	lib/makefile	/^CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall$/;"	m
+CFLAGS	lib/user/makefile	/^CFLAGS = $(LIB) -c -fno-builtin -m32  -Wall$/;"	m
+CFLAGS	makefile	/^CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall$/;"	m
+CFLAGS	thread/makefile	/^CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall$/;"	m
+CFLAGS	userprog/makefile	/^CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall$/;"	m
+CMD_IDENTIFY	device/ide.c	29;"	d	file:
+CMD_READ_SECTOR	device/ide.c	30;"	d	file:
+CMD_WRITE_SECTOR	device/ide.c	31;"	d	file:
+COUNTER0_PORT	device/timer.c	12;"	d	file:
+COUNTER0_VALUE	device/timer.c	11;"	d	file:
+DEPS	device/makefile	/^DEPS = $(SRCS:%.c=$(BUILD_DIR)\/%.d)$/;"	m
+DEPS	kernel/makefile	/^DEPS = $(SRCS:%.c=$(BUILD_DIR)\/%.d)$/;"	m
+DEPS	lib/kernel/makefile	/^DEPS = $(SRCS:%.c=$(BUILD_DIR)\/%.d)$/;"	m
+DEPS	lib/makefile	/^DEPS = $(SRCS:%.c=$(BUILD_DIR)\/%.d)$/;"	m
+DEPS	lib/user/makefile	/^DEPS = $(SRCS:%.c=$(BUILD_DIR)\/%.d)$/;"	m
+DEPS	thread/makefile	/^DEPS = $(SRCS:%.c=$(BUILD_DIR)\/%.d)$/;"	m
+DEPS	userprog/makefile	/^DEPS = $(SRCS:%.c=$(BUILD_DIR)\/%.d)$/;"	m
+DESC_CNT	include/memory.h	39;"	d
+DIV_ROUND_UP	include/global.h	23;"	d
+EFLAGS_IF	kernel/interrupt.c	13;"	d	file:
+EFLAGS_IF_OFF	include/global.h	19;"	d
+EFLAGS_IF_ON	include/global.h	18;"	d
+EFLAGS_IOPL_0	include/global.h	21;"	d
+EFLAGS_IOPL_3	include/global.h	20;"	d
+EFLAGS_MBS	include/global.h	17;"	d
+ENTRY_POINT	makefile	/^ENTRY_POINT = 0xc0001500$/;"	m
+EXT_CODE	device/keyboard.c	8;"	d	file:
+GDT_BASE	include/global.h	15;"	d
+GDT_LIMIT	boot/loader.S	/^GDT_LIMIT equ GDT_SIZE - 1$/;"	d
+GDT_SIZE	boot/loader.S	/^GDT_SIZE  equ $ - gdt$/;"	d
+GET_EFLAGS	kernel/interrupt.c	15;"	d	file:
+IDT_DESC_ATTR_DPL0	include/global.h	12;"	d
+IDT_DESC_ATTR_DPL3	include/global.h	13;"	d
+IDT_DESC_CNT	kernel/interrupt.c	7;"	d	file:
+INPUT_FREQUENCY	device/timer.c	10;"	d	file:
+INTR_OFF	include/interrupt.h	/^	INTR_OFF,$/;"	e	enum:intr_status
+INTR_ON	include/interrupt.h	/^	INTR_ON$/;"	e	enum:intr_status
+IRQ0_FREQUENCY	device/timer.c	9;"	d	file:
+KBD_BUF_PORT	device/keyboard.c	7;"	d	file:
+LD	device/makefile	/^LD = ld$/;"	m
+LD	kernel/makefile	/^LD = ld$/;"	m
+LD	lib/kernel/makefile	/^LD = ld$/;"	m
+LD	lib/makefile	/^LD = ld$/;"	m
+LD	lib/user/makefile	/^LD = ld$/;"	m
+LD	makefile	/^LD = ld$/;"	m
+LD	thread/makefile	/^LD = ld$/;"	m
+LD	userprog/makefile	/^LD = ld$/;"	m
+LDFALGS	makefile	/^LDFALGS = -Ttext $(ENTRY_POINT) -e main -Map $(BUILD_DIR)\/kernel.map \\$/;"	m
+LDFLAGS	device/makefile	/^LDFLAGS = -m elf_i386 -r$/;"	m
+LDFLAGS	kernel/makefile	/^LDFLAGS = -m elf_i386 -r$/;"	m
+LDFLAGS	lib/kernel/makefile	/^LDFLAGS = -m elf_i386 -r$/;"	m
+LDFLAGS	lib/makefile	/^LDFLAGS = -m elf_i386 -r $/;"	m
+LDFLAGS	lib/user/makefile	/^LDFLAGS = -m elf_i386 -r$/;"	m
+LDFLAGS	thread/makefile	/^LDFLAGS = -m elf_i386 -r$/;"	m
+LDFLAGS	userprog/makefile	/^LDFLAGS = -m elf_i386 -r$/;"	m
+LIB	device/makefile	/^LIB = -I ..\/include$/;"	m
+LIB	kernel/makefile	/^LIB = -I ..\/include$/;"	m
+LIB	lib/kernel/makefile	/^LIB = -I ..\/..\/include$/;"	m
+LIB	lib/makefile	/^LIB = -I ..\/include$/;"	m
+LIB	lib/user/makefile	/^LIB = -I ..\/..\/include$/;"	m
+LIB	makefile	/^LIB = -I include$/;"	m
+LIB	thread/makefile	/^LIB = -I ..\/include$/;"	m
+LIB	userprog/makefile	/^LIB = -I ..\/include$/;"	m
+LIB_STRING_H	include/string.h	2;"	d
+LIB_USER_SYSCALL_H	include/syscall.h	2;"	d
+LIST_HEAD	include/list.h	21;"	d
+LIST_HEAD_INIT	include/list.h	24;"	d
+LOADER_STACK_TOP	boot/loader.S	/^LOADER_STACK_TOP equ LOADER_BASE_ADDR$/;"	d
+MAIN_PCB	include/thread.h	19;"	d
+MEM_BITMAP_BASE	include/memory.h	10;"	d
+NULL	include/global.h	25;"	d
+OBJS	device/makefile	/^OBJS = $(SRCS:%.c=$(BUILD_DIR)\/%.o)$/;"	m
+OBJS	kernel/makefile	/^OBJS = $(SRCS:%.c=$(BUILD_DIR)\/%.o)$/;"	m
+OBJS	lib/kernel/makefile	/^OBJS = $(SRCS:%.c=$(BUILD_DIR)\/%.o)$/;"	m
+OBJS	lib/makefile	/^OBJS = $(SRCS:%.c=$(BUILD_DIR)\/%.o)$/;"	m
+OBJS	lib/user/makefile	/^OBJS = $(SRCS:%.c=$(BUILD_DIR)\/%.o)$/;"	m
+OBJS	makefile	/^OBJS =$(BUILD_DIR)\/main.o $(BUILD_DIR)\/_kernel.o $(BUILD_DIR)\/_thread.o $(BUILD_DIR)\/_lib.o  \\$/;"	m
+OBJS	thread/makefile	/^OBJS = $(SRCS:%.c=$(BUILD_DIR)\/%.o)$/;"	m
+OBJS	userprog/makefile	/^OBJS = $(SRCS:%.c=$(BUILD_DIR)\/%.o)$/;"	m
+OUT	device/makefile	/^OUT = $(BUILD_DIR)\/_device.o$/;"	m
+OUT	kernel/makefile	/^OUT = $(BUILD_DIR)\/_kernel.o$/;"	m
+OUT	lib/kernel/makefile	/^OUT = $(BUILD_DIR)\/_lib_kernel.o$/;"	m
+OUT	lib/makefile	/^OUT = $(BUILD_DIR)\/_lib.o$/;"	m
+OUT	lib/user/makefile	/^OUT = $(BUILD_DIR)\/_lib_user.o$/;"	m
+OUT	makefile	/^OUT = $(BUILD_DIR)\/kernel.bin$/;"	m
+OUT	thread/makefile	/^OUT = $(BUILD_DIR)\/_thread.o$/;"	m
+OUT	userprog/makefile	/^OUT = $(BUILD_DIR)\/_userprog.o$/;"	m
+PAGE_DIR_TABLE_POS	include/memory.h	12;"	d
+PANIC	include/debug.h	5;"	d
+PF_KERNEL	include/memory.h	/^	PF_KERNEL,$/;"	e	enum:pool_flags
+PF_USER	include/memory.h	/^	PF_USER$/;"	e	enum:pool_flags
+PG_SIZE	include/memory.h	9;"	d
+PG_SIZE	include/thread.h	18;"	d
+PIC_M_CTRL	kernel/interrupt.c	8;"	d	file:
+PIC_M_DATA	kernel/interrupt.c	9;"	d	file:
+PIC_S_CTRL	kernel/interrupt.c	10;"	d	file:
+PIC_S_DATA	kernel/interrupt.c	11;"	d	file:
+PIT_CONTROL_PORT	device/timer.c	13;"	d	file:
+SELECTOR_CODE	boot/loader.S	/^SELECTOR_CODE  equ 0x0008$/;"	d
+SELECTOR_DATA	boot/loader.S	/^SELECTOR_DATA  equ 0x0010$/;"	d
+SELECTOR_K_CODE	include/global.h	4;"	d
+SELECTOR_K_DATA	include/global.h	5;"	d
+SELECTOR_K_GS	include/global.h	7;"	d
+SELECTOR_K_STACK	include/global.h	6;"	d
+SELECTOR_K_TSS	include/global.h	8;"	d
+SELECTOR_U_CODE	include/global.h	9;"	d
+SELECTOR_U_DATA	include/global.h	10;"	d
+SELECTOR_VIDEO	boot/loader.S	/^SELECTOR_VIDEO equ 0x0018$/;"	d
+SELECTOR_VIDEO	lib/kernel/print.S	/^SELECTOR_VIDEO equ 0x0018$/;"	d
+SRCS	device/makefile	/^SRCS = $(wildcard *.c)$/;"	m
+SRCS	kernel/makefile	/^SRCS = $(_SRCS:main.c= )$/;"	m
+SRCS	lib/kernel/makefile	/^SRCS = $(wildcard *.c)$/;"	m
+SRCS	lib/makefile	/^SRCS = $(wildcard *.c)$/;"	m
+SRCS	lib/user/makefile	/^SRCS = $(wildcard *.c)$/;"	m
+SRCS	thread/makefile	/^SRCS = $(wildcard *.c)$/;"	m
+SRCS	userprog/makefile	/^SRCS = $(wildcard *.c)$/;"	m
+STACK_MAGIC	include/thread.h	20;"	d
+SUBDIRS	makefile	/^SUBDIRS = device kernel lib thread lib\/kernel lib\/user userprog$/;"	m
+TASK_BLOCKED	include/thread.h	/^	TASK_BLOCKED,$/;"	e	enum:task_status
+TASK_DIED	include/thread.h	/^	TASK_DIED$/;"	e	enum:task_status
+TASK_HANGING	include/thread.h	/^	TASK_HANGING,$/;"	e	enum:task_status
+TASK_READY	include/thread.h	/^	TASK_READY,$/;"	e	enum:task_status
+TASK_RUNNING	include/thread.h	/^	TASK_RUNNING,$/;"	e	enum:task_status
+TASK_WATTING	include/thread.h	/^	TASK_WATTING,$/;"	e	enum:task_status
+TSS_ATTR_HIGH	kernel/tss.c	48;"	d	file:
+TSS_ATTR_LOW	kernel/tss.c	49;"	d	file:
+USER_STAKC_VADDR	include/process.h	4;"	d
+USER_VADDR_START	include/process.h	5;"	d
+VADDR_START	include/memory.h	11;"	d
+VECTOR	kernel/kernel.S	/^VECTOR 0x00, ZERO$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x01, ZERO$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x02, ZERO$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x03, ZERO$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x04, ZERO$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x05, ZERO$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x06, ZERO$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x07, ZERO$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x08, ERROR_CODE$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x09, ZERO$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x0a, ERROR_CODE$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x0b, ERROR_CODE$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x0c, ERROR_CODE$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x0d, ERROR_CODE$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x0e, ERROR_CODE$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x0f, ZERO$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x10, ZERO$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x11, ERROR_CODE$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x12, ZERO$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x13, ZERO$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x14, ZERO$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x15, ZERO$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x16, ZERO$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x17, ZERO$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x18, ZERO$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x19, ZERO$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x1a, ZERO$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x1b, ZERO$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x1c, ZERO$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x1d, ZERO$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x1e, ZERO$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x1f, ZERO$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x20, ZERO 			;时钟中断$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x21, ZERO 			;键盘中断$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x22, ZERO 			;级联用$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x23, ZERO 			;串口1$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x24, ZERO 			;串口2$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x25, ZERO 			;并口2 $/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x26, ZERO 			;软盘 $/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x27, ZERO $/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x28, ZERO $/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x29, ZERO $/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x2a, ZERO $/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x2b, ZERO $/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x2c, ZERO $/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x2d, ZERO $/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x2e, ZERO $/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x2f, ZERO$/;"	l
+VECTOR	kernel/kernel.S	/^VECTOR 0x30, ZERO$/;"	l
+_SRCS	kernel/makefile	/^_SRCS = $(wildcard *.c)$/;"	m
+__DEVICE_CONSOLE_H	include/console.h	2;"	d
+__DEVICE_IDE_H	include/ide.h	2;"	d
+__DEVICE_IOQUEUE_H	include/ioqueue.h	2;"	d
+__DEVICE_KEYBOARD_H	include/keyboard.h	2;"	d
+__DEVICE_TIMER_H	include/timer.h	2;"	d
+__INIT_H	include/init.h	2;"	d
+__INTERRUPT_H	include/interrupt.h	2;"	d
+__KERNEL_DEBUG_H	include/debug.h	2;"	d
+__KERNEL_GLOBAL_H	include/global.h	2;"	d
+__KERNEL_LIST_H	include/list.h	2;"	d
+__KERNEL_MEMORY_H	include/memory.h	2;"	d
+__KERNEL_TSS_H	include/tss.h	2;"	d
+__LIB_IO_H	include/io.h	2;"	d
+__LIB_KERNEL_BITMAP_H	include/bitmap.h	2;"	d
+__LIB_KERNEL_PRINT_H	include/print.h	2;"	d
+__LIB_STDINT_H	include/stdint.h	2;"	d
+__LIB_STDIO_H	include/stdio.h	2;"	d
+__LIST_HEAD_INIT	include/list.h	19;"	d
+__NR_getpid	lib/user/syscall.c	7;"	d	file:
+__NR_malloc	lib/user/syscall.c	8;"	d	file:
+__NR_write	lib/user/syscall.c	9;"	d	file:
+__PROCESS_H	include/process.h	2;"	d
+__STDARG_H	include/stdarg.h	2;"	d
+__THREAD_SYNC_H	include/sync.h	2;"	d
+__THREAD_THREAD_H	include/thread.h	2;"	d
+__list_add	include/list.h	/^static inline void __list_add(struct list_head *new,$/;"	f
+__va_round_size	include/stdarg.h	7;"	d
+_syscall0	lib/user/syscall.c	/^_syscall0(uint32_t, getpid)$/;"	f
+_syscall0	lib/user/syscall.c	11;"	d	file:
+_syscall1	lib/user/syscall.c	21;"	d	file:
+_syscall2	lib/user/syscall.c	32;"	d	file:
+_syscall3	lib/user/syscall.c	43;"	d	file:
+addr_v2p	kernel/memory.c	/^uint32_t addr_v2p(uint32_t vaddr){$/;"	f
+all_tag	include/thread.h	/^	struct list_head all_tag;$/;"	m	struct:task_struct	typeref:struct:task_struct::list_head
+allocate_pid	thread/thread.c	/^static pid_t allocate_pid(void){$/;"	f	file:
+alt_status	device/keyboard.c	/^static bool ctrl_status, shift_status, alt_status, caps_lock_status;$/;"	v	file:
+ards_buf	boot/loader.S	/^ards_buf times 244 db 0$/;"	l
+ards_nr	boot/loader.S	/^ards_nr  dw 0		$/;"	d
+attr_low	kernel/tss.c	/^	uint8_t attr_low;$/;"	m	struct:gdt_desc	file:
+attribute	kernel/interrupt.c	/^	uint8_t  attribute;$/;"	m	struct:gate_desc	file:
+backlink	kernel/tss.c	/^	uint32_t  backlink;$/;"	m	struct:tss	file:
+base_high	kernel/tss.c	/^	uint8_t base_high;$/;"	m	struct:gdt_desc	file:
+base_low	kernel/tss.c	/^	uint16_t base_low;$/;"	m	struct:gdt_desc	file:
+base_mid	kernel/tss.c	/^	uint8_t base_mid;$/;"	m	struct:gdt_desc	file:
+bitmap	include/bitmap.h	/^struct bitmap{$/;"	s
+bitmap_init	lib/kernel/bitmap.c	/^void bitmap_init(struct bitmap *bmap){$/;"	f
+bitmap_scan	lib/kernel/bitmap.c	/^int bitmap_scan(struct bitmap *bmap, uint32_t len){$/;"	f
+bitmap_set	lib/kernel/bitmap.c	/^void bitmap_set(struct bitmap *bmap, uint32_t bit_idx, int8_t value){$/;"	f
+bitmap_set_range	lib/kernel/bitmap.c	/^void bitmap_set_range(struct bitmap *bmap, uint32_t bit_idx_start, \\$/;"	f
+bits	include/bitmap.h	/^	uint8_t *bits;$/;"	m	struct:bitmap
+block2meta	kernel/memory.c	/^static struct meta *block2meta(mem_block *blk){$/;"	f	file:
+block_bitmap	include/ide.h	/^	struct bitmap block_bitmap;$/;"	m	struct:partition	typeref:struct:partition::bitmap
+block_desc_init	kernel/memory.c	/^void block_desc_init(struct mem_block_desc *blk_desc){$/;"	f
+block_size	include/memory.h	/^	uint32_t block_size;$/;"	m	struct:mem_block_desc
+blocks	include/memory.h	/^	uint32_t blocks;$/;"	m	struct:mem_block_desc
+bool	include/global.h	26;"	d
+byte_len	include/bitmap.h	/^	uint32_t byte_len;$/;"	m	struct:bitmap
+caps_lock_status	device/keyboard.c	/^static bool ctrl_status, shift_status, alt_status, caps_lock_status;$/;"	v	file:
+channel	include/ide.h	/^	struct ide_channel *channel;$/;"	m	struct:disk	typeref:struct:disk::ide_channel
+channel_cnt	device/ide.c	/^uint8_t channel_cnt;$/;"	v
+channels	device/ide.c	/^struct ide_channel channels[2];$/;"	v	typeref:struct:ide_channel
+cnt	kernel/memory.c	/^	uint32_t cnt;$/;"	m	struct:meta	file:
+console_init	device/console.c	/^void console_init(){$/;"	f
+console_lock	device/console.c	/^static struct mutex_lock console_lock;$/;"	v	typeref:struct:mutex_lock	file:
+console_write	device/console.c	/^void console_write(const char *str){$/;"	f
+cr3	kernel/tss.c	/^	uint32_t  cr3;$/;"	m	struct:tss	file:
+create_page_dir	userprog/process.c	/^uint32_t *create_page_dir(void){$/;"	f
+create_user_vaddr_bitmap	userprog/process.c	/^void create_user_vaddr_bitmap(struct task_struct *user_prog){$/;"	f
+cs	include/thread.h	/^	uint32_t cs;$/;"	m	struct:intr_stack
+cs	kernel/tss.c	/^	uint32_t  cs;$/;"	m	struct:tss	file:
+ctrl_status	device/keyboard.c	/^static bool ctrl_status, shift_status, alt_status, caps_lock_status;$/;"	v	file:
+curr	thread/thread.c	/^struct task_struct *curr;$/;"	v	typeref:struct:task_struct
+dcount	kernel/interrupt.c	/^	uint8_t  dcount;$/;"	m	struct:gate_desc	file:
+default_prio	include/process.h	8;"	d
+desc	kernel/memory.c	/^	struct mem_block_desc *desc;$/;"	m	struct:meta	typeref:struct:meta::mem_block_desc	file:
+dev_no	include/ide.h	/^	uint8_t dev_no;$/;"	m	struct:disk
+devices	include/ide.h	/^	struct disk devices[2];$/;"	m	struct:ide_channel	typeref:struct:ide_channel::disk
+disk	include/ide.h	/^	struct disk *disk;$/;"	m	struct:partition	typeref:struct:partition::disk
+disk	include/ide.h	/^struct disk{$/;"	s
+disk_done	include/ide.h	/^	struct semaphore disk_done;$/;"	m	struct:ide_channel	typeref:struct:ide_channel::semaphore
+ds	include/thread.h	/^	uint32_t ds;$/;"	m	struct:intr_stack
+ds	kernel/tss.c	/^	uint32_t  ds;$/;"	m	struct:tss	file:
+eax	include/thread.h	/^	uint32_t eax;$/;"	m	struct:intr_stack
+eax	kernel/tss.c	/^	uint32_t  eax;$/;"	m	struct:tss	file:
+ebp	include/thread.h	/^	uint32_t ebp;$/;"	m	struct:intr_stack
+ebp	include/thread.h	/^	uint32_t ebp;$/;"	m	struct:thread_stack
+ebp	kernel/tss.c	/^	uint32_t  ebp;$/;"	m	struct:tss	file:
+ebx	include/thread.h	/^	uint32_t ebx;$/;"	m	struct:intr_stack
+ebx	include/thread.h	/^	uint32_t ebx;$/;"	m	struct:thread_stack
+ebx	kernel/tss.c	/^	uint32_t  ebx;$/;"	m	struct:tss	file:
+ecx	include/thread.h	/^	uint32_t ecx;$/;"	m	struct:intr_stack
+ecx	kernel/tss.c	/^	uint32_t  ecx;$/;"	m	struct:tss	file:
+edi	include/thread.h	/^	uint32_t edi;$/;"	m	struct:intr_stack
+edi	include/thread.h	/^	uint32_t edi;$/;"	m	struct:thread_stack
+edi	kernel/tss.c	/^	uint32_t  edi;$/;"	m	struct:tss	file:
+edx	include/thread.h	/^	uint32_t edx;$/;"	m	struct:intr_stack
+edx	kernel/tss.c	/^	uint32_t  edx;$/;"	m	struct:tss	file:
+eflags	include/thread.h	/^	uint32_t eflags;$/;"	m	struct:intr_stack
+eflags	kernel/tss.c	/^	uint32_t  eflags;$/;"	m	struct:tss	file:
+eip	include/thread.h	/^	void (*eip)(thread_func *func, void *func_arg);$/;"	m	struct:thread_stack
+eip	include/thread.h	/^	void (*eip)(void);$/;"	m	struct:intr_stack
+eip	kernel/tss.c	/^	uint32_t  (*eip)(void);$/;"	m	struct:tss	file:
+elapsed_ticks	include/thread.h	/^	uint32_t elapsed_ticks;$/;"	m	struct:task_struct
+elem_find	include/list.h	/^static inline bool elem_find(struct list_head *head, struct list_head *elem)$/;"	f
+err_code	include/thread.h	/^	uint32_t err_code;$/;"	m	struct:intr_stack
+es	include/thread.h	/^	uint32_t es;$/;"	m	struct:intr_stack
+es	kernel/tss.c	/^	uint32_t  es;$/;"	m	struct:tss	file:
+esi	include/thread.h	/^	uint32_t esi;$/;"	m	struct:intr_stack
+esi	include/thread.h	/^	uint32_t esi;$/;"	m	struct:thread_stack
+esi	kernel/tss.c	/^	uint32_t  esi;$/;"	m	struct:tss	file:
+esp	include/thread.h	/^	void *esp;$/;"	m	struct:intr_stack
+esp	kernel/tss.c	/^	uint32_t  esp;$/;"	m	struct:tss	file:
+esp0	kernel/tss.c	/^	uint32_t* esp0;$/;"	m	struct:tss	file:
+esp1	kernel/tss.c	/^	uint32_t* esp1;$/;"	m	struct:tss	file:
+esp2	kernel/tss.c	/^	uint32_t* esp2;$/;"	m	struct:tss	file:
+esp_dummy	include/thread.h	/^	uint32_t esp_dummy;$/;"	m	struct:intr_stack
+exception_init	kernel/interrupt.c	/^static void exception_init(void){$/;"	f	file:
+expecting_intr	include/ide.h	/^	bool expecting_intr;$/;"	m	struct:ide_channel
+extern	kernel/kernel.S	/^extern idt_table$/;"	l
+extern	kernel/kernel.S	/^extern put_str$/;"	l
+extern	kernel/kernel.S	/^extern syscall_table$/;"	l
+false	include/global.h	28;"	d
+for_each	include/list.h	/^static inline void for_each(struct list_head *head)$/;"	f
+free_list	include/memory.h	/^	struct list_head free_list;$/;"	m	struct:mem_block_desc	typeref:struct:mem_block_desc::list_head
+frequency_set	device/timer.c	/^static void frequency_set(uint8_t counter_port, \\$/;"	f	file:
+fs	include/thread.h	/^	uint32_t fs;$/;"	m	struct:intr_stack
+fs	kernel/tss.c	/^	uint32_t  fs;$/;"	m	struct:tss	file:
+func_arg	include/thread.h	/^	void *func_arg;$/;"	m	struct:thread_stack
+func_offset_high_word	kernel/interrupt.c	/^	uint16_t func_offset_high_word;$/;"	m	struct:gate_desc	file:
+func_offset_low_word	kernel/interrupt.c	/^	uint16_t func_offset_low_word;$/;"	m	struct:gate_desc	file:
+function	include/list.h	/^typedef bool function(struct list_head*, int arg);$/;"	t
+function	include/thread.h	/^	thread_func *function;$/;"	m	struct:thread_stack
+gate_desc	kernel/interrupt.c	/^struct gate_desc{$/;"	s	file:
+gdt	boot/loader.S	/^gdt:$/;"	l
+gdt_desc	kernel/tss.c	/^struct gdt_desc {$/;"	s	file:
+gdt_ptr	boot/loader.S	/^gdt_ptr:$/;"	l
+general_intr_handler	kernel/interrupt.c	/^static void general_intr_handler(uint8_t vec_nr){$/;"	f	file:
+get_a_page	kernel/memory.c	/^void *get_a_page(enum pool_flags pf, uint32_t vaddr){$/;"	f
+get_kernel_pages	kernel/memory.c	/^void *get_kernel_pages(uint32_t pg_cnt){$/;"	f
+get_user_pages	kernel/memory.c	/^void *get_user_pages(uint32_t pg_cnt){$/;"	f
+global	kernel/kernel.S	/^global intr_entry_table$/;"	l
+global	kernel/kernel.S	/^global intr_exit$/;"	l
+global	kernel/kernel.S	/^global syscall_handler$/;"	l
+global	lib/kernel/print.S	/^global put_char$/;"	l
+global	lib/kernel/print.S	/^global put_int$/;"	l
+global	lib/kernel/print.S	/^global put_str$/;"	l
+global	thread/switch.S	/^global switch_to$/;"	l
+gs	include/thread.h	/^	uint32_t gs;$/;"	m	struct:intr_stack
+gs	kernel/tss.c	/^	uint32_t  gs;$/;"	m	struct:tss	file:
+holder	include/sync.h	/^	struct task_struct *holder;$/;"	m	struct:mutex_lock	typeref:struct:mutex_lock::task_struct
+holder_repeat_nr	include/sync.h	/^	uint32_t holder_repeat_nr;$/;"	m	struct:mutex_lock
+ide_channel	include/ide.h	/^struct ide_channel{$/;"	s
+ide_init	device/ide.c	/^void ide_init(){$/;"	f
+idle	thread/thread.c	/^static void idle(void){$/;"	f	file:
+idle_thread	thread/thread.c	/^struct task_struct *idle_thread;$/;"	v	typeref:struct:task_struct
+idt	kernel/interrupt.c	/^static struct gate_desc idt[IDT_DESC_CNT];$/;"	v	typeref:struct:gate_desc	file:
+idt_desc_init	kernel/interrupt.c	/^static void idt_desc_init(void){ $/;"	f	file:
+idt_init	kernel/interrupt.c	/^void idt_init(){$/;"	f
+idt_table	kernel/interrupt.c	/^intr_handler idt_table[IDT_DESC_CNT];$/;"	v
+inb	include/io.h	/^static inline uint8_t inb(uint16_t port){$/;"	f
+inc	boot/loader.S	/^	inc di$/;"	d
+inc	boot/loader.S	/^	inc dx$/;"	d
+inc	boot/mbr.S	/^	inc di$/;"	d
+inc	boot/mbr.S	/^	inc dx$/;"	d
+init_all	kernel/init.c	/^void init_all(){$/;"	f
+init_thread	thread/thread.c	/^void init_thread(struct task_struct *pthread, char *name, int prio){$/;"	f
+inode_bitmap	include/ide.h	/^	struct bitmap inode_bitmap;$/;"	m	struct:partition	typeref:struct:partition::bitmap
+insw	include/io.h	/^static inline void insw(uint16_t port, void *addr, uint32_t word_cnt){$/;"	f
+int16_t	include/stdint.h	/^typedef signed short int int16_t;$/;"	t
+int32_t	include/stdint.h	/^typedef signed int int32_t;$/;"	t
+int64_t	include/stdint.h	/^typedef signed long long int64_t;$/;"	t
+int8_t	include/stdint.h	/^typedef signed char int8_t;$/;"	t
+intr_disable	kernel/interrupt.c	/^enum intr_status intr_disable(){$/;"	f
+intr_enable	kernel/interrupt.c	/^enum intr_status intr_enable(){$/;"	f
+intr_entry_table	kernel/kernel.S	/^intr_entry_table:$/;"	l
+intr_exit	kernel/kernel.S	/^intr_exit:$/;"	l
+intr_get_status	kernel/interrupt.c	/^enum intr_status intr_get_status(){$/;"	f
+intr_handler	include/interrupt.h	/^typedef void* intr_handler;$/;"	t
+intr_keyboard_handler	device/keyboard.c	/^static void intr_keyboard_handler(void){$/;"	f	file:
+intr_name	kernel/interrupt.c	/^char *intr_name[IDT_DESC_CNT];$/;"	v
+intr_set_status	kernel/interrupt.c	/^enum intr_status intr_set_status(enum intr_status status){$/;"	f
+intr_stack	include/thread.h	/^struct intr_stack{$/;"	s
+intr_status	include/interrupt.h	/^enum intr_status{$/;"	g
+intr_timer_handler	device/timer.c	/^static void intr_timer_handler(void){$/;"	f	file:
+io_base	kernel/tss.c	/^	uint32_t  io_base; \/* 高16位有效 *\/$/;"	m	struct:tss	file:
+ioqueue	include/ioqueue.h	/^struct ioqueue{$/;"	s
+irq_no	include/ide.h	/^	uint8_t irq_no;$/;"	m	struct:ide_channel
+jiffies	device/timer.c	/^uint32_t jiffies;$/;"	v
+k_block_desc	kernel/memory.c	/^struct mem_block_desc k_block_desc[DESC_CNT];$/;"	v	typeref:struct:mem_block_desc
+k_thread_a	kernel/main.c	/^void k_thread_a(void){$/;"	f
+k_thread_b	kernel/main.c	/^void k_thread_b(void){$/;"	f
+k_thread_c	kernel/main.c	/^void k_thread_c(void){$/;"	f
+kernel_init	boot/loader.S	/^kernel_init:$/;"	l
+kernel_pool	kernel/memory.c	/^struct pool kernel_pool, user_pool;$/;"	v	typeref:struct:pool
+kernel_thread	thread/thread.c	/^static void kernel_thread(thread_func *function, void *func_arg){$/;"	f	file:
+kernel_vaddr	kernel/memory.c	/^struct virtual_addr kernel_vaddr;$/;"	v	typeref:struct:virtual_addr
+keyboard_init	device/keyboard.c	/^void keyboard_init(){$/;"	f
+keymap	device/keyboard.c	/^static char keymap[0x3a][2] =$/;"	v	file:
+large	kernel/memory.c	/^	bool large;$/;"	m	struct:meta	file:
+ldt	kernel/tss.c	/^	uint32_t  ldt;$/;"	m	struct:tss	file:
+limit_high_attr_high	kernel/tss.c	/^	uint8_t limit_high_attr_high;$/;"	m	struct:gdt_desc	file:
+limit_low	kernel/tss.c	/^	uint16_t limit_low;$/;"	m	struct:gdt_desc	file:
+list_add	include/list.h	/^static inline void list_add(struct list_head *new, struct list_head *head)$/;"	f
+list_add_tail	include/list.h	/^static inline void list_add_tail(struct list_head *new, struct list_head *head)$/;"	f
+list_del	include/list.h	/^static inline void list_del(struct list_head *entry)$/;"	f
+list_empty	include/list.h	/^static inline bool list_empty(struct list_head *head)$/;"	f
+list_entry	include/list.h	8;"	d
+list_head	include/list.h	/^struct list_head{$/;"	s
+list_len	include/list.h	/^static inline uint32_t list_len(struct list_head *head)$/;"	f
+loader_start	boot/loader.S	/^loader_start:$/;"	l
+lock	include/ide.h	/^	struct mutex_lock lock;$/;"	m	struct:ide_channel	typeref:struct:ide_channel::mutex_lock
+lock	include/memory.h	/^	struct mutex_lock lock;$/;"	m	struct:pool	typeref:struct:pool::mutex_lock
+logic_parts	include/ide.h	/^	struct partition logic_parts[8];$/;"	m	struct:disk	typeref:struct:disk::partition
+main	kernel/main.c	/^int main() {$/;"	f
+main	test.c	/^int main()$/;"	f
+main_thread	thread/thread.c	/^struct task_struct *main_thread;$/;"	v	typeref:struct:task_struct
+make_gdt_desc	kernel/tss.c	/^static struct gdt_desc make_gdt_desc(uint32_t base, uint32_t limit, \\$/;"	f	file:
+make_idt_desc	kernel/interrupt.c	/^static void make_idt_desc(struct gate_desc *p_gdesc, uint8_t attr, intr_handler function){$/;"	f	file:
+make_main_thread	thread/thread.c	/^static void make_main_thread(void){$/;"	f	file:
+malloc_page	kernel/memory.c	/^void *malloc_page(enum pool_flags pf, uint32_t pg_cnt){$/;"	f
+max_lba	device/ide.c	34;"	d	file:
+mem_block	include/memory.h	/^typedef struct list_head mem_block;$/;"	t	typeref:struct:list_head
+mem_block_desc	include/memory.h	/^struct mem_block_desc{$/;"	s
+mem_cpy	boot/loader.S	/^mem_cpy:$/;"	l
+mem_init	kernel/memory.c	/^void mem_init(){$/;"	f
+mem_pool_init	kernel/memory.c	/^static void mem_pool_init(uint32_t all_mem){$/;"	f	file:
+memcmp	lib/string.c	/^int memcmp(const void *a, const void *b, uint32_t size){$/;"	f
+memcpy	lib/string.c	/^void memcpy(void *dest, void *src, uint32_t size){$/;"	f
+memset	lib/string.c	/^void memset(void *dest, uint8_t value, uint32_t size){$/;"	f
+message	boot/loader.S	/^	message db "hello loader"$/;"	d
+message	boot/mbr.S	/^	message db "hello MBR"$/;"	d
+meta	kernel/memory.c	/^struct meta{$/;"	s	file:
+meta2block	kernel/memory.c	/^static mem_block *meta2block(struct meta *a, uint32_t idx){$/;"	f	file:
+mfree_page	kernel/memory.c	/^void mfree_page(enum pool_flags pf, void *_vaddr, uint32_t pg_cnt){$/;"	f
+mil_sec_per_intr	device/timer.c	15;"	d	file:
+mtime_sleep	device/timer.c	/^void mtime_sleep(uint32_t m_secs){$/;"	f
+mul	boot/mbr.S	/^	mul dx$/;"	d
+mutex_lock	include/sync.h	/^struct mutex_lock{$/;"	s
+mutex_lock_acquire	thread/sync.c	/^void mutex_lock_acquire(struct mutex_lock *lock){$/;"	f
+mutex_lock_init	thread/sync.c	/^void mutex_lock_init(struct mutex_lock *lock){$/;"	f
+mutex_lock_release	thread/sync.c	/^void mutex_lock_release(struct mutex_lock *lock){$/;"	f
+name	include/ide.h	/^	char name[8];$/;"	m	struct:disk
+name	include/ide.h	/^	char name[8];$/;"	m	struct:ide_channel
+name	include/ide.h	/^	char name[8];$/;"	m	struct:partition
+name	include/thread.h	/^	char name[16];$/;"	m	struct:task_struct
+next	include/list.h	/^	struct list_head *next;$/;"	m	struct:list_head	typeref:struct:list_head::list_head
+offsetof	include/list.h	7;"	d
+open_inodes	include/ide.h	/^	struct list_head open_inodes;$/;"	m	struct:partition	typeref:struct:partition::list_head
+outb	include/io.h	/^static inline void outb(uint16_t port, uint8_t data){$/;"	f
+outsw	include/io.h	/^static inline void outsw(uint16_t port, const void *addr, uint32_t word_cnt){$/;"	f
+p_mode_start	boot/loader.S	/^p_mode_start:$/;"	l
+page_dir_activate	userprog/process.c	/^void page_dir_activate(struct task_struct *p_thread){$/;"	f
+page_table_add	kernel/memory.c	/^static void page_table_add(void *_vaddr, void *_paddr){$/;"	f	file:
+page_table_pte_remove	kernel/memory.c	/^static void page_table_pte_remove(uint32_t vaddr){$/;"	f	file:
+palloc	kernel/memory.c	/^static void* palloc(struct pool *m_pool){$/;"	f	file:
+panic_spin	kernel/debug.c	/^void panic_spin(char *filename, int line, const char *func, const char *condition){$/;"	f
+part_tag	include/ide.h	/^	struct list_head part_tag;$/;"	m	struct:partition	typeref:struct:partition::list_head
+partition	include/ide.h	/^struct partition{$/;"	s
+pde_ptr	kernel/memory.c	/^inline uint32_t *pde_ptr(uint32_t vaddr){$/;"	f
+pfree	kernel/memory.c	/^void pfree(uint32_t paddr){$/;"	f
+pg_dir	include/thread.h	/^	uint32_t *pg_dir;$/;"	m	struct:task_struct
+phy_addr_start	include/memory.h	/^	uint32_t phy_addr_start;$/;"	m	struct:pool
+pic_init	kernel/interrupt.c	/^static void pic_init(void){$/;"	f	file:
+pid	include/thread.h	/^	pid_t pid;$/;"	m	struct:task_struct
+pid_t	include/thread.h	/^typedef uint32_t pid_t;$/;"	t
+pool	include/memory.h	/^struct pool{$/;"	s
+pool_bitmap	include/memory.h	/^	struct bitmap pool_bitmap;$/;"	m	struct:pool	typeref:struct:pool::bitmap
+pool_flags	include/memory.h	/^enum pool_flags{$/;"	g
+pool_size	include/memory.h	/^	uint32_t pool_size;$/;"	m	struct:pool
+pop	kernel/kernel.S	/^	pop ds$/;"	d
+port_base	include/ide.h	/^	uint16_t port_base;$/;"	m	struct:ide_channel
+prev	include/list.h	/^	struct list_head *prev;$/;"	m	struct:list_head	typeref:struct:list_head::list_head
+prim_parts	include/ide.h	/^	struct partition prim_parts[4];$/;"	m	struct:disk	typeref:struct:disk::partition
+print_thread	thread/thread.c	/^void print_thread(struct task_struct *task){$/;"	f
+printf	lib/stdio.c	/^uint32_t printf(const char *fmt, ...){$/;"	f
+printk	kernel/printk.c	/^void printk(const char *fmt, ...){$/;"	f
+priority	include/thread.h	/^	uint8_t priority;$/;"	m	struct:task_struct
+process_activate	userprog/process.c	/^void process_activate(struct task_struct *p_thread){$/;"	f
+process_execute	userprog/process.c	/^void process_execute(void *filename, char *name){$/;"	f
+pte_ptr	kernel/memory.c	/^inline uint32_t *pte_ptr(uint32_t vaddr){$/;"	f
+push	kernel/kernel.S	/^	push ds$/;"	d
+put_char	lib/kernel/print.S	/^put_char:$/;"	l
+put_int	lib/kernel/print.S	/^put_int:$/;"	l
+put_int_buffer	lib/kernel/print.S	/^put_int_buffer dq 0$/;"	d
+put_str	lib/kernel/print.S	/^put_str:$/;"	l
+rd_disk_16	boot/mbr.S	/^rd_disk_16:$/;"	l
+rd_disk_32	boot/loader.S	/^rd_disk_32:$/;"	l
+ready_tag	include/thread.h	/^	struct list_head ready_tag;$/;"	m	struct:task_struct	typeref:struct:task_struct::list_head
+reg_alt_status	device/ide.c	15;"	d	file:
+reg_cmd	device/ide.c	14;"	d	file:
+reg_ctl	device/ide.c	16;"	d	file:
+reg_data	device/ide.c	6;"	d	file:
+reg_dev	device/ide.c	12;"	d	file:
+reg_error	device/ide.c	7;"	d	file:
+reg_lba_h	device/ide.c	11;"	d	file:
+reg_lba_l	device/ide.c	9;"	d	file:
+reg_lba_m	device/ide.c	10;"	d	file:
+reg_sect_cnt	device/ide.c	8;"	d	file:
+reg_status	device/ide.c	13;"	d	file:
+register_handler	kernel/interrupt.c	/^void register_handler(uint8_t vec_nr, intr_handler function){$/;"	f
+s	boot/mbr.S	/^s:  mov dh, [si]$/;"	l
+sb	include/ide.h	/^	struct super_block *sb;$/;"	m	struct:partition	typeref:struct:partition::super_block
+schedule	thread/thread.c	/^void schedule(){$/;"	f
+sec_cnt	include/ide.h	/^	uint32_t sec_cnt;$/;"	m	struct:partition
+section	boot/loader.S	/^section loader vstart=LOADER_BASE_ADDR$/;"	l
+section	boot/mbr.S	/^section mbr vstart=0x7c00$/;"	l
+section	kernel/kernel.S	/^section .data$/;"	l
+section	kernel/kernel.S	/^section .text$/;"	l
+section	lib/kernel/print.S	/^section .data$/;"	l
+section	lib/kernel/print.S	/^section .text$/;"	l
+section	thread/switch.S	/^section .text$/;"	l
+selector	kernel/interrupt.c	/^	uint16_t selector;$/;"	m	struct:gate_desc	file:
+self_kstack	include/thread.h	/^	uint32_t *self_kstack;$/;"	m	struct:task_struct
+sema_down	thread/sync.c	/^void sema_down(struct semaphore *sema){$/;"	f
+sema_init	thread/sync.c	/^void sema_init(struct semaphore *sema, uint8_t value){$/;"	f
+sema_up	thread/sync.c	/^void sema_up(struct semaphore *sema){$/;"	f
+semaphore	include/sync.h	/^	struct semaphore semaphore;$/;"	m	struct:mutex_lock	typeref:struct:mutex_lock::semaphore
+semaphore	include/sync.h	/^struct semaphore{$/;"	s
+setup_page	boot/loader.S	/^setup_page:$/;"	l
+shift_status	device/keyboard.c	/^static bool ctrl_status, shift_status, alt_status, caps_lock_status;$/;"	v	file:
+spin_lock	include/sync.h	/^struct spin_lock{$/;"	s
+spin_lock_acquire	thread/sync.c	/^void spin_lock_acquire(struct spin_lock *lock){$/;"	f
+spin_lock_init	thread/sync.c	/^void spin_lock_init(struct spin_lock *lock){$/;"	f
+spin_lock_release	thread/sync.c	/^void spin_lock_release(struct spin_lock *lock){$/;"	f
+sprintf	lib/sprintf.c	/^void sprintf(char *buf, const char *fmt, ...){$/;"	f
+ss	include/thread.h	/^	uint32_t ss;$/;"	m	struct:intr_stack
+ss	kernel/tss.c	/^	uint32_t  ss;$/;"	m	struct:tss	file:
+ss0	kernel/tss.c	/^	uint32_t  ss0;$/;"	m	struct:tss	file:
+ss1	kernel/tss.c	/^	uint32_t  ss1;$/;"	m	struct:tss	file:
+ss2	kernel/tss.c	/^	uint32_t  ss2;$/;"	m	struct:tss	file:
+stack_magic	include/thread.h	/^	uint32_t stack_magic;$/;"	m	struct:task_struct
+start_process	userprog/process.c	/^void start_process(void *filename_){$/;"	f
+statr_lba	include/ide.h	/^	uint32_t statr_lba;$/;"	m	struct:partition
+status	include/thread.h	/^	enum task_status status;$/;"	m	struct:task_struct	typeref:enum:task_struct::task_status
+strcat	lib/string.c	/^char *strcat(char *dest, char *src){$/;"	f
+strchr	lib/string.c	/^char *strchr(const char *str, const uint8_t ch){$/;"	f
+strchrs	lib/string.c	/^uint32_t strchrs(const char *str, uint8_t ch){$/;"	f
+strcmp	lib/string.c	/^int8_t strcmp(const char *str1, const char *str2){$/;"	f
+strcpy	lib/string.c	/^char *strcpy(char *dest, const char *src){$/;"	f
+strlen	lib/string.c	/^uint32_t strlen(const char *str){$/;"	f
+strrchr	lib/string.c	/^char *strrchr(const char *str, const uint8_t ch){$/;"	f
+switch_to	thread/switch.S	/^switch_to:$/;"	l
+sys_call_init	lib/user/syscall.c	/^void sys_call_init(void){$/;"	f
+sys_free	kernel/memory.c	/^void sys_free(void *ptr){$/;"	f
+sys_malloc	kernel/memory.c	/^void *sys_malloc(uint32_t size){$/;"	f
+sys_write	lib/user/syscall.c	/^uint32_t sys_write(char *str){$/;"	f
+syscall	lib/user/syscall.c	/^typedef void* syscall;$/;"	t	file:
+syscall_handler	kernel/kernel.S	/^syscall_handler:$/;"	l
+syscall_nr	lib/user/syscall.c	54;"	d	file:
+syscall_table	lib/user/syscall.c	/^syscall syscall_table[syscall_nr];$/;"	v
+task_status	include/thread.h	/^enum task_status{$/;"	g
+task_struct	include/thread.h	/^struct task_struct{$/;"	s
+thread_all_list	thread/thread.c	/^LIST_HEAD(thread_all_list);$/;"	v
+thread_block	thread/thread.c	/^void thread_block(enum task_status stat){$/;"	f
+thread_create	thread/thread.c	/^void thread_create(struct task_struct *pthread, thread_func function, void *func_arg){$/;"	f
+thread_func	include/thread.h	/^typedef void thread_func(void*);$/;"	t
+thread_init	thread/thread.c	/^void thread_init(){$/;"	f
+thread_ready_list	thread/thread.c	/^LIST_HEAD(thread_ready_list);$/;"	v
+thread_stack	include/thread.h	/^struct thread_stack{$/;"	s
+thread_start	thread/thread.c	/^struct tack_struct* thread_start(char *name, int prio, \\$/;"	f
+thread_unblock	thread/thread.c	/^void thread_unblock(struct task_struct *nthread){$/;"	f
+thread_yield	thread/thread.c	/^void thread_yield(void){$/;"	f
+ticks	include/thread.h	/^	uint8_t ticks;$/;"	m	struct:task_struct
+ticks_to_sleep	device/timer.c	/^static void ticks_to_sleep(uint32_t sleep_ticks){$/;"	f	file:
+timer_init	device/timer.c	/^void timer_init(){$/;"	f
+toChar	lib/vsprintf.c	/^static char toChar[17] = { '0', '1', '2', '3', '4', '5',$/;"	v	file:
+to_num	lib/vsprintf.c	/^void to_num(int num, char *dest, char mode){$/;"	f
+total_mem_bytes	boot/loader.S	/^total_mem_bytes dd 0$/;"	d
+true	include/global.h	27;"	d
+tss	kernel/tss.c	/^static struct tss tss;$/;"	v	typeref:struct:tss	file:
+tss	kernel/tss.c	/^struct tss{$/;"	s	file:
+tss_init	kernel/tss.c	/^void tss_init(){$/;"	f
+u_block_desc	include/thread.h	/^	struct mem_block_desc u_block_desc[DESC_CNT];$/;"	m	struct:task_struct	typeref:struct:task_struct::mem_block_desc
+u_prog_a	kernel/main.c	/^void u_prog_a(void){$/;"	f
+u_prog_b	kernel/main.c	/^void u_prog_b(void){$/;"	f
+uint16_t	include/stdint.h	/^typedef unsigned short int uint16_t;$/;"	t
+uint32_t	include/stdint.h	/^typedef unsigned int uint32_t;$/;"	t
+uint64_t	include/stdint.h	/^typedef unsigned long long uint64_t;$/;"	t
+uint8_t	include/stdint.h	/^typedef unsigned char uint8_t;$/;"	t
+unused_retaddr	include/thread.h	/^	void (*unused_retaddr);$/;"	m	struct:thread_stack
+update_tss_esp	kernel/tss.c	/^void update_tss_esp(struct task_struct *thread){$/;"	f
+user_pool	kernel/memory.c	/^struct pool kernel_pool, user_pool;$/;"	v	typeref:struct:
+userprog_vaddr	include/thread.h	/^	struct virtual_addr userprog_vaddr;$/;"	m	struct:task_struct	typeref:struct:task_struct::virtual_addr
+va_arg	include/stdarg.h	16;"	d
+va_end	include/stdarg.h	14;"	d
+va_list	include/stdarg.h	/^typedef char *va_list;$/;"	t
+va_start	include/stdarg.h	10;"	d
+vaddr_bitmap	include/memory.h	/^	struct bitmap vaddr_bitmap;$/;"	m	struct:virtual_addr	typeref:struct:virtual_addr::bitmap
+vaddr_get	kernel/memory.c	/^static void *vaddr_get(enum pool_flags pf, uint32_t pg_cnt){$/;"	f	file:
+vaddr_start	include/memory.h	/^	uint32_t vaddr_start;$/;"	m	struct:virtual_addr
+value	include/sync.h	/^	uint8_t value;$/;"	m	struct:semaphore
+value	include/sync.h	/^	uint8_t value;$/;"	m	struct:spin_lock
+vec_no	include/thread.h	/^	uint32_t vec_no;$/;"	m	struct:intr_stack
+virtual_addr	include/memory.h	/^struct virtual_addr{$/;"	s
+vsprintf	lib/vsprintf.c	/^void vsprintf(char *buf, const char *fmt, va_list args){$/;"	f
+waiters	include/sync.h	/^	struct list_head waiters;$/;"	m	struct:semaphore	typeref:struct:semaphore::list_head

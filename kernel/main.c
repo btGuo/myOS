@@ -18,13 +18,18 @@ void k_thread_c(void);
 
 int main() {
 	init_all();
-	process_execute(u_prog_a, "user_prog_a");
-	process_execute(u_prog_b, "user_prog_b");
+//	process_execute(u_prog_a, "user_prog_a");
+//	process_execute(u_prog_b, "user_prog_b");
 //	thread_start("k_thread_a", 31, k_thread_a, NULL);
 //	thread_start("k_thread_b", 31, k_thread_b, NULL);
 //	thread_start("k_thread_c", 31, k_thread_c, NULL);
 	
-	intr_enable();
+//	intr_enable();
+
+	void *p = NULL;
+	p = get_kernel_pages(1);
+	p = get_kernel_pages(10);
+	mfree_page(PF_KERNEL, p, 10);
 	while(1);
 	return 0;
 }

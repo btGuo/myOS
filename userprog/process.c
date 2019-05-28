@@ -52,6 +52,7 @@ uint32_t *create_page_dir(void){
 		console_write("create page dir failed, no more space!\n");
 	}
 
+	//复制高端内存页目录
 	memcpy((uint32_t*)((uint32_t)vaddr + 0x300 * 4), \
 			(uint32_t*)(0xfffff000 + 0x300 * 4), 1024);
 
@@ -60,6 +61,7 @@ uint32_t *create_page_dir(void){
 	return vaddr;
 }
 
+/*
 void create_user_vaddr_bitmap(struct task_struct *user_prog){
 	user_prog->userprog_vaddr.vaddr_start = USER_VADDR_START;
 	//以页为单位申请空间
@@ -69,13 +71,16 @@ void create_user_vaddr_bitmap(struct task_struct *user_prog){
 	user_prog->userprog_vaddr.vaddr_bitmap.byte_len = cnt;
 	bitmap_init(&user_prog->userprog_vaddr.vaddr_bitmap);
 }
+*/
 
 void process_execute(void *filename, char *name){
 	struct task_struct *thread = get_kernel_pages(1);
 	init_thread(thread, name, default_prio);
-	create_user_vaddr_bitmap(thread);
+//	create_user_vaddr_bitmap(thread);
 	thread_create(thread, start_process, filename);
 	thread->pg_dir= create_page_dir();
+	//初始化虚拟地址
+	thread->userprog_vaddr.vaddr_start = USER_VADDR_START;
 	block_desc_init(thread->u_block_desc);
 	
 	enum intr_status old_stat = intr_disable();
