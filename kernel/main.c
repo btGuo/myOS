@@ -25,11 +25,19 @@ int main() {
 //	thread_start("k_thread_c", 31, k_thread_c, NULL);
 	
 //	intr_enable();
+	void *p1, *p2, *p3, *p4, *p5;
+	p1 = sys_malloc(16);
+	p2 = sys_malloc(32);
+	p3 = sys_malloc(256);
+	p4 = sys_malloc(512);
+	p5 = sys_malloc(4096 * 4);
 
-	void *p = NULL;
-	p = get_kernel_pages(1);
-	p = get_kernel_pages(10);
-	mfree_page(PF_KERNEL, p, 10);
+	sys_mfree(p1);
+	sys_mfree(p2);
+	sys_mfree(p3);
+	sys_mfree(p4);
+	sys_mfree(p5);
+
 	while(1);
 	return 0;
 }

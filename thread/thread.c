@@ -3,6 +3,7 @@
 #include "interrupt.h"
 #include "thread.h"
 #include "process.h"
+#include "global.h"
 
 struct task_struct *main_thread;
 struct task_struct *curr;
@@ -29,7 +30,7 @@ static pid_t allocate_pid(void){
 	return next_pid;
 }
 
-static void idle(void){
+static void idle(void UNUSED){
 	while(1){
 		thread_block(TASK_BLOCKED);
 		asm volatile ("sti;hlt" : : : "memory");

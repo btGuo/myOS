@@ -7,16 +7,12 @@
 
 struct virtual_addr kernel_vaddr;
 struct pool kernel_pool, user_pool;
-
-//内核内存池和用户内存池, 0为内核内存池，1为用户内存池
-struct pool pool[2];
 extern struct task_struct *curr;
 
-//元数据块，表示两种内存，以页为单位分配时，desc为null，large为true;
+//元数据块，表示两种内存，以页为单位分配时，desc为null;
 struct meta{
 	struct mem_block_desc *desc;
 	uint32_t cnt;
-	bool large;
 };
 //内核内存块描述符
 struct mem_block_desc k_block_desc[DESC_CNT];
@@ -342,7 +338,7 @@ void *sys_malloc(uint32_t size){
 		mem_pool = &kernel_pool;
 		pf = PF_KERNEL;
 	}
-	if(!(size <= 0 && size > pool_size)){
+	if(size <= 0 || size > pool_size){
 		return NULL;
 	}
 
@@ -360,7 +356,6 @@ void *sys_malloc(uint32_t size){
 			memset(a, 0, PG_SIZE * pg_cnt);
 			a->desc = NULL;
 			a->cnt = pg_cnt;
-			a->large = true;
 			mutex_lock_release(&mem_pool->lock);
 			return (void *)(a + 1);
 		}
@@ -383,7 +378,6 @@ void *sys_malloc(uint32_t size){
 			memset(a, 0, PG_SIZE);
 			//初始化元数据块
 			a->desc = blk_desc + idx;
-			a->large = false;
 			a->cnt = blk_desc[idx].blocks;
 
 			enum intr_status old_stat = intr_disable();
@@ -401,11 +395,12 @@ void *sys_malloc(uint32_t size){
 		a = block2meta(blk);
 		--a->cnt;
 		mutex_lock_release(&mem_pool->lock);
+		put_str("sys_malloc done\n");
 		return (void *)blk;
 	}
 }	
 
-void sys_free(void *ptr){
+void sys_mfree(void *ptr){
 	ASSERT(ptr != NULL);
 	enum pool_flags pf;
 	struct pool *mem_pool;
@@ -420,11 +415,21 @@ void sys_free(void *ptr){
 	mutex_lock_acquire(&mem_pool->lock);
 	mem_block *blk = ptr;
 	struct meta *m = block2meta(blk);
-	if(m->desc == NULL && m->large){
+	if(m->desc == NULL){
 		mfree_page(pf, m, m->cnt);
 	}else {
 		list_add_tail(blk, &m->desc->free_list);
-		//链表满时应该归还内存
+		//块满时应该归还内存, 可以有别的策略
+		if(++m->cnt == m->desc->blocks){
+			uint32_t i = m->desc->blocks;
+			mem_block *tmp = NULL;
+			//删除该块在自由链表中的缓存
+			while(i--){
+				tmp = meta2block(m, i);
+				list_del(tmp);
+			}
+			mfree_page(pf, m, 1);
+		}
 	}
 	
 	mutex_lock_release(&mem_pool->lock);

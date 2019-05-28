@@ -6,6 +6,7 @@
 uint32_t getpid(void);
 uint32_t write(char *str);
 void* malloc(uint32_t size);
+void mfree(void *ptr); 
 
 void sys_call_init();
 

@@ -22,6 +22,7 @@
 
 #define DIV_ROUND_UP(x, step) (((x) + (step) - 1) / (step))
 
+#define UNUSED __attribute__((unused))
 #define NULL (void*)0
 #define bool char
 #define true 1

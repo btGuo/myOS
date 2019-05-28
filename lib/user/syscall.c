@@ -3,10 +3,12 @@
 #include "thread.h"
 #include "string.h"
 #include "console.h"
+#include "memory.h"
 
 #define __NR_getpid 0
 #define __NR_malloc 1
-#define __NR_write 2
+#define __NR_write  2
+#define __NR_mfree  3
 
 #define _syscall0(type, name)\
 type name(void)\
@@ -60,6 +62,7 @@ extern struct task_struct *curr;
 _syscall0(uint32_t, getpid)
 _syscall1(uint32_t, write, char*, str)
 _syscall1(void*, malloc, uint32_t, size)
+_syscall1(void,  mfree, void *, ptr)
 
 uint32_t sys_getpid(void){
 	return curr->pid;
@@ -73,8 +76,9 @@ uint32_t sys_write(char *str){
 void sys_call_init(void){
 	put_str("sys_call init\n");
 	syscall_table[__NR_getpid] = sys_getpid;
-	syscall_table[__NR_write] = sys_write;
+	syscall_table[__NR_write]  = sys_write;
 	syscall_table[__NR_malloc] = sys_malloc;
+	syscall_table[__NR_mfree]  = sys_mfree;
 	put_str("sys_call init done\n");
 }
 

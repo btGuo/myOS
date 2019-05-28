@@ -9,4 +9,5 @@ void put_int(uint32_t num);
 void printk(const char *fmt, ...);
 void vsprintf(char *buf, const char *fmt, va_list);
 void sprintf(char *buf, const char *fmt, ...);
+void printf(const char *fmt, ...);
 #endif

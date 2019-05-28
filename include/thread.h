@@ -12,7 +12,9 @@ void thread_unblock();
 struct tack_struct* thread_start(char *name, int prio, thread_func function, void *func_arg);
 void init_thread(struct task_struct *pthread, char *name, int prio);
 void thread_yield(void);
+void thread_create(struct task_struct *pthread, thread_func function, void *func_arg);
 
+void thread_init();
 typedef uint32_t pid_t;
 
 #define PG_SIZE 4096
