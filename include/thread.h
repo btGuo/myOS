@@ -65,6 +65,8 @@ enum task_status{
 	TASK_DIED
 };
 
+#define MAX_FILES_OPEN_PER_PROC 6
+
 /*
  * 程序控制任务块
  * self_kstack 		内核栈指针
@@ -92,6 +94,7 @@ struct task_struct{
 	pid_t pid;
 	struct mem_block_desc u_block_desc[DESC_CNT];
 	uint32_t stack_magic;
+	int32_t fd_table[MAX_FILES_OPEN_PER_PROC];
 };
 
 

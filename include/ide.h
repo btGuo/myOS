@@ -7,7 +7,7 @@
 #include "bitmap.h"
 
 struct partition{
-	uint32_t statr_lba;
+	uint32_t start_lba;
 	uint32_t sec_cnt;
 	struct disk *disk;
 	struct list_head part_tag;
@@ -36,4 +36,7 @@ struct ide_channel{
 	struct disk devices[2];
 };
 
+void ide_read(struct disk *hd, uint32_t lba, void *buf, uint32_t cnt);
+void ide_write(struct disk *hd, uint32_t lba, void *buf, uint32_t cnt);
+void ide_init();
 #endif

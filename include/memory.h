@@ -48,6 +48,6 @@ void block_desc_init(struct mem_block_desc *blk_desc);
 void *sys_malloc(uint32_t size);
 
 void *sys_malloc(uint32_t size);
-void sys_mfree(void *ptr);
+void sys_free(void *ptr);
 
 #endif

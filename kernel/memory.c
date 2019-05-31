@@ -235,7 +235,7 @@ void *malloc_page(enum pool_flags pf, uint32_t pg_cnt){
 
 //释放多页内存，顶层接口
 //pf其实不需要
-void mfree_page(enum pool_flags pf, void *_vaddr, uint32_t pg_cnt){
+void free_page(enum pool_flags pf, void *_vaddr, uint32_t pg_cnt){
 	uint32_t vaddr = (uint32_t)_vaddr;
 	uint32_t paddr = addr_v2p(vaddr);
 	while(pg_cnt--){
@@ -395,12 +395,11 @@ void *sys_malloc(uint32_t size){
 		a = block2meta(blk);
 		--a->cnt;
 		mutex_lock_release(&mem_pool->lock);
-		put_str("sys_malloc done\n");
 		return (void *)blk;
 	}
 }	
 
-void sys_mfree(void *ptr){
+void sys_free(void *ptr){
 	ASSERT(ptr != NULL);
 	enum pool_flags pf;
 	struct pool *mem_pool;
@@ -416,7 +415,7 @@ void sys_mfree(void *ptr){
 	mem_block *blk = ptr;
 	struct meta *m = block2meta(blk);
 	if(m->desc == NULL){
-		mfree_page(pf, m, m->cnt);
+		free_page(pf, m, m->cnt);
 	}else {
 		list_add_tail(blk, &m->desc->free_list);
 		//块满时应该归还内存, 可以有别的策略
@@ -428,7 +427,7 @@ void sys_mfree(void *ptr){
 				tmp = meta2block(m, i);
 				list_del(tmp);
 			}
-			mfree_page(pf, m, 1);
+			free_page(pf, m, 1);
 		}
 	}
 	

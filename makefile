@@ -23,11 +23,11 @@ $(BUILD_DIR)/main.o:./kernel/main.c
 $(OUT):$(OBJS)
 	$(LD) $(LDFALGS) -o $(OUT) $(OBJS)
 
-hd.img:$(OUT)
-	dd if=$(OUT) of=hd.img seek=9 count=200 bs=512 \
+hd60.img:$(OUT)
+	dd if=$(OUT) of=hd60.img seek=9 count=200 bs=512 \
 		conv=notrunc
 
-all :mk_dir subdir $(OUT) hd.img objdump
+all :mk_dir subdir $(OUT) hd60.img objdump
 
 .PHONY:mk_dir clean subdir objdump
 

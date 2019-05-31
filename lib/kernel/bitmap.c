@@ -46,11 +46,34 @@ void bitmap_set(struct bitmap *bmap, uint32_t bit_idx, int8_t value){
 		bmap->bits[bit_idx/8] &= ~mask;
 }
 	
+//debug
 void bitmap_set_range(struct bitmap *bmap, uint32_t bit_idx_start, \
 		int8_t value, int32_t cnt){
-	while(cnt--){
-		bitmap_set(bmap, bit_idx_start + cnt, value);
+	//已经遍历的位
+	int size = 0;
+	while(1){
+		if(!((bit_idx_start + size)% 8))
+			break;
+		bitmap_set(bmap, (bit_idx_start + size), value);
+		++size;
+	}
+
+	//减去前面以遍历位数再对8取整
+	int bytes = (cnt - size) / 8;
+	int offset = bit_idx_start / 8 + (bit_idx_start % 8 ? 1 : 0);
+	
+	//批量处理
+	if(value == 0)
+		memset(bmap->bits + offset, 0, bytes);
+	else
+		memset(bmap->bits + offset, 0xff, bytes);
+
+	//size 加上字节数
+	size += bytes * 8;
+
+	while(size < cnt){
+		bitmap_set(bmap, bit_idx_start + size, value);
+		++size;
 	}
 }
-
 

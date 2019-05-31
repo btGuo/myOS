@@ -8,7 +8,7 @@
 #define __NR_getpid 0
 #define __NR_malloc 1
 #define __NR_write  2
-#define __NR_mfree  3
+#define __NR_free  3
 
 #define _syscall0(type, name)\
 type name(void)\
@@ -62,7 +62,7 @@ extern struct task_struct *curr;
 _syscall0(uint32_t, getpid)
 _syscall1(uint32_t, write, char*, str)
 _syscall1(void*, malloc, uint32_t, size)
-_syscall1(void,  mfree, void *, ptr)
+_syscall1(void,  free, void *, ptr)
 
 uint32_t sys_getpid(void){
 	return curr->pid;
@@ -78,7 +78,7 @@ void sys_call_init(void){
 	syscall_table[__NR_getpid] = sys_getpid;
 	syscall_table[__NR_write]  = sys_write;
 	syscall_table[__NR_malloc] = sys_malloc;
-	syscall_table[__NR_mfree]  = sys_mfree;
+	syscall_table[__NR_free]  = sys_free;
 	put_str("sys_call init done\n");
 }
 

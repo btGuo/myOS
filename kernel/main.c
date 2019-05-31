@@ -10,6 +10,7 @@
 #include "stdint.h"
 #include "syscall.h"
 
+
 void u_prog_a(void);
 void u_prog_b(void);
 void k_thread_a(void);
@@ -25,18 +26,12 @@ int main() {
 //	thread_start("k_thread_c", 31, k_thread_c, NULL);
 	
 //	intr_enable();
-	void *p1, *p2, *p3, *p4, *p5;
-	p1 = sys_malloc(16);
-	p2 = sys_malloc(32);
-	p3 = sys_malloc(256);
-	p4 = sys_malloc(512);
-	p5 = sys_malloc(4096 * 4);
 
-	sys_mfree(p1);
-	sys_mfree(p2);
-	sys_mfree(p3);
-	sys_mfree(p4);
-	sys_mfree(p5);
+	int a = 10;
+	int b = -10;
+	char c = 'a';
+	printk("%h\n", a);
+	printk("%h and ch is:%c\n", b, c);
 
 	while(1);
 	return 0;
