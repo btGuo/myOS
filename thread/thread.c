@@ -62,6 +62,15 @@ void init_thread(struct task_struct *pthread, char *name, int prio){
 	pthread->priority = prio;
 	pthread->self_kstack = (uint32_t*)((uint32_t)pthread + PG_SIZE);
 	pthread->pid = allocate_pid();
+
+	pthread->fd_table[0] = 0;
+	pthread->fd_table[1] = 1;
+	pthread->fd_table[2] = 2;
+	uint8_t idx = 3;
+	while(idx < MAX_FILES_OPEN_PER_PROC){
+		pthread->fd_table[idx] = -1;
+		++idx;
+	}
 	pthread->stack_magic = STACK_MAGIC;
 }
 

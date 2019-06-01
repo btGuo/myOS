@@ -10,9 +10,9 @@
 #define BITS_PER_SEC (SECTOR_SIZE * 8)
 
 enum file_types{
-	FT_UNKNOWN;
-	FT_REGULAR;
-	FT_DIRECTORY;
+	FT_UNKNOWN,
+	FT_REGULAR,
+	FT_DIRECTORY
 };
 
 void filesys_init();

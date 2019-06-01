@@ -298,7 +298,8 @@ static void partition_scan(struct disk *hd, uint32_t ext_lba){
 }
 
 void ide_init(){
-	printk("ide_init_start\n");
+
+	printk("ide_init start\n");
 	uint8_t hd_cnt = *((uint8_t *)(0x475));
 	ASSERT(hd_cnt > 0);
 

@@ -320,6 +320,9 @@ static struct meta *block2meta(mem_block *blk){
 	return (struct meta *)((uint32_t)blk & 0xfffff000);
 }
 
+/**
+ * 按字节分配内存
+ */
 void *sys_malloc(uint32_t size){
 	enum pool_flags pf;
 	uint32_t pool_size = 0;

@@ -27,12 +27,6 @@ int main() {
 	
 //	intr_enable();
 
-	int a = 10;
-	int b = -10;
-	char c = 'a';
-	printk("%h\n", a);
-	printk("%h and ch is:%c\n", b, c);
-
 	while(1);
 	return 0;
 }
