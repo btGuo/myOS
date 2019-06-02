@@ -3,6 +3,7 @@
 #include "ide.h"
 #include "string.h"
 #include "fs.h"
+#include "interrupt.h"
 
 extern struct task_struct *curr;
 
@@ -68,6 +69,20 @@ struct inode * inode_open(struct partition *part, uint32_t i_no){
 
 void inode_close(struct inode *inode){
 
+	enum intr_status old_stat = intr_disable();
+	if(--inode->i_open_cnts == 0){
+		list_del(&inode->inode_tag);
+		uint32_t *pgdir_bak = curr->pg_dir;
+		curr->pg_dir = NULL;
+		sys_free(inode);
+		curr->pg_dir = pgdir_bak;
+	}
+	intr_set_status(old_stat);
+}
+
+void inode_init(uint32_t i_no, struct inode *inode){
+	memset((void *)inode, 0, sizeof(struct inode));
+	inode->i_no = i_no;
+}
 
 
-	

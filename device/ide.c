@@ -38,39 +38,32 @@
 #define max_lba ((80*1024*1024/512) - 1)	// 只支持80MB硬盘
 
 
-uint8_t channel_cnt;
-struct ide_channel channels[2];
+uint8_t channel_cnt;     ///< 通道数 1或者2 
+struct ide_channel channels[2];  ///< 两条ide通道
 
 
-/*
- * bootable; 		是否可引导
- * start_head 		起始磁头号
- * start_sec; 		起始扇区号
- * start_chs; 		起始柱面号
- * fs_type;  		分区类型
- * end_head; 		结束磁头号
- * end_sec;  		结束扇区号
- * end_chs;  		结束柱面号
- * start_lba 		起始扇区lba地址
- * sec_cnt; 		本分区u扇区数量
+/**
+ * @brief 分区表描述符 一个32字节
  */
 struct partition_table_entry{
-	uint8_t bootable;         
-	uint8_t start_head;
-	uint8_t start_sec;
-	uint8_t start_chs;
-	uint8_t fs_type;
-	uint8_t end_head;
-	uint8_t end_sec;
-	uint8_t end_chs;
-	uint32_t start_lba;
-	uint32_t sec_cnt;
+	uint8_t bootable;       ///<  是否可引导      
+	uint8_t start_head;     ///<  起始磁头号
+	uint8_t start_sec;      ///<  起始扇区号
+	uint8_t start_chs;      ///<  起始柱面号
+	uint8_t fs_type;        ///<  分区类型
+	uint8_t end_head;       ///<  结束磁头号
+	uint8_t end_sec;        ///<  结束扇区号
+	uint8_t end_chs;  	///<  结束柱面号
+	uint32_t start_lba;     ///<  起始扇区lba地址
+	uint32_t sec_cnt;       ///<  本分区u扇区数量
 }__attribute__((packed));
 
-
+/**
+ * @brief 引导扇区描述符mbr 或 ebr
+ */
 struct boot_sector{
-	struct partition_table_entry partition_table[4];
-	uint16_t signature;
+	struct partition_table_entry partition_table[4];   ///< 四个分区表项
+	uint16_t signature;   ///< 魔数
 }__attribute__((packed));
 
 
@@ -99,7 +92,6 @@ static void select_sector(struct disk *hd, uint32_t lba, uint8_t cnt){
 
 static void cmd_out(struct ide_channel *channel, uint8_t cmd){
 
-	channel ->expecting_intr = true;
 	outb(reg_cmd(channel), cmd);
 }
 
@@ -124,7 +116,15 @@ static void busy_wait(struct disk *hd){
 	while((inb(reg_status(hd->channel)) & BIT_STAT_BSY));
 }
 
-void ide_read(struct disk *hd, uint32_t lba, void *buf, uint32_t cnt){
+/**
+ * @brief 读硬盘缓冲，返回内存中块缓冲
+ */
+void *ide_read_buf(struct disk *hd, uint32_t lba){
+
+	return hash_table_find(&hd->io_buffer, lba);
+}
+
+void *ide_read(struct disk *hd, uint32_t lba, uint32_t cnt){
 
 	ASSERT(lba < max_lba);
 	ASSERT(cnt > 0);
@@ -319,7 +319,7 @@ void ide_init(){
 			channels[1].port_base = 0x170;
 			channels[1].irq_no = 0x20 + 15;
 		}
-		channels[channel_no].expecting_intr = false;
+//		channels[channel_no].expecting_intr = false;
 		mutex_lock_init(&channels[channel_no].lock);
 		sema_init(&channels[channel_no].disk_done, 0);
 
