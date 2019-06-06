@@ -8,15 +8,23 @@
 extern struct task_struct *curr;
 
 struct inode_pos{
-	uint32_t sec_lba;
+	uint32_t blk_nr;
 	uint32_t off_size;
 };
 
 static void inode_locate(struct partition *part, uint32_t i_no, struct inode_pos *pos){
 	ASSERT(i_no < MAX_FILES_PER_PART);
-	uint32_t offset = i_no * sizeof(struct inode);
-	pos->sec_lba = part->sb->inode_table_lba + offset / SECTOR_SIZE;
+	struct group *gp = GROUP_PTR(&part->groups, i_no);
+	uint32_t offset = (i_no % INODES_PER_GROUP) * sizeof(struct inode);
+	
+	pos->blk_nr = gp->inode_bitmap;
 	pos->off_size = offset % SECTOR_SIZE;
+}
+
+void inode_info_init(struct inode_info *m_inode, struct inode *d_inode, uint32_t i_no){
+	memcpy(m_inode, d_inode, sizeof(d_inode));
+	inode->i_no = i_no;
+	inode->i_blocks = i_size / BLOCK_SIZE;
 }
 
 void inode_sync(struct partition *part, struct inode *inode, void *io_buf){
@@ -35,47 +43,19 @@ void inode_sync(struct partition *part, struct inode *inode, void *io_buf){
 	ide_write(part->disk, pos->sec_lba, buf, 1);
 }
 
-struct inode * inode_open(struct partition *part, uint32_t i_no){
-
-	struct inode *inode = NULL;
-	uint32_t len = list_len(&part->open_inodes);
-	struct list_head *elem = &part->open_inodes;
-	while(len--){
-		elem = elem->next;
-		inode = list_entry(struct inode, inode_tag, elem);
-		if(inode->i_no == i_no){
-			inode->i_open_cnts++;
-			return inode;
-		}
-	}
-
-	struct inode_pos pos;
-	inode_locate(part, i_no, &pos);
-	uint32_t *pgdir_bak = curr->pg_dir;
-	curr->pg_dir = NULL;
-
-	inode = (struct inode *)sys_malloc(sizeof(struct inode));
-	curr->pg_dir = pgdir_bak;
-
-	char *buf = sys_malloc(SECTOR_SIZE);
-	ide_read(part->disk, pos->sec_lba, buf, 1);
-	memcpy(inode, (buf + pos->off_size), sizeof(struct inode));
-
-	list_add(&inode->inode_tag, &part->open_inodes);
-	sys_free(buf);
-	return inode;
-
+/**
+ * @brief 根据索引节点号，打开索引节点
+ */
+struct inode_info *inode_open(struct partition *part, uint32_t i_no){
+	return buffer_get_inode(&part->d_buf, i_no);
 }
 
-void inode_close(struct inode *inode){
+void inode_close(struct inode_info *m_inode){
+	ASSERT(m_inode->i_open_cnts > 0);
 
 	enum intr_status old_stat = intr_disable();
-	if(--inode->i_open_cnts == 0){
-		list_del(&inode->inode_tag);
-		uint32_t *pgdir_bak = curr->pg_dir;
-		curr->pg_dir = NULL;
-		sys_free(inode);
-		curr->pg_dir = pgdir_bak;
+	if(--m_inode->i_open_cnts == 0){
+
 	}
 	intr_set_status(old_stat);
 }

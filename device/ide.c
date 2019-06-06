@@ -34,8 +34,9 @@
 #define CMD_READ_SECTOR	   0x20     // 读扇区指令
 #define CMD_WRITE_SECTOR   0x30	    // 写扇区指令
 
-/* 定义可读写的最大扇区数,调试用的 */
-#define max_lba ((80*1024*1024/512) - 1)	// 只支持80MB硬盘
+/* 定义可读写的最大块数 */
+#define MAX_BLK (1024 * 1024)
+#define MAX_LBA (MAX_BLK * BLK_PER_SEC)
 
 
 uint8_t channel_cnt;     ///< 通道数 1或者2 
@@ -76,7 +77,7 @@ static void select_disk(struct disk *hd){
 }
 
 static void select_sector(struct disk *hd, uint32_t lba, uint8_t cnt){
-	ASSERT(lba < max_lba);
+	ASSERT(lba < MAX_LBA);
 
 	struct ide_channel *channel = hd->channel;
 
@@ -117,21 +118,23 @@ static void busy_wait(struct disk *hd){
 }
 
 /**
- * @brief 读硬盘缓冲，返回内存中块缓冲
+ * @brief 硬盘读
+ * 
+ * @param hd 磁盘分区指针
+ * @param blk 逻辑块号
+ * @param cnt 块数
  */
-void *ide_read_buf(struct disk *hd, uint32_t lba){
+void ide_read(struct disk *hd, uint32_t blk, void *buf, uint32_t cnt){
 
-	return hash_table_find(&hd->io_buffer, lba);
-}
-
-void *ide_read(struct disk *hd, uint32_t lba, uint32_t cnt){
-
-	ASSERT(lba < max_lba);
-	ASSERT(cnt > 0);
+	ASSERT(blk < MAX_BLK && cnt > 0);
 
 	mutex_lock_acquire(&hd->channel->lock);
 
 	select_disk(hd);
+
+	//转化为扇区
+	blk *= BLK_PER_SEC;
+	cnt *= BLK_PER_SEC;
 	
 	uint32_t reads = 0;
 	uint32_t res = cnt;
@@ -147,7 +150,7 @@ void *ide_read(struct disk *hd, uint32_t lba, uint32_t cnt){
 			res -= 256;
 		}
 
-		select_sector(hd, lba + reads, to_read);
+		select_sector(hd, blk + reads, to_read);
 		cmd_out(hd->channel, CMD_READ_SECTOR);
 		
 		busy_wait(hd);
@@ -159,14 +162,17 @@ void *ide_read(struct disk *hd, uint32_t lba, uint32_t cnt){
 	mutex_lock_release(&hd->channel->lock);
 }
 
-void ide_write(struct disk *hd, uint32_t lba, void *buf, uint32_t cnt){
+void ide_write(struct disk *hd, uint32_t blk, void *buf, uint32_t cnt){
 	
-	ASSERT(lba < max_lba);
+	ASSERT(blk < MAX_BLK);
 	ASSERT(cnt > 0);
 
 	mutex_lock_acquire(&hd->channel->lock);
 
 	select_disk(hd);
+
+	blk *= BLK_PER_SEC;
+	cnt *= BLK_PER_SEC;
 	
 	uint32_t writes = 0;
 	uint32_t res = cnt;
@@ -181,7 +187,7 @@ void ide_write(struct disk *hd, uint32_t lba, void *buf, uint32_t cnt){
 			res -= 256;
 		}
 
-		select_sector(hd, lba + writes, to_write);
+		select_sector(hd, blk + writes, to_write);
 		cmd_out(hd->channel, CMD_WRITE_SECTOR);
 
 		busy_wait(hd);

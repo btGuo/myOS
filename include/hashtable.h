@@ -2,20 +2,15 @@
 #define __LIB_KERNEL_HASHTABLE_H
 
 #include "stdint.h"
+#include "buffer_head.h"
+
 
 /**
- * 哈希表元素
- */
-struct hash_elem{
-	uint32_t key;  ///< 关键字
-	uint32_t *val; ///< 值
-};
-/**
- * @brief 哈希表
+ * @brief 哈希表，开哈希，数据域存放链表头
  */
 struct hash_table{
-	uint32_t size;   ///< 哈希表大小
-	struct hash_elem *data;  ///< 数据指针
+	uint32_t length;   ///< 哈希表槽个数
+	struct list_head *data;  ///< 数据指针
 };
 
 

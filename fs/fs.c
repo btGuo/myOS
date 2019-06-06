@@ -12,109 +12,110 @@ struct partition *cur_par = NULL;
 extern uint8_t channel_cnt;
 extern struct ide_channel channels[2];
 
+inline void write_block(struct parttition *part, struct buffer_head *bh){
+	buffer_write(&part->buffer, bh); 
+}
+
+inline struct buffer_head *read_block(struct parttition *part, uint32_t blk_nr){
+	return buffer_read(&part->buffer, blk_nr);
+}
+
+inline void write_indirect(struct parttition *part, uint32_t sta_blk_nr, void *data, uint32_t cnt){
+	ide_write(part->disk, sta_blk_nr, data, cnt);
+}	
+
+inline void read_indirect(struct partition *part, uint32_t sta_blk_nr, void *data, uint32_t cnt){
+	ide_read(part->disk, sta_blk_nr, data, cnt);
+}
+
 static void partition_format(struct partition *part){
 	printk("partition %s start format...\n", part->name);
 
-	uint32_t inode_secs = DIV_ROUND_UP(sizeof(struct inode) * MAX_FILES_PER_PART,
-		       	SECTOR_SIZE);
-	//先统计出字节数, 再统计扇区数
-	uint32_t inode_bmp_secs = DIV_ROUND_UP(MAX_FILES_PER_PART, 8);
-		 inode_bmp_secs = DIV_ROUND_UP(inode_bmp_secs, SECTOR_SIZE);
+	//总块数
+	uint32_t blocks = part->sec_cnt / BLK_PER_SEC;
+	//组数
+	uint32_t groups_cnt = blocks / GROUP_BLKS;
+	part->groups_cnt = groups_cnt;
+	//剩余块数
+	uint32_t res_blks = blocks % GROUP_BLKS; 
+
+	uint32_t h_blks = DIV_ROUND_UP(sizeof(struct super_block) 
+			+ sizeof(struct group) * groups_cnt, BLOCK_SIZE);
+	uint32_t size = h_blks * BLOCK_SIZE;
+
+	uint8_t *buf = sys_malloc(size);
+	memset(buf, 0, size);
+
+//初始化超级块
+	struct super_block *sb = (struct super_block *)buf;
+ 	
+	sb->magic = SUPER_MAGIC;
+	sb->major_rev = MAJOR;
+	sb->minor_rev = MINOR;
+
+	sb->block_size = BLOCK_SIZE;
+	sb->blocks_per_group = GROUP_BLKS;
+	sb->inodes_per_group = INODES_PER_GROUP;
+	sb->res_blocks = res_blks;
+
+	sb->blocks_count = blocks;
+	sb->inodes_count = INODES_PER_GROUP * groups_cnt;
+	sb->free_blocks_count = sb->blocks_count - 1;
+	sb->free_inodes_count = sb->inodes_count;
+
+	sb->groups_table = 1;
+//初始化块组
+	struct group *gp = (struct group *)(buf + sizeof(struct super_block));
+	struct group *gp_end = gp + groups_cnt;
+	uint32_t used_blks = 1 + h_blks + BLOCKS_BMP_BLKS + INODES_BLKS + INODES_BLKS;
+
+	while(gp != gp_end){
+		gp->free_blocks_count = sb->blocks_per_group - used_blks;
+		gp->free_inodes_count = sb->inodes_per_group;
+		gp->block_bitmap = BLOCKS(sb, BLOCKS_BMP_BLKS);
+		gp->inode_bitmap = BLOCKS(sb, INODES_BMP_BLKS);
+		gp->inode_table  = BLOCKS(sb, INODES_BLKS);
+		++gp;
+	}
 	
-	uint32_t free_secs = part->sec_cnt - 2 - inode_bmp_secs - inode_secs;
-	
-	//上取整
-	uint32_t block_bmp_secs = DIV_ROUND_UP(free_secs, (BITS_PER_SEC / SEC_PER_BLK + 1));
-	//剩下的全给块
-	uint32_t block_secs = free_secs - block_bmp_secs;
-	//剩下的位数，有多余的位
-	uint32_t res_bits = block_bmp_secs * SECTOR_SIZE * 8 - block_secs;
+	uint32_t cnt = 0;
+	while(cnt < groups_cnt){
+		write_blocks(part, GROUP_BLK(sb, cnt), h_blks, buf);
+		++cnt;
+	}
 
-	printk("     total secs: %d   ", part->sec_cnt);
-	printk("     block_bmp_secs: %d   ", block_bmp_secs);
-	printk("    block_secs : %d   ", block_secs);
-	printk("    inode_bmp_secs : %d    ", inode_bmp_secs);
-	printk("    inode_secs : %d    ", inode_secs);
-	printk("    res_bits : %d\n", res_bits);
-	
-	struct super_block sb;
-	sb.magic = SUPER_MAGIC;
-	sb.sec_cnt = part->sec_cnt;
-	sb.inode_cnt = MAX_FILES_PER_PART;
-	sb.part_lba_base = part->start_lba;
+	gp = (struct group *)(buf + sizeof(struct super_block));
+	struct bitmap bitmap;
+	bitmap->byte_len = GROUP_BLKS / 8;
+	bitmap->bits = (uint8_t *)sys_malloc(bitmap->byte_len);
+	bitmap_set_range(&bitmap, 0, 0, used_blks);
+	cnt = 0;
+	while(cnt < groups_cnt){
+	       write_blocks(part, GROUP_BLK(sb, cnt) + gp->block_bitmap, 1);
+	}
 
-	sb.block_bitmap_lba = sb.part_lba_base + 2;
-	sb.block_bitmap_sects = block_bmp_secs;
-
-	sb.inode_bitmap_lba = sb.block_bitmap_lba + sb.block_bitmap_sects;
-	sb.inode_bitmap_sects = inode_bmp_secs;
-
-	sb.inode_table_lba = sb.block_bitmap_lba + sb.block_bitmap_sects;
-	sb.inode_table_sects = inode_secs;
-
-	sb.data_start_lba = sb.inode_table_lba + sb.inode_table_sects;
-	sb.root_inode_no = 0;
-	sb.dir_entry_size = sizeof(struct dir_entry);
-
-	struct disk *hd = part->disk;
-	ide_write(hd, part->start_lba + 1, &sb, 1);
-
-	uint32_t buf_size = (block_bmp_secs > inode_secs ?  block_bmp_secs 
-		:inode_secs) * SECTOR_SIZE; 
-	uint8_t *buf = (uint8_t *)sys_malloc(buf_size);
-	buf[0] |= 1;
-
-	//创建位图以便处理
-	struct bitmap bmp;
-//先处理块位图
-	bmp.byte_len = block_bmp_secs * SECTOR_SIZE;
-	bmp.bits = buf;
-	//剩下没用的位全部置1
-	bitmap_set_range(&bmp, block_secs, 1, res_bits);
-	ide_write(hd, sb.block_bitmap_lba, buf, sb.block_bitmap_sects);
-
-//处理i节点位图
-	memset(buf, 0, buf_size);
-	buf[0] |= 1;
-	ide_write(hd, sb.inode_bitmap_lba, buf, sb.inode_bitmap_sects);
-
-//处理i节点表
-	buf[0] = 0;
-	struct inode *i = (struct inode *)buf;
-	//根目录两个目录项
-	i->i_size = sb.dir_entry_size * 2;
-	i->i_no = 0;
-	i->i_sectors[0] = sb.data_start_lba;
-	ide_write(hd, sb.inode_table_lba, buf, sb.inode_table_sects);
-//处理块
-	memset(buf, 0, sb.dir_entry_size * 2);
-	struct dir_entry *p_de = (struct dir_entry *)buf;
-	//分别处理两个目录
-	memcpy(p_de->filename, ".", 1);
-	p_de->i_no = 0;
-	p_de->f_type = FT_DIRECTORY;
-	++p_de;
-
-	memcpy(p_de->filename, "..", 2);
-	p_de->i_no = 0;
-	p_de->f_type = FT_DIRECTORY;
-
-	ide_write(hd, sb.data_start_lba, buf, 1);
-
-	sys_free(buf);
 }
+
 
 static void mount_partition(struct partition *part){
 
 	printk("mount_partition in %s\n", part->name);
 	cur_par = part;
-//读取超级块
-	part->sb = (struct super_block *)sys_malloc(sizeof(struct super_block));
-	if(!part->sb){
+//读取超级块和块组描述符
+	uint32_t h_blks = DIV_ROUND_UP(sizeof(struct super_block) 
+			+ sizeof(struct group) * groups_cnt, BLOCK_SIZE);
+	uint32_t size = h_blks * BLOCK_SIZE;
+	uint8_t *buf = sys_malloc(size);
+
+	if(!buf){
 		PANIC("no more space\n");
 	}
-	ide_read(part->disk, part->start_lba + 1, part->sb, 1);
+	part->sb = (struct super_block *)buf;
+	part->groups = (struct group *)(buf + sizeof(struct super_block));
 
+	read_indirect(part, 1, buf, h_blks);
+
+/*
 	struct super_block *sb = part->sb;
 	struct bitmap *bmp = &part->block_bitmap;
 
@@ -136,6 +137,7 @@ static void mount_partition(struct partition *part){
 		PANIC("no more space\n");
 	}
 	ide_read(part->disk, sb->inode_bitmap_lba, bmp->bits, sb->inode_bitmap_sects);
+*/
 }
 
 void filesys_init(){
@@ -191,5 +193,4 @@ void filesys_init(){
 	
 	printk("filesys_init done\n");
 }
-
 

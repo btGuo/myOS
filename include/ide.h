@@ -5,6 +5,7 @@
 #include "list.h"
 #include "sync.h"
 #include "bitmap.h"
+#include "buffer_head.h"
 #include "hash_table.h"
 
 /**
@@ -17,9 +18,10 @@ struct partition{
 	struct list_head part_tag;  
 	char name[8];     ///< 分区名字
 	struct super_block *sb;    ///< 分区超级块
-	struct bitmap block_bitmap;   ///< 块位图
-	struct bitmap inode_bitmap;   ///< inode位图
-	struct list_head open_inodes;   ///< inode缓存队列
+	struct group_info *groups;
+	struct group_info *cur_gp;
+	uint32_t groups_cnt;
+	struct disk_buffer buffer;     ///< 磁盘缓冲区
 };
 
 /**
@@ -30,7 +32,6 @@ struct disk{
 	struct ide_channel *channel;   ///< 磁盘所在的通道
 	struct partition prim_parts[4];  ///< 4个主分区
 	struct partition logic_parts[8]; ///< 8个逻辑分区，这里设了上限
-	struct hash_table io_buffer;     ///< 缓冲区，保留文件系统块指针
 	uint8_t dev_no;   ///< 设备号
 };
 

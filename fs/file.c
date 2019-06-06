@@ -30,11 +30,23 @@ int32_t set_fd(int32_t fd){
 }
 
 int32_t inode_bmp_alloc(struct partition *part){
-	int32_t idx = bitmap_scan(&part->inode_bitmap, 1);
-	if(idx != -1){
-		bitmap_set(&part->inode_bitmap, idx, 1);
+	struct group_info *cur_gp = part->cur_gp;
+	struct super_block *sb = part->sb;
+
+	ASSERT(sb->free_inodes_count > 0);
+	if(cur_gp->free_inodes_count == 0){
+		cur_gp = cur_gp->next;
+		group_info_init(cur_gp);
+		part->cur_gp = cur_gp;
 	}
-	return idx;
+	--cur_gp->free_inodes_count;
+	--sb->free_inodes_count;
+
+	uint32_t idx = bitmap_scan(&cur_gp->inode_bmp, 1);
+	if(idx != -1){
+		bitmap_set(&cur_gp->inode_bmp, idx, 1);
+	}
+	return idx + cur_gp->group_nr * INODES_PER_GROUP;
 }
 
 /**
