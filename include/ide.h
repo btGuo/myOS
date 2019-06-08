@@ -5,8 +5,8 @@
 #include "list.h"
 #include "sync.h"
 #include "bitmap.h"
-#include "buffer_head.h"
 #include "hash_table.h"
+#include "buffer.h"
 
 /**
  * @brief 分区描述符，对应硬盘上的分区，一个硬盘可以有多个分区
@@ -18,10 +18,10 @@ struct partition{
 	struct list_head part_tag;  
 	char name[8];     ///< 分区名字
 	struct super_block *sb;    ///< 分区超级块
-	struct group_info *groups;
-	struct group_info *cur_gp;
-	uint32_t groups_cnt;
-	struct disk_buffer buffer;     ///< 磁盘缓冲区
+	struct group_info *groups;  ///< 块组指针
+	struct group_info *cur_gp;  ///< 当前使用块组
+	uint32_t groups_cnt;       ///< 块组数
+	struct disk_buffer io_buffer;     ///< 磁盘缓冲区
 };
 
 /**

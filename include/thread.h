@@ -20,6 +20,7 @@ typedef uint32_t pid_t;
 #define PG_SIZE 4096         ///< 页大小
 #define MAIN_PCB 0xc009e000     ///< 主线程pcb所在地址
 #define STACK_MAGIC 0x21436587     ///< 栈魔数，随便定义的
+#define MAX_FILES_OPEN_PER_PROC 6
 
 /**
  * 中断栈，切换任务时保存上下文信息
@@ -74,7 +75,6 @@ enum task_status{
 	TASK_DIED              ///<  死亡
 };
 
-#define MAX_FILES_OPEN_PER_PROC 6
 
 /**
  * 程序控制任务块

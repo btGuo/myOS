@@ -1,13 +1,16 @@
-#include "inode.h"
 #include "fs.h"
-#include "ide.h"
 #include "dir.h"
 
 struct dir root_dir;
 extern struct partition *cur_par;
 
+void open_root_dir(struct partition *part){
+	root_dir.inode = inode_open(part, ROOT_INODE);
+	root_dir.dir_pos = 0;
+}
+
 void dir_close(struct dir *dir){
-	if(dir == root_dir){
+	if(dir == &root_dir){
 		return;
 	}
 	inode_close(dir->inode);
@@ -33,53 +36,52 @@ struct dir* dir_open(struct partition *part, uint32_t i_no){
  * @return 是否读完
  */
 
-bool _handle_inode(struct partition *part, struct inode *inode, \
-		uint32_t idx, void *buf, uint32_t *block_buf){
+struct buffer_head *_handle_inode(struct partition *part, struct inode_info *inode, uint32_t idx){
 
 	if(idx >= BLOCK_LEVEL_3){
-		return false;
+		PANIC("no more space\n");
 	}
 	
-	uint32_t lba = 0, pre_lba = 0;
-	if(idx < BLOCK_LEVEL_0){
+	struct buffer_head *bh = NULL;
+	uint32_t blk_nr = 0, pre_blk_nr = 0;
 
-		lba = inode->i_sectors[idx];
+	if(idx < BLOCK_LEVEL_0){
+		blk_nr = inode->i_block[idx];
 
 	}else {
 		idx = BLK_IDX(idx);
 		uint32_t cnt = BLK_LEVEL(idx);
-		if((idx % LBA_PER_BLK) == 0){
-			lba = inode->i_sectors[11 + cnt];
-			uint32_t i = 1;
-			while(i <= cnt){
-				if(lba == 0){
-					uint32_t new_lba = block_alloc(part);
-					if(new_lba == -1){
-						return false;
-					}
-					if(i == 1){
 
-						inode->i_sectors[11 + cnt] = new_lba;
-					}else {
-						block_buf[BLK_IDX_I(idx, i)] = new_lba;
-						ide_write(part, pre_lba, block_buf, SEC_PER_BLK);
-					}
+		blk_nr = inode->i_block[MAX_BLOCK_DIR_POS + cnt];
 
-					lba = new_lba;
+		uint32_t i = 1;
+		while(i <= cnt){
+			if(!blk_nr){
+				uint32_t new_blk_nr = block_bmp_alloc(part);
+
+				if(i == 1){
+					inode->i_block[MAX_BLOCK_DIR_POS + cnt] = new_blk_nr;
+
+				}else {
+					bh->data[BLK_IDX_I(idx, i)] = new_blk_nr;
+					//写入硬盘
+					write_block(part, bh);
+					bh = read_block(part, pre_blk_nr);
 				}
-				ide_read(part, lba, block_buf, SEC_PER_BLK);
-				pre_lba = lba;
-				lba = block_buf[BLK_IDX_I(idx, i)];
-				++i;
+				blk_nr = new_blk_nr;
 			}
-		}	
-	}
+			bh = read_block(part, blk_nr);
+			pre_blk_nr = blk_nr;
+			blk_nr = bh->data[BLK_IDX_I(idx, i)];
+			++i;
+		}
+	}	
 
-	if(!lba)
-		return false;
+	if(!blk_nr)
+		return NULL;
 
-	ide_read(part, lba, buf, SEC_PER_BLK);
-	return true;
+	bh = read_block(part, blk_nr);
+	return bh;
 }
 
 void create_dir_entry(char *filename, uint32_t i_no, enum file_types f_type,\
@@ -92,41 +94,27 @@ void create_dir_entry(char *filename, uint32_t i_no, enum file_types f_type,\
 bool search_dir_entry(struct partition *part, struct dir *dir, \
 		const char *name, struct dir_entry *dir_e){
 
-	uint8_t *buf = (uint8_t *)sys_malloc(BLOCK_SIZE);
-	uint32_t *block_buf = sys_malloc(BLOCK_SIZE);
-
-	if(!(buf && block_buf)){
-		return false;
-	}
-
-
-	uint32_t per_block = BLOCK_SIZE / sizeof(dir_entry);
+	uint32_t per_block = BLOCK_SIZE / sizeof(struct dir_entry);
 	uint32_t block_idx = 0;
 	uint32_t idx = 0;
+	struct buffer_head *bh = NULL;
 
-	while(_read_inode(part, dir->inode, idx, buf, block_buf)){
+	while(bh = _handle_inode(part, dir->inode, idx)){
 		uint32_t dir_entry_idx = 0;
-		struct dir_entry *p_de = (struct dir_entry *)buf;
+		struct dir_entry *p_de = (struct dir_entry *)bh->data;
 		while(dir_entry_idx < per_block){
 			if(!strcmp(name, p_de->filename)){
 				memcpy(dir_e, p_de, sizeof(struct dir_entry));
-				sys_free(p_de);
-				sys_free(block_buf);
 				return true;
 			}
 			++dir_entry_idx;
 			++p_de;
 		}
 		++idx;
-		memset(buf, 0, BLOCK_SIZE);
 	}
-
-	sys_free(buf);
-	sys_free(block_buf);
 	return false;
 }
 			
-
 /**
  * @brief 在目录中添加目录项
  *
@@ -136,19 +124,35 @@ bool search_dir_entry(struct partition *part, struct dir *dir, \
  *
  * @reture 是否成功
  */
-bool add_dir_entry(struct dir *par_dir, struct dir_entry *dir_e, void *buf){
+bool add_dir_entry(struct dir *par_dir, struct dir_entry *dir_e){
 
 	uint32_t size = sizeof(struct dir_entry);
-	struct inode *inode = par_dir->inode;
-	uint32_t block_idx = inode->i_size / BLOCK_SIZE;
-	uint32_t dir_entry_idx = inode->i_size / size;
-	struct dir_entry *buf = (struct dir_entry *)sys_malloc(BLOCK_SIZE);
-	uint32_t *block_buf = sys_malloc(BLOCK_SIZE);
+	struct inode_info *inode = par_dir->inode;
+	struct buffer_head *bh = NULL;
+	uint32_t blk_idx = inode->i_blocks;
+	uint32_t off_byte = inode->i_size % BLOCK_SIZE;
 
-	///块内还有剩余，读出块后再写入
-	if(inode->i_size % BLOCK_SIZE){
-		_read_inode(part, inode, block_idx, buf, block_buf);	
-		memcpy(buf + dir_entry_idx, dir_e, siz);
-		inode->i_size += size;
-		return true;
+	//块内没有剩余，这里假定目录项不跨块
+	if(!off_byte){
+		++blk_idx;
+		inode->i_blocks += 1;
 	}
+	if(blk_idx >= BLOCK_LEVEL_3)
+		return false;
+	
+	bh = _handle_inode(cur_par, inode, blk_idx);
+	//返回空指针，说明块不存在
+	if(!bh){
+		//分配内存
+		ALLOC_BH(bh);
+		//加入缓冲
+		buffer_add_block(&cur_par->io_buffer, bh);
+	}
+
+	memcpy((bh->data + off_byte), dir_e, sizeof(struct dir_entry));
+	inode->i_size += sizeof(struct dir_entry);
+	write_block(cur_par, bh);
+	return true;
+}
+
+

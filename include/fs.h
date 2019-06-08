@@ -1,10 +1,13 @@
 #ifndef __FS_FS_H
 #define __FS_FS_H
 
+#include "memory.h"
+#include "ide.h"
+#include "buffer.h"
 #define SECTOR_SIZE 512
 #define BLOCK_SIZE 1024
-#define GROUP_SIZE 8192
-#define GROUP_BLKS 8
+#define GROUP_SIZE (8192 * BLOCK_SIZE)
+#define GROUP_BLKS 8192
 
 ///每个块有多少位  1024 * 8
 #define BITS_PER_BLOCK 8192
@@ -14,9 +17,63 @@
 //每个块有多少个扇区
 #define BLK_PER_SEC (BLOCK_SIZE / SECTOR_SIZE)
 
+#define INODE_SIZE 64
+
 #define BLOCKS_BMP_BLKS 1
 #define INODES_BMP_BLKS 1
-#define INODES_BLKS(sb) ((sb)->
+#define INODES_BLKS (INODES_PER_GROUP * INODE_SIZE / BLOCK_SIZE)
+
+#define ROOT_INODE 0
+
+#define MAX_BLOCK_DIR_POS 4
+
+#define ORDER 8
+#define LBA_PER_BLK  (BLOCK_SIZE / 4)
+#define BLOCK_LEVEL_0 5
+#define BLOCK_LEVEL_1 (BLOCK_LEVEL_0 + LBA_PER_BLK) 
+#define BLOCK_LEVEL_2 (BLOCK_LEVEL_1 + LBA_PER_BLK * LBA_PER_BLK)
+#define BLOCK_LEVEL_3 (BLOCK_LEVEL_2 + LBA_PER_BLK * LBA_PER_BLK * LBA_PER_BLK)
+//对应block_size 大小
+#define BLOCK_MASK_1 ((1 << ORDER) - 1)
+#define BLOCK_MASK_2 (BLOCK_MASK_1 << ORDER)
+#define BLOCK_MASK_3 (BLOCK_MASK_2 << ORDER)
+
+#define BLK_IDX_1(x) ((x) & BLOCK_MASK_1)
+#define BLK_IDX_2(x) (((x) & BLOCK_MASK_2) >> ORDER)
+#define BLK_IDX_3(x) (((x) & BLOCK_MASK_3) >> (ORDER << 1))
+
+#define BLK_IDX_I(x, i)(\
+	(i) == 1 ? BLK_IDX_1(x):\
+	(i) == 2 ? BLK_IDX_2(x):\
+		 BLK_IDX_3(x))
+
+#define BLK_LEVEL(idx)(\
+	(idx) < BLOCK_LEVEL_1 ? 1 :\
+	(idx) < BLOCK_LEVEL_2 ? 2 : 3)
+
+#define BLK_IDX(idx)(\
+	(idx) -= ((idx) < BLOCK_LEVEL_1 ? BLOCK_LEVEL_0 :\
+		  (idx) < BLOCK_LEVEL_2 ? BLOCK_LEVEL_1 : BLOCK_LEVEL_2))
+
+
+#define ALLOC_BH(bh)\
+do{\
+	bh = (struct buffer_head *)sys_malloc(sizeof(struct buffer_head));\
+	if(!bh){\
+		PANIC("no more space\n");\
+	}\
+	bh->data = (uint8_t *)sys_malloc(BLOCK_SIZE);\
+	if(!bh->data){\
+		PANIC("no more space\n");\
+	}\
+}while(0)
+
+#define GROUP_INNER(gp, cnt, off)({\
+	(gp)->free_blocks_count -= (cnt);\
+	GROUP_BLKS - (gp)->free_blocks_count - (cnt) + \
+		(off) * GROUP_SIZE;\
+})
+
 enum file_types{
 	FT_UNKNOWN,
 	FT_REGULAR,
@@ -25,8 +82,8 @@ enum file_types{
 
 void filesys_init();
 
-inline void write_block(struct parttition *part, struct buffer_head *bh);
-inline struct buffer_head *read_block(struct parttition *part, uint32_t blk_nr);
-inline void write_indirect(struct parttition *part, uint32_t sta_blk_nr, void *data, uint32_t cnt);
-inline void read_indirect(struct partition *part, uint32_t sta_blk_nr, void *data, uint32_t cnt);
+void write_block(struct partition *part, struct buffer_head *bh);
+struct buffer_head *read_block(struct partition *part, uint32_t blk_nr);
+void write_direct(struct partition *part, uint32_t sta_blk_nr, void *data, uint32_t cnt);
+void read_direct(struct partition *part, uint32_t sta_blk_nr, void *data, uint32_t cnt);
 #endif

@@ -13,7 +13,6 @@
 	((sb)->blocks_count - (sb)->free_blocks_count - (cnt));\
 })
 
-
 #define GROUP_BLK(sb, cnt) ((sb)->groups_table + (sb)->blocks_per_group * (cnt))
 /**
  * 超级块描述符
@@ -28,7 +27,7 @@ struct super_block{
 	uint32_t block_size;        ///< 块大小
 	uint32_t blocks_per_group;   ///< 每组块数量
 	uint32_t inodes_per_group;  ///< 每组索引节点数
-	uint32_t res_blocks         ///< 剩余块数
+	uint32_t res_blocks;         ///< 剩余块数
 
 	uint32_t blocks_count;        ///< 块总数
 	uint32_t inodes_count;        ///< 索引节点总数

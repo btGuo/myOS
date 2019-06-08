@@ -3,40 +3,11 @@
 
 #include "stdint.h"
 #include "list.h"
-#include "fs.h"
+#include "ide.h"
 
 
-typedef long time_t
-
+typedef long time_t;
 #define N_BLOCKS 8 ///< 5个直接，1个间接，1个双间接，1个三间接
-
-#define ORDER 8
-#define LBA_PER_BLK  (BLOCK_SIZE / 4);
-#define BLOCK_LEVEL_0 12
-#define BLOCK_LEVEL_1 (BLOCK_LEVEL_0 + LBA_PER_BLK) 
-#define BLOCK_LEVEL_2 (BLOCK_LEVEL_1 + LBA_PER_BLK * LBA_PER_BLK)
-#define BLOCK_LEVEL_3 (BLOCK_LEVEL_2 + LBA_PER_BLK * LBA_PER_BLK * LBA_PER_BLK)
-//对应block_size 大小
-#define BLOCK_MASK_1 ((1 << ORDER) - 1)
-#define BLOCK_MASK_2 (BLOCK_MASK_1 << ORDER)
-#define BLOCK_MASK_3 (BLOCK_MASK_2 << ORDER)
-
-#define BLK_IDX_1(x) ((x) & BLOCK_MASK_1)
-#define BLK_IDX_2(x) (((x) & BLOCK_MASK_2) >> ORDER)
-#define BLK_IDX_3(x) (((x) & BLOCK_MASK_3) >> (ORDER << 1))
-
-#define BLK_IDX_I(x, i)(\
-	(i) == 1 ? BLK_IDX_1(x):\
-	(i) == 2 ? BLK_IDX_2(x):\
-		 BLK_IDX_3(x))
-
-#define BLK_LEVEL(idx)(\
-	(idx) < BLOCK_LEVEL_1 ? 1 :\
-	(idx) < BLOCK_LEVEL_2 ? 2 : 3)
-
-#define BLK_IDX(idx)(\
-	(idx) -= ((idx) < BLOCK_LEVEL_1 ? BLOCK_LEVEL_0 :\
-		  (idx) < BLOCK_LEVEL_2 ? BLOCK_LEVEL_1 : BLOCK_LEVEL_2))
 
 /**
  * 磁盘上索引节点结构
@@ -70,14 +41,27 @@ struct inode_info{
 	uint16_t i_links;    ///< 硬链接数
 	uint32_t i_block[N_BLOCKS];  ///< 数据块指针
 	uint16_t i_blocks;   ///< 文件大小块为单位
-	struct group *gp;   ///< 块组指针
 	uint32_t i_no;      ///< 索引节点号
-	struct list_head i_tag;
 	uint32_t i_open_cnts;
+	bool     i_dirty;    ///< 脏标志
+	bool     i_lock;
+
+//	struct group_info *gp;   ///< 块组指针
+	struct list_head hash_tag;
+	struct list_head queue_tag;
 };
 
-void inode_init(uint32_t i_no, struct inode *inode);
-void inode_close(struct inode *inode);
-struct inode * inode_open(struct partition *part, uint32_t i_no);
-void inode_sync(struct partition *part, struct inode *inode, void *io_buf);
+struct inode_pos{
+	uint32_t blk_nr;
+	uint32_t off_size;
+};
+
+void inode_locate(struct partition *part, uint32_t i_no, struct inode_pos *pos);
+struct inode_info *inode_open(struct partition *part, uint32_t i_no);
+void inode_close(struct inode_info *inode);
+void inode_init(struct inode_info *m_inode, uint32_t i_no);
+
+struct inode_info *buffer_read_inode(struct disk_buffer *d_buf, uint32_t i_no);
+void buffer_add_inode(struct disk_buffer *d_buf, struct inode_info *m_inode);
+void buffer_release_inode(struct inode_info *m_inode);
 #endif

@@ -1,42 +1,51 @@
-#include "ide.h"
 #include "fs.h"
 #include "inode.h"
 #include "super_block.h"
 #include "dir.h"
 #include "global.h"
+#include "ide.h"
 #include "bitmap.h"
 #include "string.h"
 #include "memory.h"
-#include "group.h"
-#include "buffer.h"
 
 struct partition *cur_par = NULL;
 extern uint8_t channel_cnt;
 extern struct ide_channel channels[2];
 
-void write_block(struct partition *part, struct buffer_head *bh){
-	buffer_write_block(&part->io_buffer, bh); 
+inline void write_block(struct parttition *part, struct buffer_head *bh){
+	buffer_write_block(&part->buffer, bh); 
 }
 
-struct buffer_head *read_block(struct partition *part, uint32_t blk_nr){
-	struct buffer_head *bh = buffer_read_block(&part->io_buffer, blk_nr);
+#define alloc_bh(bh)\
+do{\
+
+	bh = (struct buffer_head *)sys_malloc(sizeof(struct buffer_head));
+	if(!bh){
+		PANIC("no more space\n");
+	}
+	bh->data = (uint8_t *)sys_malloc(BLOCK_SIZE);
+	if(!bh->data){
+		PANIC("no more space\n");
+	}
+
+inline struct buffer_head *read_block(struct parttition *part, uint32_t blk_nr){
+	struct buffer_head *bh = buffer_read_block(&part->buffer, blk_nr);
 	if(bh){
 		return bh;
 	}
-	ALLOC_BH(bh);
 	bh->blk_nr = blk_nr;
 	//从磁盘读
-	ide_read(part->disk, blk_nr, bh->data, 1);
+	ide_read(part, blk_nr, bh->data, 1);
 	//加入缓冲区
-	buffer_add_block(&part->io_buffer, bh);
-	return bh;
+	buffer_add_block(&part->buffer, bh);
+	return buffer_read(&part->buffer, blk_nr);
 }
 
-void write_direct(struct partition *part, uint32_t sta_blk_nr, void *data, uint32_t cnt){
+inline void write_indirect(struct parttition *part, uint32_t sta_blk_nr, void *data, uint32_t cnt){
 	ide_write(part->disk, sta_blk_nr, data, cnt);
 }	
 
-void read_direct(struct partition *part, uint32_t sta_blk_nr, void *data, uint32_t cnt){
+inline void read_indirect(struct partition *part, uint32_t sta_blk_nr, void *data, uint32_t cnt){
 	ide_read(part->disk, sta_blk_nr, data, cnt);
 }
 
@@ -51,8 +60,6 @@ static void partition_format(struct partition *part){
 	//剩余块数
 	uint32_t res_blks = blocks % GROUP_BLKS; 
 
-
-	//超级块加上块组大小
 	uint32_t h_blks = DIV_ROUND_UP(sizeof(struct super_block) 
 			+ sizeof(struct group) * groups_cnt, BLOCK_SIZE);
 	uint32_t size = h_blks * BLOCK_SIZE;
@@ -60,8 +67,6 @@ static void partition_format(struct partition *part){
 	uint8_t *buf = sys_malloc(size);
 	memset(buf, 0, size);
 
-	//每组已使用的块: 超级块和块组描述符，块位图，inode位图，inode表
-	uint32_t used_blks = h_blks + BLOCKS_BMP_BLKS + INODES_BMP_BLKS + INODES_BLKS;
 //初始化超级块
 	struct super_block *sb = (struct super_block *)buf;
  	
@@ -76,44 +81,40 @@ static void partition_format(struct partition *part){
 
 	sb->blocks_count = blocks;
 	sb->inodes_count = INODES_PER_GROUP * groups_cnt;
-	sb->free_blocks_count = sb->blocks_count - 1 - used_blks * groups_cnt;
-	sb->free_inodes_count = sb->inodes_count - 1;
+	sb->free_blocks_count = sb->blocks_count - 1;
+	sb->free_inodes_count = sb->inodes_count;
 
 	sb->groups_table = 1;
 //初始化块组
-	struct group *gp_head = (struct group *)(buf + sizeof(struct super_block));
-	struct group *gp = gp_head;
-	uint32_t cnt = groups_cnt;
-	
-	//group初始化
-	while(cnt--){
-		gp->free_blocks_count = sb->blocks_per_group - h_blks;
+	struct group *gp = (struct group *)(buf + sizeof(struct super_block));
+	struct group *gp_end = gp + groups_cnt;
+	uint32_t used_blks = 1 + h_blks + BLOCKS_BMP_BLKS + INODES_BLKS + INODES_BLKS;
+
+	while(gp != gp_end){
+		gp->free_blocks_count = sb->blocks_per_group - used_blks;
 		gp->free_inodes_count = sb->inodes_per_group;
-		gp->block_bitmap = GROUP_INNER(gp, BLOCKS_BMP_BLKS, cnt);
-		gp->inode_bitmap = GROUP_INNER(gp, INODES_BMP_BLKS, cnt);
-		gp->inode_table  = GROUP_INNER(gp, INODES_BLKS, cnt);
+		gp->block_bitmap = BLOCKS(sb, BLOCKS_BMP_BLKS);
+		gp->inode_bitmap = BLOCKS(sb, INODES_BMP_BLKS);
+		gp->inode_table  = BLOCKS(sb, INODES_BLKS);
 		++gp;
 	}
 	
-	gp = gp_head;
-	cnt = 0;
-
-	//直接写入磁盘
+	uint32_t cnt = 0;
 	while(cnt < groups_cnt){
-		write_direct(part, GROUP_BLK(sb, cnt), buf, h_blks);
+		write_blocks(part, GROUP_BLK(sb, cnt), h_blks, buf);
 		++cnt;
 	}
 
-	gp = gp_head;
+	gp = (struct group *)(buf + sizeof(struct super_block));
 	struct bitmap bitmap;
-	bitmap.byte_len = GROUP_BLKS / 8;
-	bitmap.bits = (uint8_t *)sys_malloc(bitmap.byte_len);
+	bitmap->byte_len = GROUP_BLKS / 8;
+	bitmap->bits = (uint8_t *)sys_malloc(bitmap->byte_len);
 	bitmap_set_range(&bitmap, 0, 0, used_blks);
 	cnt = 0;
 	while(cnt < groups_cnt){
-	       write_direct(part, GROUP_BLK(sb, cnt) + gp->block_bitmap, bitmap.bits, 1);
+	       write_blocks(part, GROUP_BLK(sb, cnt) + gp->block_bitmap, 1);
 	}
-	sys_free(buf);
+
 }
 
 
@@ -121,38 +122,43 @@ static void mount_partition(struct partition *part){
 
 	printk("mount_partition in %s\n", part->name);
 	cur_par = part;
-
-	part->groups = sys_malloc(part->groups_cnt * sizeof(struct group_info));
-	part->sb = sys_malloc(sizeof(struct super_block));
-	struct group_info *gp_info = part->groups;
-	memset(gp_info, 0, part->groups_cnt * sizeof(struct group_info));
 //读取超级块和块组描述符
 	uint32_t h_blks = DIV_ROUND_UP(sizeof(struct super_block) 
-			+ sizeof(struct group) * part->groups_cnt, BLOCK_SIZE);
-
+			+ sizeof(struct group) * groups_cnt, BLOCK_SIZE);
 	uint32_t size = h_blks * BLOCK_SIZE;
 	uint8_t *buf = sys_malloc(size);
-	struct supeer_block *sb = (struct super_block *)buf;
-	struct group *gp = (struct group *)(buf + sizeof(struct super_block));
 
 	if(!buf){
 		PANIC("no more space\n");
 	}
-	//直接读取
-	read_direct(part, 1, buf, h_blks);
+	part->sb = (struct super_block *)buf;
+	part->groups = (struct group *)(buf + sizeof(struct super_block));
 
-	memcpy(part->sb, sb, sizeof(struct super_block));
-	uint32_t cnt = part->groups_cnt;
-	struct group_info *next = NULL;
-	while(cnt--){
-		memcpy(gp_info, gp, sizeof(struct group));
-		gp_info->next = next;
-		next = gp_info;
-		++gp_info;
-		++gp;
+	read_indirect(part, 1, buf, h_blks);
+
+/*
+	struct super_block *sb = part->sb;
+	struct bitmap *bmp = &part->block_bitmap;
+
+//读取block位图
+	bmp->byte_len = sb->block_bitmap_sects * SECTOR_SIZE;
+       	bmp->bits = sys_malloc(bmp->byte_len);	
+
+	if(!bmp->bits){
+		PANIC("no more space\n");
 	}
+	ide_read(part->disk, sb->block_bitmap_lba, bmp->bits, sb->block_bitmap_sects);
 
-	sys_free(buf);
+//读取inode 位图
+ 	bmp = &part->inode_bitmap;
+	bmp->byte_len = sb->inode_bitmap_sects * SECTOR_SIZE;
+	bmp->bits = sys_malloc(bmp->byte_len);
+	
+	if(!bmp->bits){
+		PANIC("no more space\n");
+	}
+	ide_read(part->disk, sb->inode_bitmap_lba, bmp->bits, sb->inode_bitmap_sects);
+*/
 }
 
 void filesys_init(){

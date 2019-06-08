@@ -14,7 +14,7 @@ struct list_head{
 	struct list_head *next;
 };
 
-typedef bool function(struct list_head*, int arg);
+//typedef bool function(struct list_head*, int arg);
 
 #define __LIST_HEAD_INIT(name){ &(name), &(name) }
 
