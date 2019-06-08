@@ -40,13 +40,13 @@ struct inode_info{
 	time_t   i_dtime;    ///< 删除时间
 	uint16_t i_links;    ///< 硬链接数
 	uint32_t i_block[N_BLOCKS];  ///< 数据块指针
+	/** 以下为内存特有 */
 	uint16_t i_blocks;   ///< 文件大小块为单位
-	uint32_t i_no;      ///< 索引节点号
-	uint32_t i_open_cnts;
+	uint32_t i_no;       ///< 索引节点号
+	uint32_t i_open_cnts;///< 打开次数 
 	bool     i_dirty;    ///< 脏标志
-	bool     i_lock;
-
-//	struct group_info *gp;   ///< 块组指针
+	bool     i_lock;     ///< 上锁意味着必须留在内存
+	bool     i_buffered; ///< 是否位于缓冲区
 	struct list_head hash_tag;
 	struct list_head queue_tag;
 };
@@ -60,6 +60,8 @@ void inode_locate(struct partition *part, uint32_t i_no, struct inode_pos *pos);
 struct inode_info *inode_open(struct partition *part, uint32_t i_no);
 void inode_close(struct inode_info *inode);
 void inode_init(struct inode_info *m_inode, uint32_t i_no);
+void release_inode(struct inode_info *m_inode);
+void write_inode(struct inode_info *m_inode);
 
 struct inode_info *buffer_read_inode(struct disk_buffer *d_buf, uint32_t i_no);
 void buffer_add_inode(struct disk_buffer *d_buf, struct inode_info *m_inode);

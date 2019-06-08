@@ -15,7 +15,15 @@ extern uint8_t channel_cnt;
 extern struct ide_channel channels[2];
 
 void write_block(struct partition *part, struct buffer_head *bh){
-	buffer_write_block(&part->io_buffer, bh); 
+	/** TODO 不在缓冲区情况*/
+	if(bh->is_buffered){
+		BUFR_BLOCK(bh);
+		BUFW_BLOCK(bh);
+		return;
+	}
+	ide_write(part->disk, bh->blk_nr, bh->data, 1);
+	sys_free(bh->data);
+	sys_free(bh);
 }
 
 struct buffer_head *read_block(struct partition *part, uint32_t blk_nr){
@@ -25,10 +33,15 @@ struct buffer_head *read_block(struct partition *part, uint32_t blk_nr){
 	}
 	ALLOC_BH(bh);
 	bh->blk_nr = blk_nr;
+	bh->lock = true;
+	bh->is_buffered = true;
 	//从磁盘读
 	ide_read(part->disk, blk_nr, bh->data, 1);
 	//加入缓冲区
-	buffer_add_block(&part->io_buffer, bh);
+	if(!buffer_add_block(&part->io_buffer, bh)){
+		//缓冲区已经满了
+		bh->is_buffered = false;
+	}
 	return bh;
 }
 
@@ -135,9 +148,7 @@ static void mount_partition(struct partition *part){
 	struct supeer_block *sb = (struct super_block *)buf;
 	struct group *gp = (struct group *)(buf + sizeof(struct super_block));
 
-	if(!buf){
-		PANIC("no more space\n");
-	}
+	MEMORY_OK(buf);
 	//直接读取
 	read_direct(part, 1, buf, h_blks);
 

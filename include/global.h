@@ -30,4 +30,11 @@
 #define true 1
 #define false 0
 
+#include "debug.h"
+
+#define MEMORY_OK(ptr) ({\
+if(!(ptr))\
+	PANIC("no more memory\n");\
+})
+
 #endif
