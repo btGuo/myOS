@@ -14,6 +14,8 @@ struct partition *cur_par = NULL;
 extern uint8_t channel_cnt;
 extern struct ide_channel channels[2];
 
+static char *path_parse(char *path)
+
 void write_block(struct partition *part, struct buffer_head *bh){
 	/** TODO 不在缓冲区情况*/
 	if(bh->is_buffered){

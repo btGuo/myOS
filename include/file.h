@@ -3,6 +3,7 @@
 
 #include "global.h"
 #include "stdint.h"
+#include "ide.h"
 
 #define MAX_FILE_OPEN 12
 
@@ -21,4 +22,8 @@ enum std_fd{
 	stderr_no    ///< 2标准错误
 };
 
+int32_t get_fd();
+int32_t set_fd(int32_t fd);
+int32_t inode_bmp_alloc(struct partition *part);
+int32_t block_bmp_alloc(struct partition *part);
 #endif

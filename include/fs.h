@@ -80,6 +80,13 @@ enum file_types{
 	FT_DIRECTORY
 };
 
+enum oflags{
+	O_RDONLY,
+	O_WRONLY,
+	O_RDWR,
+	O_CREAT = 4
+};
+
 void filesys_init();
 
 void write_block(struct partition *part, struct buffer_head *bh);

@@ -2,6 +2,7 @@
 #define __LIB_KERNEL_HASHTABLE_H
 
 #include "stdint.h"
+#include "list.h"  //不加的话会有警告
 
 typedef bool (*hash_func) (struct list_head *, uint32_t);
 
@@ -14,5 +15,9 @@ struct hash_table{
 	hash_func compare;
 };
 
+inline void hash_table_init(struct hash_table *ht, hash_func comp);
+inline void hash_table_insert(struct hash_table *ht, struct list_head *elem);
+inline struct list_head *hash_table_find(struct hash_table *ht, uint32_t key);
+inline void hash_table_clear(struct hash_table *ht);
 
 #endif

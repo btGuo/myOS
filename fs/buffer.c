@@ -2,6 +2,8 @@
 #include "memory.h"
 #include "ide.h"
 #include "inode.h"
+#include "string.h"
+#include "fs.h"
 
 #define BUFFER_HEAD_SIZE 1024
 
@@ -26,8 +28,7 @@ bool compare_block(struct list_head *elem, uint32_t key){
  * @return 将被删除的节点
  * 	@retval NULL 缓冲区已经满了
  */
-static struct list_head *i_buffer_pop(struct disk_buffer *d_buf){
-	struct list_head *head = &d_buf->i_queue;
+static struct inode_info *i_buffer_pop(struct list_head *head){
 	struct list_head *cur = head->next;
 	struct inode_info *m_inode = NULL;
 	while(cur != head){
@@ -44,8 +45,7 @@ static struct list_head *i_buffer_pop(struct disk_buffer *d_buf){
 	return NULL;
 }
 
-static struct list_head *b_buffer_pop(struct list_head *head){
-	struct list_head *head = &d_buf->b_queue;
+static struct buffer_head *b_buffer_pop(struct list_head *head){
 	struct list_head *cur = head->next;
 	struct buffer_head *bh = NULL;
 	while(cur != head){
@@ -63,14 +63,14 @@ static struct list_head *b_buffer_pop(struct list_head *head){
 /**
  * @brief 同步磁盘
  */
-static void sync_disk(struct disk_buffer *d_buf){
+static void buffer_sync_disk(struct disk_buffer *d_buf){
 	struct list_head *head = &d_buf->b_queue;
 	struct list_head *cur = head->next;
 	struct buffer_head *bh = NULL;
 
 	while(cur != head){
 		bh = list_entry(struct buffer_head, queue_tag, cur);
-		if(bh->dirty && !bh->lock){
+		if(bh->dirty){
 			//直接写入磁盘
 			ide_write(d_buf->part->disk, bh->blk_nr, bh->data, 1);
 			//复位脏
@@ -82,7 +82,7 @@ static void sync_disk(struct disk_buffer *d_buf){
 /**
  * @brief 同步索引节点
  */
-static void sync_inodes(struct disk_buffer *d_buf){
+static void buffer_sync_inodes(struct disk_buffer *d_buf){
 	struct list_head *head = &d_buf->i_queue;
 	struct list_head *cur = head->next;
 	struct inode_info *m_inode = NULL; 
@@ -93,8 +93,14 @@ static void sync_inodes(struct disk_buffer *d_buf){
 	while(cur != head){
 		m_inode = list_entry(struct inode_info, queue_tag, cur);
 		//节点是脏的且没有上锁
-		if(m_inode->i_dirty && !m_inode->i_lock){
-			write_inode(m_inode);
+		if(m_inode->i_dirty){
+			//定位inode
+			inode_locate(d_buf->part, m_inode->i_no, &pos);
+			bh = read_block(d_buf->part, pos.blk_nr);
+			memcpy((bh->data + pos.off_size), &m_inode, sizeof(struct inode));
+			write_block(d_buf->part, bh);
+			//复位脏
+			m_inode->i_dirty = false;
 		}
 		cur = cur->next;
 	}
@@ -116,8 +122,8 @@ void disk_buffer_init(struct disk_buffer *d_buf){
 	LIST_HEAD_INIT(d_buf->b_queue);
 	LIST_HEAD_INIT(d_buf->i_queue);
 
-	hash_table_init(&d_buf->b_map, compare_block);
-	hash_table_init(&d_buf->i_map, compare_inode);
+	hash_table_init(&d_buf->b_map, (hash_func)compare_block);
+	hash_table_init(&d_buf->i_map, (hash_func)compare_inode);
 
 }
 
@@ -166,7 +172,7 @@ struct inode_info *buffer_read_inode(struct disk_buffer *d_buf, uint32_t i_no){
  */
 bool buffer_add_block(struct disk_buffer *d_buf, struct buffer_head *bh){
 	if(d_buf->b_size == d_buf->b_max_size){
-		sync_disk(d_buf);
+		buffer_sync_disk(d_buf);
 		struct buffer_head *old_bh = b_buffer_pop(&d_buf->b_queue);
 		if(!old_bh){
 			return false;
@@ -184,7 +190,7 @@ bool buffer_add_block(struct disk_buffer *d_buf, struct buffer_head *bh){
 
 bool buffer_add_inode(struct disk_buffer *d_buf, struct inode_info *m_inode){
 	if(d_buf->i_size == d_buf->i_max_size){
-		sync_inodes(d_buf);
+		buffer_sync_inodes(d_buf);
 		struct inode_info *old_inode = i_buffer_pop(&d_buf->i_queue);
 		if(!old_inode){
 			return false;

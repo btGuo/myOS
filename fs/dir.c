@@ -1,5 +1,8 @@
 #include "fs.h"
 #include "dir.h"
+#include "bitmap.h"
+#include "string.h"
+#include "file.h"
 
 struct dir root_dir;
 extern struct partition *cur_par;
@@ -54,6 +57,7 @@ struct buffer_head *_handle_inode(struct partition *part, struct inode_info *ino
 
 		blk_nr = inode->i_block[MAX_BLOCK_DIR_POS + cnt];
 
+		//TODO 考虑buffer_head 的释放
 		uint32_t i = 1;
 		while(i <= cnt){
 			if(!blk_nr){
@@ -86,6 +90,8 @@ struct buffer_head *_handle_inode(struct partition *part, struct inode_info *ino
 
 void create_dir_entry(char *filename, uint32_t i_no, enum file_types f_type,\
 		struct dir_entry *dir_e){
+
+	memset(dir_entry, 0, sizeof(struct dir_entry));
 	memcpy(dir_e->filename, filename, MAX_FILE_NAME_LEN);
 	dir_e->i_no = i_no;
 	dir_e->f_type = f_type;
@@ -95,7 +101,6 @@ bool search_dir_entry(struct partition *part, struct dir *dir, \
 		const char *name, struct dir_entry *dir_e){
 
 	uint32_t per_block = BLOCK_SIZE / sizeof(struct dir_entry);
-	uint32_t block_idx = 0;
 	uint32_t idx = 0;
 	struct buffer_head *bh = NULL;
 
@@ -126,7 +131,6 @@ bool search_dir_entry(struct partition *part, struct dir *dir, \
  */
 bool add_dir_entry(struct dir *par_dir, struct dir_entry *dir_e){
 
-	uint32_t size = sizeof(struct dir_entry);
 	struct inode_info *inode = par_dir->inode;
 	struct buffer_head *bh = NULL;
 	uint32_t blk_idx = inode->i_blocks;

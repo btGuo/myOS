@@ -57,13 +57,12 @@ struct inode_pos{
 };
 
 void inode_locate(struct partition *part, uint32_t i_no, struct inode_pos *pos);
+void inode_release(struct inode_info *m_inode);
+void inode_sync(struct partition *part, struct inode_info *m_inode);
 struct inode_info *inode_open(struct partition *part, uint32_t i_no);
-void inode_close(struct inode_info *inode);
+void inode_close(struct inode_info *m_inode);
 void inode_init(struct inode_info *m_inode, uint32_t i_no);
-void release_inode(struct inode_info *m_inode);
-void write_inode(struct inode_info *m_inode);
 
 struct inode_info *buffer_read_inode(struct disk_buffer *d_buf, uint32_t i_no);
-void buffer_add_inode(struct disk_buffer *d_buf, struct inode_info *m_inode);
-void buffer_release_inode(struct inode_info *m_inode);
+bool buffer_add_inode(struct disk_buffer *d_buf, struct inode_info *m_inode);
 #endif

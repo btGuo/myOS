@@ -91,3 +91,53 @@ int32_t block_bmp_alloc(struct partition *part){
 	return idx + cur_gp->group_nr * BLOCKS_PER_GROUP;
 }
 
+int32_t file_create(struct dir *par_dir, char *filename, uint8_t flag){
+	
+	int32_t i_no = inode_bmp_alloc(cur_par);
+	uint32_t roll_no = 0;
+	struct inode_info *m_inode = (struct inode_info *)sys_malloc(sizeof(struct inode_info));
+	if(!m_inode){
+		roll_no = 1;
+		printk("file_create: sys_malloc for inode failed\n");
+		goto rollback;
+	}
+	inode_init(cur_par, m_inode, i_no);
+	int32_t fd_idx = get_fd();
+	if(fd_idx == -1){
+		printk("exceed max open files\n");
+		roll_no = 2;
+		goto rollback;
+	}
+	file_table[fd_idx].fd_pos = 0;
+	file_table[fd_idx].fd_flag = flag;
+	file_table[fd_idx].fd_inode = m_inode;
+	
+	struct dir_entry dir_entry;
+	create_dir_entry(filename, i_no, FT_REGULAR, &dir_entry);
+	if(!add_dir_entry(par_dir, &dir_entry)){
+		printk("sync dir_entry to disk failed\n");
+		roll_no = 3;
+		goto rollback;
+	}
+	inode_sync(cur_par, par_dir->inode);
+	inode_sync(cur_par, m_inode);
+	return set_fd(fd_idx);
+
+rollback:
+	switch(roll_no){
+		case 3:
+			memset(&file_table[fd_idx], 0 sizeof(struct file));
+		case 2:
+			sys_free(m_inode);
+		case 1:
+			//TODO
+			break;
+	}
+	return -1;
+}
+}
+		
+	
+
+		
+

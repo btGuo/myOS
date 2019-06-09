@@ -27,29 +27,32 @@ void inode_locate(struct partition *part, uint32_t i_no, struct inode_pos *pos){
 
 /**
  * @brief 释放inode
- * @detail 如果位于缓冲中，则交给缓冲区管理，如果不是
- * 则写入磁盘后，释放内存
+ * @detail 如果位于缓冲区中，则不处理，否则释放内存
  */
-void release_inode(struct inode_info *m_inode){
+void inode_release(struct inode_info *m_inode){
+
+	ASSERT(!m_inode->i_lock && m_inode->i_open_cnts == 0);
+	if(!m_inode->i_buffered){
+		sys_free(m_inode);
+	}
+}
+
+/**
+ * @brief 磁盘同步inode
+ * @detail 如果位于缓冲中，则交给缓冲区管理，如果不是
+ * 则写入磁盘
+ */
+void inode_sync(struct partition *part, struct inode_info *m_inode){
 	if(m_inode->i_buffered){
 		BUFW_INODE(m_inode);
 		return;
 	}
-	write_inode(m_inode);
-	sys_free(m_inode);
-}
-
-/**
- * @brief 将inode写入磁盘
- */
-void write_inode(struct inode_info *m_inode){
-	//定位inode
-	inode_locate(cur_par, m_inode->i_no, &pos);
-	bh = read_block(cur_par, pos.blk_nr);
+	struct inode_pos pos;
+	struct buffer_head *bh;
+	inode_locate(part, m_inode->i_no, &pos);
+	bh = read_block(part, pos.blk_nr);
 	memcpy((bh->data + pos.off_size), &m_inode, sizeof(struct inode));
-	write_block(cur_par, bh);
-	//复位脏
-	m_inode->i_dirty = false;
+	write_block(part, bh);
 }
 
 /** not used */
@@ -77,8 +80,9 @@ struct inode_info *inode_open(struct partition *part, uint32_t i_no){
 	m_inode = (struct inode_info *)sys_malloc(sizeof(struct inode_info));
 	MEMORY_OK(m_inode);
 
+	//定位后读出块
 	inode_locate(part, i_no, &pos);
-	bh = read_block(&part->io_buffer, pos.blk_nr);
+	bh = read_block(part, pos.blk_nr);
 	memcpy((bh->data + pos.off_size), &m_inode, sizeof(struct inode));
 	//初始化
 	m_inode->i_no = i_no;
@@ -102,13 +106,18 @@ void inode_close(struct inode_info *m_inode){
 	//引用计数为0则释放inode
 	if(--m_inode->i_open_cnts == 0){
 		m_inode->i_lock = false;
-		release_inode(m_inode);
+		inode_release(m_inode);
 	}
 	intr_set_status(old_stat);
 }
 
-void inode_init(struct inode_info *m_inode, uint32_t i_no){
+void inode_init(struct partition *part, struct inode_info *m_inode, uint32_t i_no){
 	memset((void *)m_inode, 0, sizeof(struct inode_info));
 	m_inode->i_no = i_no;
+	m_inode->i_lock = true;
+	m_inode->i_buffered = true;
+	if(buffer_add_inode(&part->io_buffer, m_inode)){
+		m_inode->i_buffered = false;
+	}
 }
 
