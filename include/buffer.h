@@ -37,7 +37,7 @@ struct disk_buffer{
 #define BUFW_BLOCK(bh) ((bh)->dirty = true)
 #define BUFR_BLOCK(bh) ((bh)->lock = false)
 #define BUFW_INODE(m_inode) ((m_inode)->i_dirty = true)
-//#define BUFR_INODE(m_inode) ((m_inode)->i_lock = true)
+#define BUFR_INODE(m_inode) ((m_inode)->i_lock = true)
 
 void disk_buffer_init(struct disk_buffer *d_buf);
 

@@ -27,14 +27,14 @@ void inode_locate(struct partition *part, uint32_t i_no, struct inode_pos *pos){
 
 /**
  * @brief 释放inode
- * @detail 如果位于缓冲区中，则不处理，否则释放内存
  */
 void inode_release(struct inode_info *m_inode){
 
-	ASSERT(!m_inode->i_lock && m_inode->i_open_cnts == 0);
-	if(!m_inode->i_buffered){
-		sys_free(m_inode);
+	if(m_inode->i_buffered){
+		BUFR_INODE(m_inode);
+		return;
 	}
+	sys_free(m_inode);
 }
 
 /**
@@ -85,15 +85,7 @@ struct inode_info *inode_open(struct partition *part, uint32_t i_no){
 	bh = read_block(part, pos.blk_nr);
 	memcpy((bh->data + pos.off_size), &m_inode, sizeof(struct inode));
 	//初始化
-	m_inode->i_no = i_no;
-	m_inode->i_open_cnts = 0;
-	m_inode->i_lock = true;
-	m_inode->i_buffered = true;
-	//加入缓冲区
-	if(!buffer_add_inode(&part->io_buffer, m_inode)){
-		//缓冲区已满
-		m_inode->i_buffered = false;
-	}
+	inode_init(part, m_inode, i_no);
 
 	return m_inode;
 }
@@ -105,16 +97,19 @@ void inode_close(struct inode_info *m_inode){
 	enum intr_status old_stat = intr_disable();
 	//引用计数为0则释放inode
 	if(--m_inode->i_open_cnts == 0){
-		m_inode->i_lock = false;
 		inode_release(m_inode);
 	}
 	intr_set_status(old_stat);
 }
 
+/**
+ * 初始化inode，并尝试加入缓冲区
+ */
 void inode_init(struct partition *part, struct inode_info *m_inode, uint32_t i_no){
 	memset((void *)m_inode, 0, sizeof(struct inode_info));
 	m_inode->i_no = i_no;
-	m_inode->i_lock = true;
+	m_inode->i_open_cnts = 0;
+	m_inode->i_lock = true;  //这里上锁
 	m_inode->i_buffered = true;
 	if(buffer_add_inode(&part->io_buffer, m_inode)){
 		m_inode->i_buffered = false;

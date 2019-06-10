@@ -47,13 +47,17 @@ struct inode_info{
 	bool     i_dirty;    ///< 脏标志
 	bool     i_lock;     ///< 上锁意味着必须留在内存
 	bool     i_buffered; ///< 是否位于缓冲区
-	struct list_head hash_tag;
-	struct list_head queue_tag;
+	bool     i_write_deny;   ///< 拒绝写标志
+	struct list_head hash_tag;   ///< 哈希表标签
+	struct list_head queue_tag;  ///< 队列标签
 };
 
+/**
+ * inode 在块内的位置
+ */
 struct inode_pos{
-	uint32_t blk_nr;
-	uint32_t off_size;
+	uint32_t blk_nr;    ///< 块号
+	uint32_t off_size;  ///< 块内偏移
 };
 
 void inode_locate(struct partition *part, uint32_t i_no, struct inode_pos *pos);

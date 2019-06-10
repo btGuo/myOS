@@ -27,62 +27,74 @@ struct dir* dir_open(struct partition *part, uint32_t i_no){
 	return dir;
 }
 
+enum handle_mode{
+	M_SEARCH,
+	M_CREATE
+};
+
 /**
  * @brief 读取i节点块，每次读取一个块
  *
  * @param part 分区指针
  * @param inode i节点指针
  * @param idx  该i节点中第idx个块
- * @param buf  输出缓冲
- * @param block_buf  前12个直接块访问不需要使用该变量，间接访问时用于缓存上一级块
  *
  * @return 是否读完
  */
 
-struct buffer_head *_handle_inode(struct partition *part, struct inode_info *inode, uint32_t idx){
+struct buffer_head *_handle_inode(struct partition *part, struct inode_info *inode,\
+	       	uint32_t idx, enum handle_mode mode){
 
 	if(idx >= BLOCK_LEVEL_3){
 		PANIC("no more space\n");
 	}
 	
 	struct buffer_head *bh = NULL;
-	uint32_t blk_nr = 0, pre_blk_nr = 0;
+	uint32_t blk_nr = 0;
 
 	if(idx < BLOCK_LEVEL_0){
 		blk_nr = inode->i_block[idx];
 
 	}else {
 		idx = BLK_IDX(idx);
+		//间接次数
 		uint32_t cnt = BLK_LEVEL(idx);
 
 		blk_nr = inode->i_block[MAX_BLOCK_DIR_POS + cnt];
+		//基地址不存在，单独处理
+		if(!blk_nr){
+			uint32_t new_blk_nr = block_bmp_alloc(part);
+			inode->i_block[MAX_BLOCK_DIR_POS + cnt] = new_blk_nr;
+			blk_nr = new_blk_nr;
+		}
 
 		//TODO 考虑buffer_head 的释放
 		uint32_t i = 1;
+		uint32_t *pos = NULL;
 		while(i <= cnt){
+
+			bh = read_block(part, blk_nr);
+			pos = &bh->data[BLK_IDX_I(idx, i)];
+			blk_nr = *pos;
+
+			//块不存在
 			if(!blk_nr){
+				//最后一块为数据块
+				if(i == cnt && mode == M_SEARCH)
+					return NULL;
 				uint32_t new_blk_nr = block_bmp_alloc(part);
 
-				if(i == 1){
-					inode->i_block[MAX_BLOCK_DIR_POS + cnt] = new_blk_nr;
-
-				}else {
-					bh->data[BLK_IDX_I(idx, i)] = new_blk_nr;
-					//写入硬盘
-					write_block(part, bh);
-					bh = read_block(part, pre_blk_nr);
-				}
+				*pos = new_blk_nr;
+				//写入硬盘
+				write_block(part, bh);
 				blk_nr = new_blk_nr;
 			}
-			bh = read_block(part, blk_nr);
-			pre_blk_nr = blk_nr;
-			blk_nr = bh->data[BLK_IDX_I(idx, i)];
+
+			//释放
+			release_block(bh);
 			++i;
 		}
 	}	
-
-	if(!blk_nr)
-		return NULL;
 
 	bh = read_block(part, blk_nr);
 	return bh;
@@ -104,7 +116,7 @@ bool search_dir_entry(struct partition *part, struct dir *dir, \
 	uint32_t idx = 0;
 	struct buffer_head *bh = NULL;
 
-	while(bh = _handle_inode(part, dir->inode, idx)){
+	while(bh = _handle_inode(part, dir->inode, idx, M_SEARCH)){
 		uint32_t dir_entry_idx = 0;
 		struct dir_entry *p_de = (struct dir_entry *)bh->data;
 		while(dir_entry_idx < per_block){
@@ -136,27 +148,22 @@ bool add_dir_entry(struct dir *par_dir, struct dir_entry *dir_e){
 	uint32_t blk_idx = inode->i_blocks;
 	uint32_t off_byte = inode->i_size % BLOCK_SIZE;
 
+	if(blk_idx >= BLOCK_LEVEL_3)
+		return false;
 	//块内没有剩余，这里假定目录项不跨块
 	if(!off_byte){
 		++blk_idx;
 		inode->i_blocks += 1;
+		if(blk_idx >= BLOCK_LEVEL_3)
+			return false;
 	}
-	if(blk_idx >= BLOCK_LEVEL_3)
-		return false;
 	
-	bh = _handle_inode(cur_par, inode, blk_idx);
-	//返回空指针，说明块不存在
-	if(!bh){
-		//分配内存
-		ALLOC_BH(bh);
-		//加入缓冲
-		buffer_add_block(&cur_par->io_buffer, bh);
-	}
+	bh = _handle_inode(cur_par, inode, blk_idx, M_CREATE);
 
 	memcpy((bh->data + off_byte), dir_e, sizeof(struct dir_entry));
 	inode->i_size += sizeof(struct dir_entry);
 	write_block(cur_par, bh);
+	release_block(bh);
 	return true;
 }
-
 

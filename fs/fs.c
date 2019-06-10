@@ -14,20 +14,78 @@ struct partition *cur_par = NULL;
 extern uint8_t channel_cnt;
 extern struct ide_channel channels[2];
 
-static char *path_parse(char *path)
+/**
+ * 路径解析，提取出/之间的名字
+ *
+ * @param path 路径名
+ * @param res  遍历结果
+ *
+ * @return 遍历完当前项后path的位置
+ * 	@retval NULL 没有东西可以提取了
+ */
+static char *path_parse(char *path, char *res){
 
+	while(*path == '/')
+		++path;
+	
+	while(*path != '/' && *path != '\0')
+		*res++ = *path++;
+
+	*res = '\0';
+	if(!*path)
+		return NULL;
+	
+	return path;
+}
+
+/**
+ * 将路径分割成文件名和目录名
+ *
+ * @param path 路径名
+ * @param filename 文件名
+ * @param dirname 目录名
+ *
+ * @note 对于/a/b/c 分割结果为 filename : c  dirname /a/b/
+ */
+static void split_path(char *path, char *filename, char *dirname){
+	char *pos = path;
+	char *head = path;
+	while(*path){
+		if(*path == '/')
+			pos = path + 1;
+		++path;
+	}
+
+	while(head != pos) 
+		*dirname++ = *head++;
+	*dirname = '\0';
+
+	while(pos != path)
+		*filename++ = *pos++;
+	*filename = '\0';
+}
+
+
+/**
+ * @brief 写磁盘块
+ * @note 操作的对象为buffer_head
+ */
 void write_block(struct partition *part, struct buffer_head *bh){
-	/** TODO 不在缓冲区情况*/
 	if(bh->is_buffered){
-		BUFR_BLOCK(bh);
 		BUFW_BLOCK(bh);
 		return;
 	}
 	ide_write(part->disk, bh->blk_nr, bh->data, 1);
-	sys_free(bh->data);
-	sys_free(bh);
 }
 
+
+/**
+ * @brief 读取磁盘块
+ * @detail 先在缓冲区中查找，命中则直接返回，否则从磁盘读取块并尝试加入
+ * 缓冲区
+ *
+ * @param blk_nr 块号
+ */
 struct buffer_head *read_block(struct partition *part, uint32_t blk_nr){
 	struct buffer_head *bh = buffer_read_block(&part->io_buffer, blk_nr);
 	if(bh){
@@ -47,13 +105,38 @@ struct buffer_head *read_block(struct partition *part, uint32_t blk_nr){
 	return bh;
 }
 
+
+/**
+ * 释放内存中的块
+ */
+void release_block(struct buffer_head *bh){
+	if(bh->is_buffered){
+		BUFR_BLOCK(bh);
+		return;
+	}
+	sys_free(bh->data);
+	sys_free(bh);
+}
+
+/** 下面这两个好像没什么意义 */
+
+/**
+ * 磁盘直接写
+ */
 void write_direct(struct partition *part, uint32_t sta_blk_nr, void *data, uint32_t cnt){
 	ide_write(part->disk, sta_blk_nr, data, cnt);
 }	
 
+/**
+ * 磁盘直接读
+ */
 void read_direct(struct partition *part, uint32_t sta_blk_nr, void *data, uint32_t cnt){
 	ide_read(part->disk, sta_blk_nr, data, cnt);
 }
+
+/**
+ * 分区格式化
+ */
 
 static void partition_format(struct partition *part){
 	printk("partition %s start format...\n", part->name);
@@ -119,6 +202,7 @@ static void partition_format(struct partition *part){
 		++cnt;
 	}
 
+//初始化块组内块位图
 	gp = gp_head;
 	struct bitmap bitmap;
 	bitmap.byte_len = GROUP_BLKS / 8;
@@ -131,6 +215,9 @@ static void partition_format(struct partition *part){
 	sys_free(buf);
 }
 
+/**
+ * 挂载分区，即将分区加载到内存
+ */
 
 static void mount_partition(struct partition *part){
 
@@ -178,6 +265,8 @@ void filesys_init(){
 	struct partition *part = NULL;
 	struct disk *hd = NULL;
 	struct super_block sb;
+
+//格式化所有分区
 	//遍历通道
 	while(cno < channel_cnt){
 		dno = 0;
@@ -218,7 +307,96 @@ void filesys_init(){
 		}
 		++cno;
 	}
-	
+//打开根目录
+	open_root_dir(cur_par);
+
+	uint32_t fd_idx = 0;
+	while(fd_idx < MAX_FILE_OPEN){
+		file_table[fd_idx++].fd_inode = NULL;
+	}
+
 	printk("filesys_init done\n");
 }
+
+/**
+ * 提取路径中最后一项目录
+ *
+ * @param path 目录路径，形式为 /a/b/c/ 最后一个字符是/
+ * @note 对于/a/b/c/ 返回c
+ */
+static struct dir *get_last_dir(const char *path){
+	
+	//根目录直接返回
+	if(!strcmp(path, "/") || !strcmp(path, "/.") || !(path, "/..")){
+		return root_dir;
+	}
+
+	char name[MAX_FILE_NAME_LEN];
+	struct par_dir = root_dir;
+	struct dir_entry dir_e;
+	
+	while(path = path_parse(path, name)){
+		if(search_dir_entry(cur_par, par_dir, name, &dir_e)){
+
+			dir_close(par_dir);
+			if(dir_e.f_type != FT_DIRECTORY){
+				printk("%s is not a directory!\n", name);
+				return NULL;
+			}
+			par_dir = dir_open(cur_par, dir_e.i_no);
+		}
+		else{
+			printk("%s is not found!\n", name);
+			return NULL;
+		}
+	}
+	return par_dir;
+}
+
+#define MAX_PATH_LEN 128
+
+int32_t sys_open(const char *path, uint8_t flags){
+	
+	if(path[strlen(path) - 1] == '/'){
+		printk("can't open a directory %s\n", path);
+		return -1;
+	}
+
+	ASSERT(flags <= 7);
+	int32_t fd = -1;
+	char filename[MAX_FILE_NAME_LEN];
+	char dirname[MAX_PATH_LEN];
+	struct dir_entry dir_e;
+
+	split_path(path, filename, dirname);
+	struct dir *par_dir = get_last_dir(dirname);
+	if(!par_dir){
+		printk("open directory error\n");
+		return -1;
+	}
+
+	bool found = search_dir_entry(cur_par, par_dir, filename, &dir_e);
+
+	if(!found && !(flags & O_CREAT)){
+
+		printk("file %s isn't exist\n", filename);
+		dir_close(par_dir);
+		return -1;
+
+	}else if(found && (flags & O_CREAT)){
+
+		printk("file %s has already exist!\n", filename);
+		dir_close(par_dir);
+		return -1;
+	}
+	if(flags & O_CREAT){
+
+		printk("create file %s\n", filename);
+		fd = file_create(par_dir, filename, flags);
+		dir_close(par_dir);
+	}else {
+		fd = file_open(dir_e.i_no, flags);
+	}
+	return fd;
+}	
 

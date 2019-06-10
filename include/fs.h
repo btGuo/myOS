@@ -74,17 +74,22 @@ do{\
 		(off) * GROUP_SIZE;\
 })
 
+/**
+ * 文件类型
+ */
 enum file_types{
-	FT_UNKNOWN,
-	FT_REGULAR,
-	FT_DIRECTORY
+	FT_UNKNOWN,  ///< 未知文件
+	FT_REGULAR,  ///< 普通文件
+	FT_DIRECTORY  ///< 目录
 };
-
+/**
+ * 文件打开标志位
+ */
 enum oflags{
-	O_RDONLY,
-	O_WRONLY,
-	O_RDWR,
-	O_CREAT = 4
+	O_RDONLY,    ///< 只读  000b
+	O_WRONLY,    ///< 只写  001b
+	O_RDWR,      ///< 读写  010b
+	O_CREAT = 4  ///< 创建  100b
 };
 
 void filesys_init();
