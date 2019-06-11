@@ -43,9 +43,9 @@
 #define BLK_IDX_3(x) (((x) & BLOCK_MASK_3) >> (ORDER << 1))
 
 #define BLK_IDX_I(x, i)(\
-	(i) == 1 ? BLK_IDX_1(x):\
+	((i) == 1 ? BLK_IDX_1(x):\
 	(i) == 2 ? BLK_IDX_2(x):\
-		 BLK_IDX_3(x))
+		 BLK_IDX_3(x)) * 4)
 
 #define BLK_LEVEL(idx)(\
 	(idx) < BLOCK_LEVEL_1 ? 1 :\
@@ -70,8 +70,8 @@ do{\
 
 #define GROUP_INNER(gp, cnt, off)({\
 	(gp)->free_blocks_count -= (cnt);\
-	GROUP_BLKS - (gp)->free_blocks_count - (cnt) + \
-		(off) * GROUP_SIZE;\
+	GROUP_BLKS - (gp)->free_blocks_count - (cnt) + 1 + \
+		(off) * GROUP_BLKS;\
 })
 
 /**
@@ -96,6 +96,8 @@ void filesys_init();
 
 void write_block(struct partition *part, struct buffer_head *bh);
 struct buffer_head *read_block(struct partition *part, uint32_t blk_nr);
+void release_block(struct buffer_head *bh);
 void write_direct(struct partition *part, uint32_t sta_blk_nr, void *data, uint32_t cnt);
 void read_direct(struct partition *part, uint32_t sta_blk_nr, void *data, uint32_t cnt);
+int32_t sys_open(const char *path, uint8_t flags);
 #endif

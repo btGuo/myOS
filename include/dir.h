@@ -5,6 +5,7 @@
 
 #include "ide.h"
 #include "inode.h"
+#include "fs.h"
 /**
  * 目录，用于内存
  */
@@ -23,10 +24,14 @@ struct dir_entry{
 	uint32_t i_no;      ///< i节点号
 };
 
+#define M_SEARCH 0
+#define M_CREATE 1
+
 void open_root_dir(struct partition *part);
 void dir_close(struct dir *dir);
 struct dir* dir_open(struct partition *part, uint32_t i_no);
-struct buffer_head *_handle_inode(struct partition *part, struct inode_info *inode, uint32_t idx);
+struct buffer_head *_handle_inode(struct partition *part, struct inode_info *inode,\
+	       	uint32_t idx, uint8_t mode);
 void create_dir_entry(char *filename, uint32_t i_no, enum file_types f_type,\
 		struct dir_entry *dir_e);
 bool search_dir_entry(struct partition *part, struct dir *dir, \

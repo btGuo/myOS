@@ -27,11 +27,6 @@ struct dir* dir_open(struct partition *part, uint32_t i_no){
 	return dir;
 }
 
-enum handle_mode{
-	M_SEARCH,
-	M_CREATE
-};
-
 /**
  * @brief 读取i节点块，每次读取一个块
  *
@@ -43,7 +38,7 @@ enum handle_mode{
  */
 
 struct buffer_head *_handle_inode(struct partition *part, struct inode_info *inode,\
-	       	uint32_t idx, enum handle_mode mode){
+	       	uint32_t idx, uint8_t mode){
 
 	if(idx >= BLOCK_LEVEL_3){
 		PANIC("no more space\n");
@@ -74,7 +69,7 @@ struct buffer_head *_handle_inode(struct partition *part, struct inode_info *ino
 		while(i <= cnt){
 
 			bh = read_block(part, blk_nr);
-			pos = &bh->data[BLK_IDX_I(idx, i)];
+			pos = (uint8_t *)&bh->data[BLK_IDX_I(idx, i)];
 			blk_nr = *pos;
 
 			//块不存在
@@ -103,11 +98,12 @@ struct buffer_head *_handle_inode(struct partition *part, struct inode_info *ino
 void create_dir_entry(char *filename, uint32_t i_no, enum file_types f_type,\
 		struct dir_entry *dir_e){
 
-	memset(dir_entry, 0, sizeof(struct dir_entry));
+	memset(dir_e, 0, sizeof(struct dir_entry));
 	memcpy(dir_e->filename, filename, MAX_FILE_NAME_LEN);
 	dir_e->i_no = i_no;
 	dir_e->f_type = f_type;
 }
+
 
 bool search_dir_entry(struct partition *part, struct dir *dir, \
 		const char *name, struct dir_entry *dir_e){
@@ -116,7 +112,7 @@ bool search_dir_entry(struct partition *part, struct dir *dir, \
 	uint32_t idx = 0;
 	struct buffer_head *bh = NULL;
 
-	while(bh = _handle_inode(part, dir->inode, idx, M_SEARCH)){
+	while((bh = _handle_inode(part, dir->inode, idx, M_SEARCH))){
 		uint32_t dir_entry_idx = 0;
 		struct dir_entry *p_de = (struct dir_entry *)bh->data;
 		while(dir_entry_idx < per_block){

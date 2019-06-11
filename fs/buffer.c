@@ -184,7 +184,7 @@ bool buffer_add_block(struct disk_buffer *d_buf, struct buffer_head *bh){
 
 	++d_buf->b_size;
 	list_add_tail(&bh->queue_tag, &d_buf->b_queue);
-	hash_table_insert(&d_buf->b_map, &bh->hash_tag);
+	hash_table_insert(&d_buf->b_map, &bh->hash_tag, bh->blk_nr);
 	return true;
 }
 
@@ -201,6 +201,6 @@ bool buffer_add_inode(struct disk_buffer *d_buf, struct inode_info *m_inode){
 
 	++d_buf->i_size;
 	list_add_tail(&m_inode->queue_tag, &d_buf->i_queue);
-	hash_table_insert(&d_buf->i_map, &m_inode->hash_tag);
+	hash_table_insert(&d_buf->i_map, &m_inode->hash_tag, m_inode->i_no);
 	return true;
 }

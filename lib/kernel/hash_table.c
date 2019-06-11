@@ -29,8 +29,8 @@ inline void hash_table_init(struct hash_table *ht, hash_func comp){
  * @param elem 待插入的哈希元素
  *
  */
-inline void hash_table_insert(struct hash_table *ht, struct list_head *elem){
-	uint32_t idx = hashf(ht, elem->key);
+inline void hash_table_insert(struct hash_table *ht, struct list_head *elem, uint32_t key){
+	uint32_t idx = hashf(ht, key);
 	list_add(elem, &ht->data[idx]);
 }
 /**
@@ -44,7 +44,7 @@ inline void hash_table_insert(struct hash_table *ht, struct list_head *elem){
  */
 inline struct list_head *hash_table_find(struct hash_table *ht, uint32_t key){
 	uint32_t idx = hashf(ht, key);
-	struct list_head *head = ht->data[idx];
+	struct list_head *head = &ht->data[idx];
 	struct list_head *cur = head->next;
 
 	while(cur != head){
@@ -64,5 +64,5 @@ inline void hash_table_remove(struct hash_table *ht, \
  * 清空哈希表
  */
 inline void hash_table_clear(struct hash_table *ht){
-	memset(data, 0, HASH_SIZE);
+	memset(ht->data, 0, HASH_SIZE);
 }

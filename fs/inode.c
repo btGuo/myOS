@@ -18,11 +18,11 @@ extern struct partition *cur_par;
  */
 void inode_locate(struct partition *part, uint32_t i_no, struct inode_pos *pos){
 	ASSERT(i_no < part->sb->inodes_count);
-	struct group *gp = GROUP_PTR(&part->groups, i_no);
+	struct group_info *gp = GROUP_PTR(part->groups, i_no);
 	uint32_t offset = (i_no % INODES_PER_GROUP) * sizeof(struct inode);
 	
-	pos->blk_nr = gp->inode_bitmap;
-	pos->off_size = offset % SECTOR_SIZE;
+	pos->blk_nr = gp->inode_table + offset / BLOCK_SIZE ;
+	pos->off_size = offset % BLOCK_SIZE;
 }
 
 /**
@@ -82,6 +82,7 @@ struct inode_info *inode_open(struct partition *part, uint32_t i_no){
 
 	//定位后读出块
 	inode_locate(part, i_no, &pos);
+	printk("root inode pos %d\n", pos.blk_nr);
 	bh = read_block(part, pos.blk_nr);
 	memcpy((bh->data + pos.off_size), &m_inode, sizeof(struct inode));
 	//初始化
@@ -111,6 +112,12 @@ void inode_init(struct partition *part, struct inode_info *m_inode, uint32_t i_n
 	m_inode->i_open_cnts = 0;
 	m_inode->i_lock = true;  //这里上锁
 	m_inode->i_buffered = true;
+	
+	//根节点不需要加入缓冲
+	if(!i_no){
+		m_inode->i_buffered = false;
+		return;
+	}
 	if(buffer_add_inode(&part->io_buffer, m_inode)){
 		m_inode->i_buffered = false;
 	}

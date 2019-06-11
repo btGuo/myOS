@@ -5,10 +5,14 @@
 #include "super_block.h"
 #include "thread.h"
 #include "fs.h"
+#include "interrupt.h"
+#include "dir.h"
+#include "string.h"
 
 
 struct file file_table[MAX_FILE_OPEN];   ///< 文件表
 extern struct task_struct *curr;
+extern struct partition *cur_par;
 
 /**
  * @brief 在文件表中找到空位
@@ -52,7 +56,8 @@ int32_t inode_bmp_alloc(struct partition *part){
 	ASSERT(sb->free_inodes_count > 0);
 	//当前组中已经没有空闲位置，切换到下一个组
 	if(cur_gp->free_inodes_count == 0){
-		cur_gp = cur_gp->next;
+		//这里直接加一，因为在内存上是连续的，要特别注意小心越界
+		++cur_gp;
 		group_info_init(part, cur_gp);
 		part->cur_gp = cur_gp;
 	}
@@ -87,7 +92,7 @@ int32_t block_bmp_alloc(struct partition *part){
 	ASSERT(sb->free_blocks_count > 0);
 	//当前组中已经没有空闲位置，切换到下一个组
 	if(cur_gp->free_blocks_count == 0){
-		cur_gp = cur_gp->next;
+		++cur_gp;
 		group_info_init(part, cur_gp);
 		part->cur_gp = cur_gp;
 	}
@@ -165,7 +170,7 @@ int32_t file_create(struct dir *par_dir, char *filename, uint8_t flag){
 rollback:
 	switch(roll_no){
 		case 3:
-			memset(&file_table[fd_idx], 0 sizeof(struct file));
+			memset(&file_table[fd_idx], 0, sizeof(struct file));
 		case 2:
 			sys_free(m_inode);
 		case 1:
@@ -201,7 +206,4 @@ int32_t file_open(uint32_t i_no, uint8_t flag){
 	return set_fd(fd_idx);
 }
 
-
-		
-		
 

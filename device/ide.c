@@ -35,8 +35,7 @@
 #define CMD_WRITE_SECTOR   0x30	    // 写扇区指令
 
 /* 定义可读写的最大块数 */
-#define MAX_BLK (1024 * 1024)
-#define MAX_LBA (MAX_BLK * BLK_PER_SEC)
+#define MAX_LBA (1024 * 1024 * 89)
 
 
 uint8_t channel_cnt;     ///< 通道数 1或者2 
@@ -121,21 +120,17 @@ static void busy_wait(struct disk *hd){
  * @brief 硬盘读
  * 
  * @param hd 磁盘分区指针
- * @param blk 逻辑块号
- * @param cnt 块数
+ * @param lba 扇区号
+ * @param cnt 扇区数
  */
-void ide_read(struct disk *hd, uint32_t blk, void *buf, uint32_t cnt){
+void ide_read(struct disk *hd, uint32_t lba, void *buf, uint32_t cnt){
 
-	ASSERT(blk < MAX_BLK && cnt > 0);
+	ASSERT(lba < MAX_LBA && cnt > 0);
 
 	mutex_lock_acquire(&hd->channel->lock);
 
 	select_disk(hd);
 
-	//转化为扇区
-	blk *= BLK_PER_SEC;
-	cnt *= BLK_PER_SEC;
-	
 	uint32_t reads = 0;
 	uint32_t res = cnt;
 	uint32_t to_read = 0;
@@ -150,7 +145,7 @@ void ide_read(struct disk *hd, uint32_t blk, void *buf, uint32_t cnt){
 			res -= 256;
 		}
 
-		select_sector(hd, blk + reads, to_read);
+		select_sector(hd, lba + reads, to_read);
 		cmd_out(hd->channel, CMD_READ_SECTOR);
 		
 		busy_wait(hd);
@@ -162,18 +157,14 @@ void ide_read(struct disk *hd, uint32_t blk, void *buf, uint32_t cnt){
 	mutex_lock_release(&hd->channel->lock);
 }
 
-void ide_write(struct disk *hd, uint32_t blk, void *buf, uint32_t cnt){
+void ide_write(struct disk *hd, uint32_t lba, void *buf, uint32_t cnt){
 	
-	ASSERT(blk < MAX_BLK);
-	ASSERT(cnt > 0);
+	ASSERT(lba < MAX_LBA && cnt > 0);
 
 	mutex_lock_acquire(&hd->channel->lock);
 
 	select_disk(hd);
 
-	blk *= BLK_PER_SEC;
-	cnt *= BLK_PER_SEC;
-	
 	uint32_t writes = 0;
 	uint32_t res = cnt;
 	uint32_t to_write = 0;
@@ -187,7 +178,7 @@ void ide_write(struct disk *hd, uint32_t blk, void *buf, uint32_t cnt){
 			res -= 256;
 		}
 
-		select_sector(hd, blk + writes, to_write);
+		select_sector(hd, lba + writes, to_write);
 		cmd_out(hd->channel, CMD_WRITE_SECTOR);
 
 		busy_wait(hd);
@@ -303,6 +294,17 @@ static void partition_scan(struct disk *hd, uint32_t ext_lba){
 	}
 }
 
+void test(struct partition *part){
+	printk("test %s\n", part->name);
+	char buf[512];
+	memset(buf, 0, 512);
+	ide_read(part->disk, part->start_lba + 3, buf, 1);
+	ide_write(part->disk, part->start_lba + 3, buf, 1);
+	ide_write(part->disk, part->start_lba + 3, buf, 1);
+	printk("end test\n");
+}
+
+
 void ide_init(){
 
 	printk("ide_init start\n");
@@ -327,7 +329,7 @@ void ide_init(){
 		}
 //		channels[channel_no].expecting_intr = false;
 		mutex_lock_init(&channels[channel_no].lock);
-		sema_init(&channels[channel_no].disk_done, 0);
+	//	sema_init(&channels[channel_no].disk_done, 0);
 
 		//注册中断处理程序
 		register_handler(channels[channel_no].irq_no, intr_hd_handler);
@@ -338,8 +340,8 @@ void ide_init(){
 			hd->channel = &channels[channel_no];
 			hd->dev_no = dev_no;
 			sprintf(hd->name, "sd%c", 'a' + channel_no * 2 + dev_no);
-			//主盘为系统盘，不做处理
 			identify_disk(hd);
+			//主盘为系统盘，不做处理
 			if(dev_no){
 				partition_scan(hd, 0);
 			}
@@ -347,6 +349,6 @@ void ide_init(){
 		}
 		++channel_no;
 	}
+	test(&channels[0].devices[1].prim_parts[0]);
 	printk("ide_init done\n");
 }
-

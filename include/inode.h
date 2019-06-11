@@ -10,7 +10,7 @@ typedef long time_t;
 #define N_BLOCKS 8 ///< 5个直接，1个间接，1个双间接，1个三间接
 
 /**
- * 磁盘上索引节点结构
+ * 磁盘上索引节点结构，64字节
  */
 struct inode{
 	uint16_t i_type;     ///< 文件类型
@@ -65,7 +65,7 @@ void inode_release(struct inode_info *m_inode);
 void inode_sync(struct partition *part, struct inode_info *m_inode);
 struct inode_info *inode_open(struct partition *part, uint32_t i_no);
 void inode_close(struct inode_info *m_inode);
-void inode_init(struct inode_info *m_inode, uint32_t i_no);
+void inode_init(struct partition *part, struct inode_info *m_inode, uint32_t i_no);
 
 struct inode_info *buffer_read_inode(struct disk_buffer *d_buf, uint32_t i_no);
 bool buffer_add_inode(struct disk_buffer *d_buf, struct inode_info *m_inode);

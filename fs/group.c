@@ -2,7 +2,9 @@
 #include "buffer.h"
 #include "fs.h"
 #include "ide.h"
-
+/**
+ * 初始化组描述符，如果位图不在内存中则加载到内存并初始化
+ */
 void group_info_init(struct partition *part, struct group_info *gp){
 	if(!gp->block_bmp.bits){
 		struct buffer_head *bh = read_block(part, gp->block_bitmap);

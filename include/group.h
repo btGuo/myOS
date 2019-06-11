@@ -23,7 +23,7 @@ struct group{
 };
 
 /**
- * @brief 内存上组描述符
+ * 内存上组描述符
  */
 struct group_info{
 	uint32_t block_bitmap;         ///< 数据块位图块号
@@ -36,7 +36,6 @@ struct group_info{
 	uint32_t zeros[3];             ///< 补全32字节
 	struct bitmap inode_bmp;       ///< 索引节点位图
 	struct bitmap block_bmp;       ///< 块节点位图
-	struct group_info *next;       ///< 下一个组指针
 	uint32_t group_nr;             ///< 组号
 };
 
