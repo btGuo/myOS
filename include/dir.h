@@ -16,7 +16,7 @@ struct dir{
 };
 
 /**
- * 目录项，保存在磁盘
+ * 目录项，保存在磁盘，32字节
  */
 struct dir_entry{
 	char filename[MAX_FILE_NAME_LEN];
@@ -37,4 +37,6 @@ void create_dir_entry(char *filename, uint32_t i_no, enum file_types f_type,\
 bool search_dir_entry(struct partition *part, struct dir *dir, \
 	const char *name, struct dir_entry *dir_e);
 bool add_dir_entry(struct dir *par_dir, struct dir_entry *dir_e);
+
+void print_root(struct inode_info *m_inode);
 #endif

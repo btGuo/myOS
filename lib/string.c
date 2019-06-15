@@ -79,7 +79,7 @@ char *strcat(char *dest, char *src){
 	char *tmp = dest;
 	while(*tmp)
 		++tmp;
-	while(*tmp++ = *src++);
+	while((*tmp++ = *src++));
 	return tmp;
 }
 

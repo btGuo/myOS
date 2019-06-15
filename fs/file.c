@@ -102,7 +102,8 @@ int32_t block_bmp_alloc(struct partition *part){
 
 	uint32_t idx = bitmap_scan(&cur_gp->block_bmp, 1);
 	bitmap_set(&cur_gp->block_bmp, idx, 1);
-	return idx + cur_gp->group_nr * BLOCKS_PER_GROUP;
+	//这里要加上一块引导块
+	return idx + cur_gp->group_nr * BLOCKS_PER_GROUP + LEADER_BLKS;
 }
 
 /**
@@ -179,7 +180,11 @@ rollback:
 	}
 	return -1;
 }
-
+/**
+ * 打开文件
+ * @param i_no 文件的inode号
+ * @param flag 文件打开标志
+ */
 int32_t file_open(uint32_t i_no, uint8_t flag){
 	int fd_idx = get_fd();
 	if(fd_idx == -1){

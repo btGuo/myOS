@@ -72,7 +72,7 @@ static void buffer_sync_disk(struct disk_buffer *d_buf){
 		bh = list_entry(struct buffer_head, queue_tag, cur);
 		if(bh->dirty){
 			//直接写入磁盘
-			ide_write(d_buf->part->disk, bh->blk_nr, bh->data, 1);
+			write_direct(d_buf->part, bh->blk_nr, bh->data, 1);
 			//复位脏
 			bh->dirty = false;
 		}
@@ -92,13 +92,14 @@ static void buffer_sync_inodes(struct disk_buffer *d_buf){
 	//遍历缓存队列
 	while(cur != head){
 		m_inode = list_entry(struct inode_info, queue_tag, cur);
-		//节点是脏的且没有上锁
+		//节点是脏的
 		if(m_inode->i_dirty){
 			//定位inode
 			inode_locate(d_buf->part, m_inode->i_no, &pos);
 			bh = read_block(d_buf->part, pos.blk_nr);
 			memcpy((bh->data + pos.off_size), &m_inode, sizeof(struct inode));
 			write_block(d_buf->part, bh);
+			release_block(bh);
 			//复位脏
 			m_inode->i_dirty = false;
 		}
@@ -108,10 +109,10 @@ static void buffer_sync_inodes(struct disk_buffer *d_buf){
 
 /**
  * @brief 初始化磁盘缓冲区
- *
- * @attention 这里考虑到接口问题，并没有初始化part指针
  */
-void disk_buffer_init(struct disk_buffer *d_buf){
+void disk_buffer_init(struct disk_buffer *d_buf, struct partition *part){
+
+	d_buf->part = part;
 
 	d_buf->b_max_size = BUFFER_HEAD_SIZE;
 	d_buf->i_max_size = BUFFER_HEAD_SIZE;
@@ -202,5 +203,13 @@ bool buffer_add_inode(struct disk_buffer *d_buf, struct inode_info *m_inode){
 	++d_buf->i_size;
 	list_add_tail(&m_inode->queue_tag, &d_buf->i_queue);
 	hash_table_insert(&d_buf->i_map, &m_inode->hash_tag, m_inode->i_no);
+	printk("buffer add inode\n");
 	return true;
+}
+
+void buffer_sync(struct disk_buffer *d_buf){
+
+	//注意顺序
+	buffer_sync_inodes(d_buf);
+	buffer_sync_disk(d_buf);
 }

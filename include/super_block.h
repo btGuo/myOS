@@ -14,6 +14,10 @@
 })
 
 #define GROUP_BLK(sb, cnt) ((sb)->groups_table + (sb)->blocks_per_group * (cnt))
+
+#define SUPER_BLK(sb, cnt) (1 + (sb)->blocks_per_group * (cnt))
+
+#define SUPER_BLKS 1
 /**
  * 超级块描述符
  */
@@ -41,6 +45,7 @@ struct super_block{
 	uint32_t last_check;    ///< 最后一次检验时间
 
 	uint32_t groups_table;  ///< 组所在块号
+	uint8_t  pad[964];     ///< 凑齐1024(BLOCK_SIZE)字节
 };
 
 

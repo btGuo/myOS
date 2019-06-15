@@ -16,6 +16,8 @@
 
 //每个块有多少个扇区
 #define BLK_PER_SEC (BLOCK_SIZE / SECTOR_SIZE)
+//引导块数
+#define LEADER_BLKS 1
 
 #define INODE_SIZE 64
 
@@ -100,4 +102,5 @@ void release_block(struct buffer_head *bh);
 void write_direct(struct partition *part, uint32_t sta_blk_nr, void *data, uint32_t cnt);
 void read_direct(struct partition *part, uint32_t sta_blk_nr, void *data, uint32_t cnt);
 int32_t sys_open(const char *path, uint8_t flags);
+void sync();
 #endif

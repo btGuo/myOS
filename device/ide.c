@@ -266,6 +266,10 @@ static void get_ext_partition(struct disk *hd, uint32_t l_no, uint32_t s_lba){
 		get_ext_partition(hd, l_no + 1, ext_lba_base + p[1].start_lba);
 }
 
+/**
+ * 扫描分区表，设置分区描述符中的前四项
+ */
+
 static void partition_scan(struct disk *hd, uint32_t ext_lba){
 
 	struct boot_sector bs;
@@ -294,6 +298,9 @@ static void partition_scan(struct disk *hd, uint32_t ext_lba){
 	}
 }
 
+/**
+ * 简单测试分区读写
+ */
 void test(struct partition *part){
 	printk("test %s\n", part->name);
 	char buf[512];
@@ -304,7 +311,11 @@ void test(struct partition *part){
 	printk("end test\n");
 }
 
-
+/**
+ * @brief硬盘初始化
+ * @detail 初始化两条通道，以及其中的硬盘及分区描述符
+ * @attention 分区描述符只初始化了前四项，其余在这里均未初始化，在文件系统处被初始化
+ */
 void ide_init(){
 
 	printk("ide_init start\n");
@@ -349,6 +360,6 @@ void ide_init(){
 		}
 		++channel_no;
 	}
-	test(&channels[0].devices[1].prim_parts[0]);
+//	test(&channels[0].devices[1].prim_parts[0]);
 	printk("ide_init done\n");
 }

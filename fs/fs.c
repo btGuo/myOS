@@ -13,6 +13,7 @@
 #include "print.h"
 
 //TODO 检查内存块复用
+//将超级块单独拿出来，本来以为和块组放在一起问题也不大，然而并不好
 
 struct partition *cur_par = NULL;
 extern uint8_t channel_cnt;
@@ -45,6 +46,24 @@ void print_group(struct group *gp, int cnt){
 	printk("end printk group\n");
 }
 
+void print_group_info(struct group_info *gp, int cnt){
+	int i = 0;
+	printk("start print group\n");
+	printk("b_bmp  i_bmp  i_tab  f_blk  f_ino  i_bit  b_bit  gp_nr\n");
+	while(i < cnt){
+		printk("%d  %d  %d  %d  %d  %d  %d  %d\n", 
+			gp->block_bitmap, gp->inode_bitmap, gp->inode_table,\
+			gp->free_blocks_count, gp->free_inodes_count,\
+			gp->inode_bmp.bits, gp->block_bmp.bits, gp->group_nr);
+		++i;
+		++gp;
+	}
+	printk("end printk group\n");
+
+}
+/**
+ * 打印元信息
+ */
 void print_meta_info(){
 	printk("inode size : %d\n", sizeof(struct inode));
 	printk("super_block size : %d\n", sizeof(struct super_block));
@@ -135,7 +154,6 @@ struct buffer_head *read_block(struct partition *part, uint32_t blk_nr){
 	bh->lock = true;
 	bh->is_buffered = true;
 	//从磁盘读
-	write_direct(part, blk_nr, bh->data, 1);
 	read_direct(part, blk_nr, bh->data, 1);
 	//加入缓冲区
 	if(!buffer_add_block(&part->io_buffer, bh)){
@@ -181,11 +199,12 @@ void read_direct(struct partition *part, uint32_t sta_blk_nr, void *data, uint32
 	ide_read(part->disk, part->start_lba + sta_blk_nr, data, cnt);
 }
 
-void create_root(struct partition *part, struct group *gp);
+
 /**
  * 分区格式化
+ *
+ * @attention 这里并没有创建根目录，第一次挂载时才创建根目录
  */
-
 static void partition_format(struct partition *part){
 	printk("partition %s start format...\n", part->name);
 
@@ -193,23 +212,19 @@ static void partition_format(struct partition *part){
 	uint32_t blocks = part->sec_cnt / BLK_PER_SEC;
 	//组数
 	uint32_t groups_cnt = blocks / GROUP_BLKS;
-	part->groups_cnt = groups_cnt;
 	//剩余块数
 	uint32_t res_blks = blocks % GROUP_BLKS; 
+	//组描述符所占块数
+	uint32_t gp_blks = DIV_ROUND_UP(groups_cnt * sizeof(struct group), BLOCK_SIZE);
 
+	//每组已使用的块: 超级块，块组描述符，块位图，inode位图，inode表
+	uint32_t gp_used_blks = SUPER_BLKS + gp_blks + BLOCKS_BMP_BLKS \
+			     + INODES_BMP_BLKS + INODES_BLKS;
 
-	//超级块加上块组大小
-	uint32_t h_blks = DIV_ROUND_UP(sizeof(struct super_block) 
-			+ sizeof(struct group) * groups_cnt, BLOCK_SIZE);
-	uint32_t size = h_blks * BLOCK_SIZE;
-
-	uint8_t *buf = sys_malloc(size);
-	memset(buf, 0, size);
-
-	//每组已使用的块: 超级块和块组描述符，块位图，inode位图，inode表
-	uint32_t used_blks = h_blks + BLOCKS_BMP_BLKS + INODES_BMP_BLKS + INODES_BLKS;
 //初始化超级块
-	struct super_block *sb = (struct super_block *)buf;
+	struct super_block *sb = (struct super_block *)sys_malloc(SUPER_BLKS * BLOCK_SIZE);
+	MEMORY_OK(sb);
+	memset(sb, 0, SUPER_BLKS * BLOCK_SIZE);
  	
 	sb->magic = SUPER_MAGIC;
 	sb->major_rev = MAJOR;
@@ -223,20 +238,21 @@ static void partition_format(struct partition *part){
 	sb->blocks_count = blocks;
 	sb->inodes_count = INODES_PER_GROUP * groups_cnt;
 	//1块引导块及1块根目录块
-	sb->free_blocks_count = sb->blocks_count - 2 - used_blks * groups_cnt;
+	sb->free_blocks_count = sb->blocks_count - LEADER_BLKS - gp_used_blks * groups_cnt;
 	//0号inode 给根节点
-	sb->free_inodes_count = sb->inodes_count - 1;
+	sb->free_inodes_count = sb->inodes_count;
 
-	//从1开始
-	sb->groups_table = 1;
+	//从2开始
+	sb->groups_table = 2;
+
 //初始化块组
-	struct group *gp_head = (struct group *)(buf + sizeof(struct super_block));
+	struct group *gp_head = (struct group *)sys_malloc(gp_blks * BLOCK_SIZE);
+	MEMORY_OK(gp_head);
+	memset(gp_head, 0, gp_blks * BLOCK_SIZE);
 	struct group *gp = gp_head;
 	uint32_t cnt = 0;
-	
-	//group初始化
 	while(cnt < groups_cnt){
-		gp->free_blocks_count = sb->blocks_per_group - h_blks;
+		gp->free_blocks_count = sb->blocks_per_group - gp_blks - SUPER_BLKS;
 		gp->free_inodes_count = sb->inodes_per_group;
 		gp->block_bitmap = GROUP_INNER(gp, BLOCKS_BMP_BLKS, cnt);
 		gp->inode_bitmap = GROUP_INNER(gp, INODES_BMP_BLKS, cnt);
@@ -244,157 +260,164 @@ static void partition_format(struct partition *part){
 		++gp;
 		++cnt;
 	}
+	print_group(gp_head, groups_cnt);
 
+//块组和超级块同步磁盘
 	gp = gp_head;
-	cnt = 0;
-
-	//直接写入磁盘
-	while(cnt < groups_cnt){
-		write_direct(part, GROUP_BLK(sb, cnt), buf, h_blks);
-		++cnt;
+	cnt = groups_cnt;
+	while(cnt--){
+		write_direct(part, SUPER_BLK(sb, cnt), sb, SUPER_BLKS);
+		write_direct(part, GROUP_BLK(sb, cnt), gp_head, gp_blks); 
 	}
 
-//初始化块组内块位图
-	gp = gp_head;
+//创建位图
 	struct bitmap bitmap;
 	bitmap.byte_len = GROUP_BLKS / 8;
 	bitmap.bits = (uint8_t *)sys_malloc(bitmap.byte_len);
-	bitmap_set_range(&bitmap, 1, 0, used_blks);
-	cnt = 0;
-	while(cnt < groups_cnt){
+	bitmap_set_range(&bitmap, 0, 1, gp_used_blks);
+
+//同步位图
+	gp = gp_head;
+	cnt = groups_cnt;
+	while(cnt--){
 		//写入各个组对应位图
 	       	write_direct(part, gp->block_bitmap, bitmap.bits, 1);
-	       	++cnt;
 	       	++gp;
 	}
 
-	create_root(part, gp_head);
-
-	printk("groups_cnt is %d\n", groups_cnt);
-	print_group(gp_head, groups_cnt);
-	
-	//注意释放内存
-	sys_free(buf);
-	sys_free(bitmap.bits);
-
+	sys_free(sb);
+	sys_free(gp_head);
 	printk("partition format done\n");
 }
 
 /**
- * 创建根目录，格式化分区时调用
- *
- * @param gp 第一个组描述符指针
+ * 查看根目录是否存在，这里假设cur_gp 已经初始化
  */
-void create_root(struct partition *part, struct group *gp){
+static bool scan_root(struct partition *part){
+	return bitmap_verify(&part->cur_gp->inode_bmp, ROOT_INODE);
+}
+
+/**
+ * 创建根目录并写入磁盘
+ */
+static void create_root(struct partition *part){
 	
-	printk("create root dir start\n");
-
-	uint8_t *buf = (uint8_t *)sys_malloc(BLOCK_SIZE);
-	memset(buf, 0, BLOCK_SIZE);
+	printk("create root\n");
 	
-	buf[0] |= 0x01;
-//写入inode位图
-	write_direct(part, gp->inode_bitmap, buf, 1);
+	uint32_t i_no = inode_bmp_alloc(part);
+	ASSERT(i_no == ROOT_INODE);
 
-	--gp->free_blocks_count;
-	--gp->free_inodes_count;
+	struct inode_info *m_inode = (struct inode_info *)sys_malloc(sizeof(struct inode_info));
+	inode_init(part, m_inode, i_no);
+	struct dir_entry dir_e;
+	root_dir.inode = m_inode;
 
-	struct bitmap bitmap;
-	bitmap.byte_len = BLOCK_SIZE;
-	bitmap.bits = (uint8_t *)buf;
-
-	uint32_t used_blks = BLOCKS_PER_GROUP - gp->free_blocks_count;
-	uint32_t blk_nr = used_blks - 1;
-
-	bitmap_set_range(&bitmap, 1, 0, used_blks);
-//再次写入block位图
-	write_direct(part, gp->block_bitmap, buf, 1);
-
-	memset(buf, 0, BLOCK_SIZE);
-	struct inode_info *m_inode = (struct inode_info *)buf;
-
-	//根目录不用加入缓冲区
-	m_inode->i_no = 0;
-	m_inode->i_size = sizeof(struct dir_entry) * 2;
-	m_inode->i_blocks = 1;
-	m_inode->i_block[0] = blk_nr;
-
-//写入inode表
-	write_direct(part, gp->inode_table, buf, 1);
-
-	struct dir_entry *dir_e = (struct dir_entry *)buf;
-	memset(buf, 0, BLOCK_SIZE);
-
-	memcpy(dir_e->filename, ".", 1);
-	dir_e->i_no = 0;
-	dir_e->f_type = FT_DIRECTORY;
-	++dir_e;
-
-	memcpy(dir_e->filename, "..", 2);
-	dir_e->i_no = 0;
-	dir_e->f_type = FT_DIRECTORY;
-
-//写入根目录块
-	write_direct(part, blk_nr, buf, 1);
-       	
-	sys_free(buf);
-	printk("create root dir done\n");
-}	
+	create_dir_entry(".", ROOT_INODE, FT_DIRECTORY, &dir_e);
+	add_dir_entry(&root_dir, &dir_e);
+	create_dir_entry("..", ROOT_INODE, FT_DIRECTORY, &dir_e);
+	add_dir_entry(&root_dir, &dir_e);
 	
+//	print_root(m_inode);
+	inode_sync(part, m_inode);
+	//确认没有指针指向，释放
+	sys_free(m_inode);
+	printk("create root done\n");
+}
 
 /**
  * 挂载分区，即将分区加载到内存
+ *
+ * @attention 这里初始化了part中的后五个成员
  */
-
 static void mount_partition(struct partition *part){
 
 	printk("mount_partition in %s\n", part->name);
+	//设置当前分区
 	cur_par = part;
 
-	//注意这里要分配的是group_info了，不是group
-	part->groups = sys_malloc(part->groups_cnt * sizeof(struct group_info));
+//先处理超级块
 	part->sb = sys_malloc(sizeof(struct super_block));
+	MEMORY_OK(part->sb);
+//	memset(part->sb, 0, sizeof(struct super_block));
+	//直接读取超级块
+	read_direct(part, 1, part->sb, SUPER_BLKS);
+
+	//初始化part中的两个字段
+	part->groups_cnt = part->sb->blocks_count / part->sb->blocks_per_group;
+	part->groups_blks = DIV_ROUND_UP(part->groups_cnt * sizeof(struct group), \
+			BLOCK_SIZE);
+
+//处理块组，由于块组磁盘上和内存上存储形式不同，处理方法和超级块不同
+
+	part->cur_gp = part->groups = sys_malloc(part->groups_cnt * sizeof(struct group_info));
+	MEMORY_OK(part->groups);
+	memset(part->groups, 0, part->groups_cnt * sizeof(struct group_info));
+
+	//读取磁盘上块组
+	uint8_t *buf = sys_malloc(part->groups_blks * BLOCK_SIZE);
+	struct group *gp = (struct group *)buf;
 	struct group_info *gp_info = part->groups;
-	memset(gp_info, 0, part->groups_cnt * sizeof(struct group_info));
+	read_direct(part, part->sb->groups_table, gp, part->groups_blks);
 
-//读取超级块和块组描述符
-	uint32_t h_blks = DIV_ROUND_UP(sizeof(struct super_block) 
-			+ sizeof(struct group) * part->groups_cnt, BLOCK_SIZE);
-
-	uint32_t size = h_blks * BLOCK_SIZE;
-	uint8_t *buf = sys_malloc(size);
-	struct supeer_block *sb = (struct super_block *)buf;
-	struct group *gp = (struct group *)(buf + sizeof(struct super_block));
-
-	MEMORY_OK(buf);
-	//直接读取
-	read_direct(part, 1, buf, h_blks);
-
-	//复制超级块
-	memcpy(part->sb, sb, sizeof(struct super_block));
-	uint32_t cnt = 0;
-	//复制组描述符
+	//复制内存
+	int cnt = 0;
 	while(cnt < part->groups_cnt){
+
 		memcpy(gp_info, gp, sizeof(struct group));
 		gp_info->group_nr = cnt;
-		++gp_info;
-		++gp;
-		++cnt;
-		
+		++gp_info; ++gp; ++cnt;
 	}
+//end
+	
+//	print_group_info(part->groups, part->groups_cnt);
+	//初始化分区缓冲
+	disk_buffer_init(&part->io_buffer, part);
 
-	disk_buffer_init(&part->io_buffer);
+	//初始化第一个组
+	group_info_init(part, part->cur_gp);
 
 	//释放缓冲
 	sys_free(buf);
-	printk("mount_partition %s done\n", part->name);
+	printk("mount partition done\n");
 }
 
-void read_super_block(struct partition *part, struct super_block *sb){
-	char buf[BLOCK_SIZE];
-	read_direct(part, 1, buf, 1);
-	memcpy(sb, buf, sizeof(struct super_block));
+void sync(){
+	struct partition *part = cur_par;
+
+	uint8_t *buf = sys_malloc(part->groups_blks * BLOCK_SIZE);
+	MEMORY_OK(buf);
+	struct group *gp = (struct group *)buf;
+	struct group_info *gp_info = part->groups;
+	struct super_block *sb = part->sb;
+
+	uint32_t cnt = part->groups_cnt;
+//复制块组
+	while(cnt--){
+		memcpy(gp, gp_info, sizeof(struct group));
+		++gp; ++gp_info;
+	}
+
+//每个分区都要写入
+	cnt = part->groups_cnt;
+	while(cnt--){
+		//超级块直接写入就行
+		write_direct(part, SUPER_BLK(sb, cnt), sb, SUPER_BLKS);
+		write_direct(part, GROUP_BLK(sb, cnt), buf, part->groups_blks);
+	}
+
+	//根目录不在缓冲中
+	inode_sync(part, root_dir.inode);
+	sys_free(buf);
+
+//同步缓冲区
+	buffer_sync(&part->io_buffer);
 }
+
+/**
+ * @brief初始化文件系统
+ * @detail 检查所有分区文件系统魔数，如果没有，则格式化分区，创建文件系统
+ * 之后，选择默认分区挂载，打开根目录
+ */
 
 void filesys_init(){
 
@@ -429,8 +452,7 @@ void filesys_init(){
 
 				//分区存在
 				if(part->sec_cnt){
-					//读取超级块
-					read_super_block(part, &sb);
+					read_direct(part, 1, &sb, SUPER_BLKS);
 					//验证魔数
 					if(sb.magic == SUPER_MAGIC){
 						/** nothing */
@@ -442,7 +464,11 @@ void filesys_init(){
 					}
 					//如果是默认分区，则挂载
 					if(!strcmp(part->name, default_part)){
+
 					        mount_partition(part);
+						if(!scan_root(part)){
+							create_root(part);
+						}
 					}	       
 				}
 				++pno;
@@ -455,6 +481,7 @@ void filesys_init(){
 //打开根目录
 	open_root_dir(cur_par);
 
+//初始化文件表
 	uint32_t fd_idx = 0;
 	while(fd_idx < MAX_FILE_OPEN){
 		file_table[fd_idx++].fd_inode = NULL;
@@ -515,6 +542,7 @@ int32_t sys_open(const char *path, uint8_t flags){
 
 	split_path(path, filename, dirname);
 	struct dir *par_dir = get_last_dir(dirname);
+//	printk("dirname : %s  dirinode %d\n", dirname, par_dir->inode->i_no);
 	if(!par_dir){
 		printk("open directory error\n");
 		return -1;

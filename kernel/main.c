@@ -9,6 +9,7 @@
 #include "interrupt.h"
 #include "stdint.h"
 #include "syscall.h"
+#include "fs.h"
 
 
 void u_prog_a(void);
@@ -26,6 +27,10 @@ int main() {
 //	thread_start("k_thread_c", 31, k_thread_c, NULL);
 	
 //	intr_enable();
+
+
+	//sys_open("/ftest", O_CREAT);
+	//sync();
 
 	while(1);
 	return 0;

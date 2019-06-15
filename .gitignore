@@ -1,7 +1,9 @@
 test.c
 note.txt
-hd80.img
+hd90.img
 hd60.img
 build/
 run.sh
 a.out
+tags
+test/

@@ -39,8 +39,8 @@ struct disk_buffer{
 #define BUFW_INODE(m_inode) ((m_inode)->i_dirty = true)
 #define BUFR_INODE(m_inode) ((m_inode)->i_lock = true)
 
-void disk_buffer_init(struct disk_buffer *d_buf);
 
 struct buffer_head *buffer_read_block(struct disk_buffer *d_buf, uint32_t blk_nr);
 bool buffer_add_block(struct disk_buffer *d_buf, struct buffer_head *bh);
+void buffer_sync(struct disk_buffer *d_buf);
 #endif

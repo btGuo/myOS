@@ -5,6 +5,8 @@
 static const char map[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8',\
 	'9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
+//TODO 数为0时没有打印
+
 //数字转字符串, 可选十进制和十六进制
 void to_num(int num, char *dest, char mode){
 	char _tmp[1024];
@@ -54,7 +56,7 @@ void vsprintf(char *buf, const char *fmt, va_list args){
 			++fmt;
 			if(*fmt == 's'){
 				char *str = va_arg(args, char*);	
-				while(*dest++ = *str++);
+				while((*dest++ = *str++));
 				--dest;
 
 			}else if(*fmt == 'd' || *fmt == 'h'){

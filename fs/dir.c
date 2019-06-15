@@ -7,9 +7,15 @@
 struct dir root_dir;
 extern struct partition *cur_par;
 
+void print_root(struct inode_info *m_inode){
+	printk("root inode info\n");
+	printk("%d  %d  %d\n", m_inode->i_block[0], m_inode->i_size, m_inode->i_blocks);
+}
+
 void open_root_dir(struct partition *part){
 	root_dir.inode = inode_open(part, ROOT_INODE);
 	root_dir.dir_pos = 0;
+	print_root(root_dir.inode);
 }
 
 void dir_close(struct dir *dir){
@@ -37,6 +43,8 @@ struct dir* dir_open(struct partition *part, uint32_t i_no){
  * @return 是否读完
  */
 
+//TODO 改放回值，返回blk_nr是否更好
+
 struct buffer_head *_handle_inode(struct partition *part, struct inode_info *inode,\
 	       	uint32_t idx, uint8_t mode){
 
@@ -48,7 +56,20 @@ struct buffer_head *_handle_inode(struct partition *part, struct inode_info *ino
 	uint32_t blk_nr = 0;
 
 	if(idx < BLOCK_LEVEL_0){
+		//TODO 位图结果好像不太对
 		blk_nr = inode->i_block[idx];
+		if(!blk_nr){
+
+			//搜索为空，直接返回
+			if(mode == M_SEARCH)
+				return NULL;
+
+			//printk("empty\n");
+			uint32_t new_blk_nr = block_bmp_alloc(part);
+			inode->i_block[idx] = new_blk_nr;
+			blk_nr = new_blk_nr;
+			//printk("new_blk_nr %d\n", blk_nr);
+		}
 
 	}else {
 		idx = BLK_IDX(idx);
@@ -63,7 +84,6 @@ struct buffer_head *_handle_inode(struct partition *part, struct inode_info *ino
 			blk_nr = new_blk_nr;
 		}
 
-		//TODO 考虑buffer_head 的释放
 		uint32_t i = 1;
 		uint32_t *pos = NULL;
 		while(i <= cnt){
@@ -91,6 +111,7 @@ struct buffer_head *_handle_inode(struct partition *part, struct inode_info *ino
 		}
 	}	
 
+	//读出数据块
 	bh = read_block(part, blk_nr);
 	return bh;
 }
@@ -124,6 +145,7 @@ bool search_dir_entry(struct partition *part, struct dir *dir, \
 			++p_de;
 		}
 		++idx;
+		release_block(bh);
 	}
 	return false;
 }
@@ -141,7 +163,9 @@ bool add_dir_entry(struct dir *par_dir, struct dir_entry *dir_e){
 
 	struct inode_info *inode = par_dir->inode;
 	struct buffer_head *bh = NULL;
-	uint32_t blk_idx = inode->i_blocks;
+	//最后一块可用块，可能已经满了
+	//这里用有符号的
+	int32_t blk_idx = inode->i_blocks - 1;    
 	uint32_t off_byte = inode->i_size % BLOCK_SIZE;
 
 	if(blk_idx >= BLOCK_LEVEL_3)
@@ -158,6 +182,7 @@ bool add_dir_entry(struct dir *par_dir, struct dir_entry *dir_e){
 
 	memcpy((bh->data + off_byte), dir_e, sizeof(struct dir_entry));
 	inode->i_size += sizeof(struct dir_entry);
+//	printk("%d\n", inode->i_size);
 	write_block(cur_par, bh);
 	release_block(bh);
 	return true;
