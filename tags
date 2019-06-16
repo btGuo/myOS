@@ -4,7 +4,6 @@
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.8	//
-A	test/test.c	/^struct A{$/;"	s	file:
 ALLOC_BH	include/fs.h	61;"	d
 AS	boot/makefile	/^AS = nasm$/;"	m
 AS	fs/makefile	/^AS = nasm$/;"	m
@@ -24,7 +23,6 @@ ASFLAGS	userprog/makefile	/^ASFLAGS = -f elf$/;"	m
 ASSERT	include/debug.h	10;"	d
 ASSERT	include/debug.h	8;"	d
 ASSERT	test/bitmap.c	6;"	d	file:
-B	test/test.c	/^struct B{$/;"	s	file:
 BITMAP_MASK	include/bitmap.h	/^static const uint8_t BITMAP_MASK = 1;$/;"	v
 BITMAP_MASK	test/bitmap.h	/^static const uint8_t BITMAP_MASK = 0x01;$/;"	v
 BITS_PER_BLOCK	include/fs.h	13;"	d
@@ -177,7 +175,7 @@ MAX_FILES_OPEN_PER_PROC	include/thread.h	23;"	d
 MAX_FILE_NAME_LEN	include/dir.h	4;"	d
 MAX_FILE_OPEN	include/file.h	9;"	d
 MAX_LBA	device/ide.c	38;"	d	file:
-MAX_PATH_LEN	fs/fs.c	525;"	d	file:
+MAX_PATH_LEN	fs/fs.c	538;"	d	file:
 MEMORY_OK	include/global.h	35;"	d
 MEM_BITMAP_BASE	include/memory.h	10;"	d
 MINOR	include/super_block.h	6;"	d
@@ -233,7 +231,7 @@ SELECTOR_U_CODE	include/global.h	9;"	d
 SELECTOR_U_DATA	include/global.h	10;"	d
 SELECTOR_VIDEO	boot/loader.S	/^SELECTOR_VIDEO equ 0x0018$/;"	d
 SELECTOR_VIDEO	lib/kernel/print.S	/^SELECTOR_VIDEO equ 0x0018$/;"	d
-SIZE	test/test.c	6;"	d	file:
+SIZE	test/test.c	4;"	d	file:
 SRCS	device/makefile	/^SRCS = $(wildcard *.c)$/;"	m
 SRCS	fs/makefile	/^SRCS = $(wildcard *.c)$/;"	m
 SRCS	kernel/makefile	/^SRCS = $(_SRCS:main.c= )$/;"	m
@@ -341,24 +339,22 @@ __LIB_KERNEL_PRINT_H	include/print.h	2;"	d
 __LIB_STDINT_H	include/stdint.h	2;"	d
 __LIB_STDIO_H	include/stdio.h	2;"	d
 __LIST_HEAD_INIT	include/list.h	19;"	d
-__NR_free	lib/user/syscall.c	11;"	d	file:
-__NR_getpid	lib/user/syscall.c	8;"	d	file:
-__NR_malloc	lib/user/syscall.c	9;"	d	file:
-__NR_write	lib/user/syscall.c	10;"	d	file:
+__NR_free	lib/user/syscall.c	12;"	d	file:
+__NR_getpid	lib/user/syscall.c	9;"	d	file:
+__NR_malloc	lib/user/syscall.c	10;"	d	file:
+__NR_write	lib/user/syscall.c	11;"	d	file:
 __PROCESS_H	include/process.h	2;"	d
 __STDARG_H	include/stdarg.h	2;"	d
 __THREAD_SYNC_H	include/sync.h	2;"	d
 __THREAD_THREAD_H	include/thread.h	2;"	d
 __list_add	include/list.h	/^static inline void __list_add(struct list_head *new,$/;"	f
 __va_round_size	include/stdarg.h	7;"	d
-_handle_inode	fs/dir.c	/^struct buffer_head *_handle_inode(struct partition *part, struct inode_info *inode,\\$/;"	f
 _start	boot/grub/header.s	/^_start:$/;"	l
 _syscall0	lib/user/syscall.c	/^_syscall0(uint32_t, getpid)$/;"	f
-_syscall0	lib/user/syscall.c	13;"	d	file:
-_syscall1	lib/user/syscall.c	23;"	d	file:
-_syscall2	lib/user/syscall.c	34;"	d	file:
-_syscall3	lib/user/syscall.c	45;"	d	file:
-a	test/test.c	/^	int a;$/;"	m	struct:A	file:
+_syscall0	lib/user/syscall.c	14;"	d	file:
+_syscall1	lib/user/syscall.c	24;"	d	file:
+_syscall2	lib/user/syscall.c	35;"	d	file:
+_syscall3	lib/user/syscall.c	46;"	d	file:
 add_dir_entry	fs/dir.c	/^bool add_dir_entry(struct dir *par_dir, struct dir_entry *dir_e){$/;"	f
 addr_v2p	kernel/memory.c	/^uint32_t addr_v2p(uint32_t vaddr){$/;"	f
 all_tag	include/thread.h	/^	struct list_head all_tag;         \/\/\/<  用于所有任务队列的链表节点$/;"	m	struct:task_struct	typeref:struct:task_struct::list_head
@@ -370,7 +366,6 @@ ards_nr	boot/grub/header.s	/^ards_nr:$/;"	l
 ards_nr	boot/loader.S	/^ards_nr  dw 0		$/;"	d
 attr_low	kernel/tss.c	/^	uint8_t attr_low;$/;"	m	struct:gdt_desc	file:
 attribute	kernel/interrupt.c	/^	uint8_t  attribute;$/;"	m	struct:gate_desc	file:
-b	test/test.c	/^	int b;$/;"	m	struct:B	file:
 b_buffer_pop	fs/buffer.c	/^static struct buffer_head *b_buffer_pop(struct list_head *head){$/;"	f	file:
 b_map	include/buffer.h	/^	struct hash_table b_map;         \/\/\/< 块映射表$/;"	m	struct:disk_buffer	typeref:struct:disk_buffer::hash_table
 b_max_size	include/buffer.h	/^	uint32_t b_max_size;             \/\/\/< 磁盘块最大缓冲数$/;"	m	struct:disk_buffer
@@ -402,6 +397,7 @@ block_bitmap	include/group.h	/^	uint32_t block_bitmap;         \/\/\/< 数据块
 block_bitmap	include/group.h	/^	uint32_t block_bitmap;         \/\/\/< 数据块位图块号$/;"	m	struct:group_info
 block_bmp	include/group.h	/^	struct bitmap block_bmp;       \/\/\/< 块节点位图$/;"	m	struct:group_info	typeref:struct:group_info::bitmap
 block_bmp_alloc	fs/file.c	/^int32_t block_bmp_alloc(struct partition *part){$/;"	f
+block_bmp_bh	include/group.h	/^	struct buffer_head *block_bmp_bh;  \/\/\/< 当前block位图缓冲区指针$/;"	m	struct:group_info	typeref:struct:group_info::buffer_head
 block_bmp_clear	fs/file.c	/^void block_bmp_clear(struct partition *part, uint32_t blk_nr){$/;"	f
 block_desc_init	kernel/memory.c	/^void block_desc_init(struct mem_block_desc *blk_desc){$/;"	f
 block_size	include/memory.h	/^	uint32_t block_size;$/;"	m	struct:mem_block_desc
@@ -441,7 +437,7 @@ console_write	device/console.c	/^void console_write(const char *str){$/;"	f
 cr3	kernel/tss.c	/^	uint32_t  cr3;$/;"	m	struct:tss	file:
 create_dir_entry	fs/dir.c	/^void create_dir_entry(char *filename, uint32_t i_no, enum file_types f_type,\\$/;"	f
 create_page_dir	userprog/process.c	/^uint32_t *create_page_dir(void){$/;"	f
-create_root	fs/fs.c	/^void create_root(struct partition *part){$/;"	f
+create_root	fs/fs.c	/^static void create_root(struct partition *part){$/;"	f	file:
 create_root	test/tmp.c	/^void create_root(struct partition *part, struct group *gp){$/;"	f
 create_time	include/super_block.h	/^	uint32_t create_time;   \/\/\/< 创建时间$/;"	m	struct:super_block
 create_time	test/super_block.h	/^	uint32_t create_time;   \/\/\/< 创建时间$/;"	m	struct:super_block
@@ -449,7 +445,7 @@ cs	include/thread.h	/^	uint32_t cs;$/;"	m	struct:intr_stack
 cs	kernel/tss.c	/^	uint32_t  cs;$/;"	m	struct:tss	file:
 ctrl_status	device/keyboard.c	/^static bool ctrl_status, shift_status, alt_status, caps_lock_status;$/;"	v	file:
 cur_gp	include/ide.h	/^	struct group_info *cur_gp;  \/\/\/< 当前使用块组$/;"	m	struct:partition	typeref:struct:partition::group_info
-cur_par	fs/fs.c	/^struct partition *cur_par = NULL;$/;"	v	typeref:struct:partition
+cur_par	fs/fs.c	/^struct partition *cur_par = NULL; \/\/\/< 当前活跃分区$/;"	v	typeref:struct:partition
 curr	thread/thread.c	/^struct task_struct *curr;$/;"	v	typeref:struct:task_struct
 data	include/buffer.h	/^	uint8_t *data;               \/\/\/< 数据指针$/;"	m	struct:buffer_head
 data	include/hash_table.h	/^	struct list_head *data;  \/\/\/< 数据指针$/;"	m	struct:hash_table	typeref:struct:hash_table::list_head
@@ -468,7 +464,7 @@ dirty	include/buffer.h	/^	bool dirty;                  \/\/\/< 脏标志位$/;"	
 disk	include/ide.h	/^	struct disk *disk;    \/\/\/< 该分区所在磁盘$/;"	m	struct:partition	typeref:struct:partition::disk
 disk	include/ide.h	/^struct disk{$/;"	s
 disk_buffer	include/buffer.h	/^struct disk_buffer{$/;"	s
-disk_buffer_init	fs/buffer.c	/^void disk_buffer_init(struct disk_buffer *d_buf){$/;"	f
+disk_buffer_init	fs/buffer.c	/^void disk_buffer_init(struct disk_buffer *d_buf, struct partition *part){$/;"	f
 ds	include/thread.h	/^	uint32_t ds;$/;"	m	struct:intr_stack
 ds	kernel/tss.c	/^	uint32_t  ds;$/;"	m	struct:tss	file:
 eax	include/thread.h	/^	uint32_t eax;$/;"	m	struct:intr_stack
@@ -518,12 +514,14 @@ false	include/global.h	31;"	d
 fd_flag	include/file.h	/^	uint32_t fd_flag;   \/\/\/< 文件属性$/;"	m	struct:file
 fd_inode	include/file.h	/^	struct inode_info *fd_inode;   \/\/\/< 对应的i节点$/;"	m	struct:file	typeref:struct:file::inode_info
 fd_pos	include/file.h	/^	uint32_t fd_pos;    \/\/\/< 文件偏移$/;"	m	struct:file
-fd_table	include/thread.h	/^	int32_t fd_table[MAX_FILES_OPEN_PER_PROC];    \/\/\/< 文件描述符表$/;"	m	struct:task_struct
+fd_table	include/thread.h	/^	int32_t fd_table[MAX_FILES_OPEN_PER_PROC];    \/\/\/< 文件号表$/;"	m	struct:task_struct
 file	include/file.h	/^struct file{$/;"	s
+file_close	fs/file.c	/^void file_close(struct file *file){$/;"	f
 file_create	fs/file.c	/^int32_t file_create(struct dir *par_dir, char *filename, uint8_t flag){$/;"	f
 file_open	fs/file.c	/^int32_t file_open(uint32_t i_no, uint8_t flag){$/;"	f
 file_table	fs/file.c	/^struct file file_table[MAX_FILE_OPEN];   \/\/\/< 文件表$/;"	v	typeref:struct:file
 file_types	include/fs.h	/^enum file_types{$/;"	g
+file_write	fs/file.c	/^int32_t file_write(struct file *file, const void *buf, uint32_t count){$/;"	f
 filename	include/dir.h	/^	char filename[MAX_FILE_NAME_LEN];$/;"	m	struct:dir_entry
 filesys_init	fs/fs.c	/^void filesys_init(){$/;"	f
 for_each	include/list.h	/^static inline void for_each(struct list_head *head)$/;"	f
@@ -553,6 +551,7 @@ gdt_ptr	boot/grub/header.s	/^gdt_ptr:$/;"	l
 gdt_ptr	boot/loader.S	/^gdt_ptr:$/;"	l
 general_intr_handler	kernel/interrupt.c	/^static void general_intr_handler(uint8_t vec_nr){$/;"	f	file:
 get_a_page	kernel/memory.c	/^void *get_a_page(enum pool_flags pf, uint32_t vaddr){$/;"	f
+get_block_num	fs/dir.c	/^uint32_t get_block_num(struct partition *part, struct inode_info *inode,\\$/;"	f
 get_boot_sector	device/ide.c	/^static void get_boot_sector(struct disk *hd, uint32_t lba, \\$/;"	f	file:
 get_ext_partition	device/ide.c	/^static void get_ext_partition(struct disk *hd, uint32_t l_no, uint32_t s_lba){$/;"	f	file:
 get_fd	fs/file.c	/^int32_t get_fd(){$/;"	f
@@ -567,9 +566,11 @@ global	lib/kernel/print.S	/^global put_int$/;"	l
 global	lib/kernel/print.S	/^global put_str$/;"	l
 global	thread/switch.S	/^global switch_to$/;"	l
 group	include/group.h	/^struct group{$/;"	s
+group_bmp_sync	fs/group.c	/^void group_bmp_sync(struct partition *part){$/;"	f
 group_info	include/group.h	/^struct group_info{$/;"	s
 group_info_init	fs/group.c	/^void group_info_init(struct partition *part, struct group_info *gp){$/;"	f
 group_nr	include/group.h	/^	uint32_t group_nr;             \/\/\/< 组号$/;"	m	struct:group_info
+group_switch	fs/group.c	/^struct group_info *group_switch(struct partition *part){$/;"	f
 groups	include/ide.h	/^	struct group_info *groups;  \/\/\/< 块组指针$/;"	m	struct:partition	typeref:struct:partition::group_info
 groups_blks	include/ide.h	/^	uint32_t groups_blks;      \/\/\/< 块组struct group所占块数$/;"	m	struct:partition
 groups_cnt	include/ide.h	/^	uint32_t groups_cnt;       \/\/\/< 块组数$/;"	m	struct:partition
@@ -648,6 +649,7 @@ inode_bitmap	include/group.h	/^	uint32_t inode_bitmap;         \/\/\/< 索引节
 inode_bitmap	include/group.h	/^	uint32_t inode_bitmap;         \/\/\/< 索引节点位图块号$/;"	m	struct:group_info
 inode_bmp	include/group.h	/^	struct bitmap inode_bmp;       \/\/\/< 索引节点位图$/;"	m	struct:group_info	typeref:struct:group_info::bitmap
 inode_bmp_alloc	fs/file.c	/^int32_t inode_bmp_alloc(struct partition *part){$/;"	f
+inode_bmp_bh	include/group.h	/^	struct buffer_head *inode_bmp_bh;  \/\/\/< 当前inode位图缓冲区指针$/;"	m	struct:group_info	typeref:struct:group_info::buffer_head
 inode_bmp_clear	fs/file.c	/^void inode_bmp_clear(struct partition *part, uint32_t i_no){$/;"	f
 inode_close	fs/inode.c	/^void inode_close(struct inode_info *m_inode){$/;"	f
 inode_info	include/inode.h	/^struct inode_info{$/;"	s
@@ -683,7 +685,7 @@ intr_stack	include/thread.h	/^struct intr_stack{$/;"	s
 intr_status	include/interrupt.h	/^enum intr_status{$/;"	g
 intr_timer_handler	device/timer.c	/^static void intr_timer_handler(void){$/;"	f	file:
 io_base	kernel/tss.c	/^	uint32_t  io_base; \/* 高16位有效 *\/$/;"	m	struct:tss	file:
-io_buffer	include/ide.h	/^	struct disk_buffer io_buffer;     \/\/\/< 磁盘缓冲区$/;"	m	struct:partition	typeref:struct:partition::disk_buffer
+io_buffer	include/ide.h	/^	struct disk_buffer io_buffer;     \/\/\/< 磁盘缓冲区，换成指针或许更好$/;"	m	struct:partition	typeref:struct:partition::disk_buffer
 ioqueue	include/ioqueue.h	/^struct ioqueue{$/;"	s
 irq_no	include/ide.h	/^	uint8_t irq_no;     \/\/\/< 中断号$/;"	m	struct:ide_channel
 is_buffered	include/buffer.h	/^	bool is_buffered;            \/\/\/< 是否在缓存中$/;"	m	struct:buffer_head
@@ -843,8 +845,7 @@ res_blocks	test/super_block.h	/^	uint32_t res_blocks;         \/\/\/< 剩余块�
 root_dir	fs/dir.c	/^struct dir root_dir;$/;"	v	typeref:struct:dir
 s	boot/mbr.S	/^s:  mov dh, [si]$/;"	l
 sb	include/ide.h	/^	struct super_block *sb;    \/\/\/< 分区超级块$/;"	m	struct:partition	typeref:struct:partition::super_block
-sb	test/test.c	/^	struct B sb;$/;"	m	struct:A	typeref:struct:A::B	file:
-scan_root	fs/fs.c	/^bool scan_root(struct partition *part){$/;"	f
+scan_root	fs/fs.c	/^static bool scan_root(struct partition *part){$/;"	f	file:
 schedule	thread/thread.c	/^void schedule(){$/;"	f
 search_dir_entry	fs/dir.c	/^bool search_dir_entry(struct partition *part, struct dir *dir, \\$/;"	f
 sec_cnt	device/ide.c	/^	uint32_t sec_cnt;       \/\/\/<  本分区u扇区数量$/;"	m	struct:partition_table_entry	file:
@@ -904,20 +905,22 @@ super_block	include/super_block.h	/^struct super_block{$/;"	s
 super_block	test/super_block.h	/^struct super_block{$/;"	s
 swap_copy	device/ide.c	/^static void swap_copy(const char *src, char *buf, uint32_t size){$/;"	f	file:
 switch_to	thread/switch.S	/^switch_to:$/;"	l
-sync	fs/fs.c	/^void sync(struct partition *part){$/;"	f
+sync	fs/fs.c	/^void sync(){$/;"	f
 sync	test/tmp.c	/^void sync(struct partition *part){$/;"	f
 sys_call_init	lib/user/syscall.c	/^void sys_call_init(void){$/;"	f
+sys_close	fs/fs.c	/^int32_t sys_close(int32_t fd){$/;"	f
 sys_free	kernel/memory.c	/^void sys_free(void *ptr){$/;"	f
 sys_malloc	kernel/memory.c	/^void *sys_malloc(uint32_t size){$/;"	f
 sys_open	fs/fs.c	/^int32_t sys_open(const char *path, uint8_t flags){$/;"	f
-sys_write	lib/user/syscall.c	/^uint32_t sys_write(char *str){$/;"	f
+sys_write	fs/fs.c	/^int32_t sys_write(int32_t fd, const void *buf, uint32_t count){$/;"	f
 syscall	lib/user/syscall.c	/^typedef void* syscall;$/;"	t	file:
 syscall_handler	kernel/kernel.S	/^syscall_handler:$/;"	l
-syscall_nr	lib/user/syscall.c	56;"	d	file:
+syscall_nr	lib/user/syscall.c	57;"	d	file:
 syscall_table	lib/user/syscall.c	/^syscall syscall_table[syscall_nr];$/;"	v
 task_status	include/thread.h	/^enum task_status{$/;"	g
 task_struct	include/thread.h	/^struct task_struct{$/;"	s
 test	device/ide.c	/^void test(struct partition *part){$/;"	f
+test	test/test.c	/^void test(int *p){}$/;"	f
 thread_all_list	thread/thread.c	/^LIST_HEAD(thread_all_list);$/;"	v
 thread_block	thread/thread.c	/^void thread_block(enum task_status stat){$/;"	f
 thread_create	thread/thread.c	/^void thread_create(struct task_struct *pthread, thread_func function, void *func_arg){$/;"	f
@@ -932,6 +935,7 @@ ticks	include/thread.h	/^	uint8_t ticks;                   \/\/\/< 运行滴答�
 ticks_to_sleep	device/timer.c	/^static void ticks_to_sleep(uint32_t sleep_ticks){$/;"	f	file:
 time_t	include/inode.h	/^typedef long time_t;$/;"	t
 timer_init	device/timer.c	/^void timer_init(){$/;"	f
+to_global_fd	fs/fs.c	/^static inline uint32_t to_global_fd(uint32_t fd){$/;"	f	file:
 to_num	lib/vsprintf.c	/^void to_num(int num, char *dest, char mode){$/;"	f
 total_mem_bytes	boot/grub/header.s	/^total_mem_bytes:$/;"	l
 total_mem_bytes	boot/loader.S	/^total_mem_bytes dd 0$/;"	d

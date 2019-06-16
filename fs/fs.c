@@ -11,15 +11,16 @@
 #include "buffer.h"
 #include "file.h"
 #include "print.h"
+#include "thread.h"
 
 //TODO 检查内存块复用
-//将超级块单独拿出来，本来以为和块组放在一起问题也不大，然而并不好
 
-struct partition *cur_par = NULL;
+struct partition *cur_par = NULL; ///< 当前活跃分区
 extern uint8_t channel_cnt;
 extern struct ide_channel channels[2];
 extern struct dir root_dir;
 extern struct file file_table[MAX_FILE_OPEN];
+extern struct task_struct *curr;
 
 void print_super_block(struct super_block *sb){
 	printk("start print super_block\n");
@@ -140,19 +141,21 @@ void write_block(struct partition *part, struct buffer_head *bh){
 /**
  * @brief 读取磁盘块
  * @detail 先在缓冲区中查找，命中则直接返回，否则从磁盘读取块并尝试加入
- * 缓冲区
+ * 缓冲区，这里并没有设置脏位
  *
  * @param blk_nr 块号
  */
 struct buffer_head *read_block(struct partition *part, uint32_t blk_nr){
 	struct buffer_head *bh = buffer_read_block(&part->io_buffer, blk_nr);
 	if(bh){
+		//printk("buffer hit\n");
 		return bh;
 	}
 	ALLOC_BH(bh);
 	bh->blk_nr = blk_nr;
 	bh->lock = true;
 	bh->is_buffered = true;
+//	bh->dirty = true;
 	//从磁盘读
 	read_direct(part, blk_nr, bh->data, 1);
 	//加入缓冲区
@@ -370,6 +373,7 @@ static void mount_partition(struct partition *part){
 //end
 	
 //	print_group_info(part->groups, part->groups_cnt);
+
 	//初始化分区缓冲
 	disk_buffer_init(&part->io_buffer, part);
 
@@ -381,6 +385,9 @@ static void mount_partition(struct partition *part){
 	printk("mount partition done\n");
 }
 
+/**
+ * 同步磁盘
+ */
 void sync(){
 	struct partition *part = cur_par;
 
@@ -405,11 +412,14 @@ void sync(){
 		write_direct(part, GROUP_BLK(sb, cnt), buf, part->groups_blks);
 	}
 
+//同步块组位图
+	group_bmp_sync(part);
+
 	//根目录不在缓冲中
 	inode_sync(part, root_dir.inode);
 	sys_free(buf);
 
-//同步缓冲区
+//同步缓冲区，这个应该放在最后
 	buffer_sync(&part->io_buffer);
 }
 
@@ -418,7 +428,6 @@ void sync(){
  * @detail 检查所有分区文件系统魔数，如果没有，则格式化分区，创建文件系统
  * 之后，选择默认分区挂载，打开根目录
  */
-
 void filesys_init(){
 
 	printk("filesys_init start\n");
@@ -466,6 +475,7 @@ void filesys_init(){
 					if(!strcmp(part->name, default_part)){
 
 					        mount_partition(part);
+						//挂载分区后检测根目录
 						if(!scan_root(part)){
 							create_root(part);
 						}
@@ -527,6 +537,14 @@ static struct dir *get_last_dir(const char *path){
 
 #define MAX_PATH_LEN 128
 
+/**
+ * 打开文件
+ * @param path 文件路径
+ * @param flags 模式，创建或者只是打开
+ *
+ * @return 打开的文件号
+ * 	@retval -1 失败
+ */
 int32_t sys_open(const char *path, uint8_t flags){
 	
 	if(path[strlen(path) - 1] == '/'){
@@ -548,6 +566,7 @@ int32_t sys_open(const char *path, uint8_t flags){
 		return -1;
 	}
 
+	//创建或者打开文件都需要先搜索
 	bool found = search_dir_entry(cur_par, par_dir, filename, &dir_e);
 
 	if(!found && !(flags & O_CREAT)){
@@ -569,7 +588,59 @@ int32_t sys_open(const char *path, uint8_t flags){
 		dir_close(par_dir);
 	}else {
 		fd = file_open(dir_e.i_no, flags);
+		printk("open file fd %d name %s i_no %d\n", fd, dir_e.filename, dir_e.i_no);
 	}
 	return fd;
 }	
+
+static inline uint32_t to_global_fd(uint32_t fd){
+
+	ASSERT(fd >= 2 && fd < MAX_FILES_OPEN_PER_PROC);
+	int32_t g_fd = curr->fd_table[fd];
+	ASSERT(g_fd >= 0 && g_fd < MAX_FILE_OPEN);
+	return g_fd;
+}
+
+int32_t sys_close(int32_t fd){
+
+	uint32_t g_fd = to_global_fd(fd);
+	file_close(&file_table[g_fd]);
+	curr->fd_table[fd] = -1;
+
+	return g_fd;
+}
+
+int32_t sys_write(int32_t fd, const void *buf, uint32_t count){
+
+	if(fd < 0 || fd >= MAX_FILES_OPEN_PER_PROC){
+		printk("sys write: fd error\n");
+		return -1;
+	}
+	if(fd == stdout_no){
+		//TODO
+		console_write(buf);
+		return count;
+	}
+	uint32_t g_fd = to_global_fd(fd);
+	struct file *file = &file_table[g_fd];
+	if(file->fd_flag & O_WRONLY || file->fd_flag & O_RDWR){
+
+		return file_write(file, buf, count);
+	}else {
+		printk("sys_write flag error\n");
+		return -1;
+	}
+}
+
+int32_t sys_read(int32_t fd, void *buf, uint32_t count){
+
+	if(fd < 0 || fd >= MAX_FILES_OPEN_PER_PROC){
+		printk("sys write: fd error\n");
+		return -1;
+	}
+	uint32_t g_fd = to_global_fd(fd);
+	struct file *file = &file_table[g_fd];
+
+	return file_read(file, buf, count);
+}
 

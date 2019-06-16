@@ -4,6 +4,7 @@
 #include "string.h"
 #include "console.h"
 #include "memory.h"
+#include "fs.h"
 
 #define __NR_getpid 0
 #define __NR_malloc 1
@@ -60,17 +61,12 @@ extern struct task_struct *curr;
 
 //不需要分号
 _syscall0(uint32_t, getpid)
-_syscall1(uint32_t, write, char*, str)
+_syscall3(uint32_t, write, int32_t, fd, char*, str, uint32_t, count)
 _syscall1(void*, malloc, uint32_t, size)
 _syscall1(void,  free, void *, ptr)
 
 uint32_t sys_getpid(void){
 	return curr->pid;
-}
-
-uint32_t sys_write(char *str){
-	console_write(str);
-	return strlen(str);
 }
 
 void sys_call_init(void){

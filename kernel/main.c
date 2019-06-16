@@ -29,8 +29,15 @@ int main() {
 //	intr_enable();
 
 
-	//sys_open("/ftest", O_CREAT);
-	//sync();
+	uint32_t fd = sys_open("/ftest", O_RDWR);
+	printk("fd %d\n", fd);
+	char buf[100];
+	memset(buf, 0, 100);
+//	sys_write(fd, "hello world\n", 13);
+//	sys_read(fd, buf, 18);
+	//printk("content %s\n", buf);
+	sys_close(fd);
+	sync();
 
 	while(1);
 	return 0;

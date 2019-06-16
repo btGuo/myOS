@@ -56,10 +56,8 @@ int32_t inode_bmp_alloc(struct partition *part){
 	ASSERT(sb->free_inodes_count > 0);
 	//当前组中已经没有空闲位置，切换到下一个组
 	if(cur_gp->free_inodes_count == 0){
-		//这里直接加一，因为在内存上是连续的，要特别注意小心越界
-		++cur_gp;
-		group_info_init(part, cur_gp);
-		part->cur_gp = cur_gp;
+
+		cur_gp = group_switch(part);
 	}
 	//注意减1
 	--cur_gp->free_inodes_count;
@@ -92,9 +90,8 @@ int32_t block_bmp_alloc(struct partition *part){
 	ASSERT(sb->free_blocks_count > 0);
 	//当前组中已经没有空闲位置，切换到下一个组
 	if(cur_gp->free_blocks_count == 0){
-		++cur_gp;
-		group_info_init(part, cur_gp);
-		part->cur_gp = cur_gp;
+
+		cur_gp = group_switch(part);
 	}
 	//注意减1
 	--cur_gp->free_blocks_count;
@@ -140,6 +137,8 @@ int32_t file_create(struct dir *par_dir, char *filename, uint8_t flag){
 
 	//初始化inode
 	inode_init(cur_par, m_inode, i_no);
+	//TODO
+	++m_inode->i_open_cnts;
 
 	//获取文件号
 	int32_t fd_idx = get_fd();
@@ -180,6 +179,7 @@ rollback:
 	}
 	return -1;
 }
+
 /**
  * 打开文件
  * @param i_no 文件的inode号
@@ -198,6 +198,7 @@ int32_t file_open(uint32_t i_no, uint8_t flag){
 	bool *write_deny = &file_table[fd_idx].fd_inode->i_write_deny;
 
 	if(flag & O_WRONLY || flag & O_RDWR){
+		//这里应该改为锁
 		enum intr_status old_stat = intr_disable();
 		if(!(*write_deny)){
 			*write_deny = true;
@@ -209,6 +210,104 @@ int32_t file_open(uint32_t i_no, uint8_t flag){
 		}
 	}
 	return set_fd(fd_idx);
+}
+
+/**
+ * 关闭文件
+ */
+void file_close(struct file *file){
+
+	inode_close(file->fd_inode);
+	file->fd_inode = NULL;
+}
+
+/**
+ * 写文件
+ */
+int32_t file_write(struct file *file, const void *buf, uint32_t count){
+
+	struct buffer_head *bh = NULL;
+	struct inode_info *m_inode = file->fd_inode;
+
+	ASSERT(file->fd_pos <= m_inode->i_size);
+
+	int32_t blk_idx = file->fd_pos / BLOCK_SIZE;
+	int32_t off_byte = file->fd_pos % BLOCK_SIZE;
+	uint8_t *src = (uint8_t *)buf;
+
+	if(blk_idx >= BLOCK_LEVEL_3)
+		return -1;
+
+	uint32_t res = count;
+	uint32_t to_write = 0;
+	uint32_t blk_nr = 0;
+
+
+	while(res){
+		if(res > BLOCK_SIZE - off_byte){
+			to_write = BLOCK_SIZE - off_byte;
+			res -= to_write;
+		}else {
+			to_write = res;
+			res = 0;
+		}
+		
+		blk_nr = get_block_num(cur_par, m_inode, blk_idx, M_CREATE);
+		bh = read_block(cur_par, blk_nr);
+		memcpy((bh->data + off_byte), src, to_write);
+	       	write_block(cur_par, bh);	
+		release_block(bh);
+		src += to_write;
+
+		//第一次循环时有用
+		off_byte = 0;
+		++m_inode->i_blocks;
+		++blk_idx;
+		if(blk_idx >= BLOCK_LEVEL_3)
+			return count - res;
+	}
+	m_inode->i_size += count;
+	printk("m_inode->i_size %d\n", m_inode->i_size);
+	inode_sync(cur_par, m_inode);
+	file->fd_pos += count;
+	return count;
+}
+
+int32_t file_read(struct file *file, void *buf, uint32_t count){
+
+	struct buffer_head *bh = NULL;
+	struct inode_info *m_inode = file->fd_inode;
+
+	ASSERT(file->fd_pos + count <= m_inode->i_size);
+
+	int32_t blk_idx = file->fd_pos / BLOCK_SIZE;
+	int32_t off_byte = file->fd_pos % BLOCK_SIZE;
+	uint8_t *dest = (uint8_t *)buf;
+
+	uint32_t res = count;
+	uint32_t to_read = 0;
+	uint32_t blk_nr = 0;
+
+	while(res){
+		if(res > BLOCK_SIZE - off_byte){
+			to_read = BLOCK_SIZE - off_byte;
+			res -= to_read;
+		}else {
+			to_read = res;
+			res = 0;
+		}
+
+		blk_nr = get_block_num(cur_par, m_inode, blk_idx, M_CREATE);
+		printk("blk_nr %d\n", blk_nr);
+		bh = read_block(cur_par, blk_nr);
+		memcpy(dest, (bh->data + off_byte), to_read);
+		release_block(bh);
+		dest += to_read;
+
+		off_byte = 0;
+	}
+	file->fd_pos += count;
+	return count;
 }
 
 

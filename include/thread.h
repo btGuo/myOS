@@ -92,7 +92,7 @@ struct task_struct{
 	struct virtual_addr userprog_vaddr; ///<  虚拟地址 
 	pid_t pid;                          ///<  任务号
 	struct mem_block_desc u_block_desc[DESC_CNT]; ///< 内存块描述符表
-	int32_t fd_table[MAX_FILES_OPEN_PER_PROC];    ///< 文件描述符表
+	int32_t fd_table[MAX_FILES_OPEN_PER_PROC];    ///< 文件号表
 	uint32_t stack_magic;                        ///< 魔数，标记是否越界
 };
 

@@ -36,10 +36,14 @@ struct group_info{
 	uint32_t zeros[3];             ///< 补全32字节
 	struct bitmap inode_bmp;       ///< 索引节点位图
 	struct bitmap block_bmp;       ///< 块节点位图
+	struct buffer_head *inode_bmp_bh;  ///< 当前inode位图缓冲区指针
+	struct buffer_head *block_bmp_bh;  ///< 当前block位图缓冲区指针
 	uint32_t group_nr;             ///< 组号
 };
 
 
 void group_info_init(struct partition *part, struct group_info *gp);
+struct group_info *group_switch(struct partition *part);
+void group_bmp_sync(struct partition *part);
 
 #endif

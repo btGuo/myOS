@@ -30,7 +30,7 @@ struct dir_entry{
 void open_root_dir(struct partition *part);
 void dir_close(struct dir *dir);
 struct dir* dir_open(struct partition *part, uint32_t i_no);
-struct buffer_head *_handle_inode(struct partition *part, struct inode_info *inode,\
+uint32_t get_block_num(struct partition *part, struct inode_info *inode,\
 	       	uint32_t idx, uint8_t mode);
 void create_dir_entry(char *filename, uint32_t i_no, enum file_types f_type,\
 		struct dir_entry *dir_e);

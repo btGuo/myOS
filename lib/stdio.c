@@ -1,6 +1,7 @@
 #include "stdio.h"
 #include "syscall.h"
 #include "stdarg.h"
+#include "string.h"
 
 uint32_t printf(const char *fmt, ...){
 	va_list args;
@@ -10,5 +11,5 @@ uint32_t printf(const char *fmt, ...){
 	vsprintf(buf, fmt, args);
 	va_end(args);
 	//和printk区别在于系统调用
-	return write(buf);
+	return write(1, buf, strlen(buf));
 }

@@ -83,17 +83,24 @@ struct inode_info *inode_open(struct partition *part, uint32_t i_no){
 
 	//定位后读出块
 	inode_locate(part, i_no, &pos);
-	printk("root inode pos %d\n", pos.blk_nr);
 	bh = read_block(part, pos.blk_nr);
+	printk("off_size %d\n", pos.off_size);
 	memcpy(m_inode, (bh->data + pos.off_size), sizeof(struct inode));
 	//初始化
 	inode_init(part, m_inode, i_no);
+	++m_inode->i_open_cnts;
+
+	printk("i_size %d i_block %d\n", m_inode->i_size, m_inode->i_block[0]);
 
 	return m_inode;
 }
 
+/**
+ * 关闭inode
+ */
 void inode_close(struct inode_info *m_inode){
 	ASSERT(m_inode->i_open_cnts > 0);
+	m_inode->i_write_deny = false;
 
 	//关中断，防止重复释放
 	enum intr_status old_stat = intr_disable();
@@ -105,21 +112,21 @@ void inode_close(struct inode_info *m_inode){
 }
 
 /**
- * 初始化inode，并尝试加入缓冲区
+ * 初始化inode，并尝试加入缓冲区，这里只初始化了内存中的部分
  */
 void inode_init(struct partition *part, struct inode_info *m_inode, uint32_t i_no){
-//	printk("root i_no %d\n", i_no);
-	m_inode->i_no = i_no;
-	m_inode->i_open_cnts = 0;
-	m_inode->i_lock = true;  //这里上锁
-	m_inode->i_buffered = true;
+
 	//对块大小上取整
 	m_inode->i_blocks = DIV_ROUND_UP(m_inode->i_size, BLOCK_SIZE);
+	m_inode->i_no = i_no;
+	m_inode->i_open_cnts = 0;
 	m_inode->i_dirty = true;
+	m_inode->i_lock = true;  //这里上锁
+	m_inode->i_buffered = true;
+	m_inode->i_write_deny = false;
 	LIST_HEAD_INIT(m_inode->hash_tag);
 	LIST_HEAD_INIT(m_inode->queue_tag);
 
-	
 	//根节点不需要加入缓冲
 	if(!i_no){
 		m_inode->i_buffered = false;
