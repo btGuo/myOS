@@ -39,4 +39,6 @@ bool search_dir_entry(struct partition *part, struct dir *dir, \
 bool add_dir_entry(struct dir *par_dir, struct dir_entry *dir_e);
 
 void print_root(struct inode_info *m_inode);
+void clear_blocks(struct partition *part, struct inode_info *m_inode);
+bool delete_dir_entry(struct partition *part, struct dir *par_dir, uint32_t i_no);
 #endif

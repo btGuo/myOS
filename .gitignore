@@ -8,3 +8,6 @@ a.out
 tags
 test/
 hex
+hex.old
+hdump.sh
+

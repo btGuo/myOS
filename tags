@@ -229,7 +229,6 @@ SELECTOR_U_CODE	include/global.h	9;"	d
 SELECTOR_U_DATA	include/global.h	10;"	d
 SELECTOR_VIDEO	boot/loader.S	/^SELECTOR_VIDEO equ 0x0018$/;"	d
 SELECTOR_VIDEO	lib/kernel/print.S	/^SELECTOR_VIDEO equ 0x0018$/;"	d
-SIZE	test/test.c	4;"	d	file:
 SRCS	device/makefile	/^SRCS = $(wildcard *.c)$/;"	m
 SRCS	fs/makefile	/^SRCS = $(wildcard *.c)$/;"	m
 SRCS	kernel/makefile	/^SRCS = $(_SRCS:main.c= )$/;"	m
@@ -342,14 +341,14 @@ __THREAD_SYNC_H	include/sync.h	2;"	d
 __THREAD_THREAD_H	include/thread.h	2;"	d
 __list_add	include/list.h	/^static inline void __list_add(struct list_head *new,$/;"	f
 __va_round_size	include/stdarg.h	7;"	d
-_clear_blocks	fs/dir.c	/^void _clear_blocks(struct partition *part, uint32_t blk_nr, uint32_t depth){$/;"	f
+_clear_blocks	fs/dir.c	/^static void _clear_blocks(struct partition *part, uint32_t blk_nr, uint32_t depth){$/;"	f	file:
+_remove_last	fs/dir.c	/^bool _remove_last(struct partition *part, uint32_t blk_nr, uint32_t depth){$/;"	f
 _start	boot/grub/header.s	/^_start:$/;"	l
 _syscall0	lib/user/syscall.c	/^_syscall0(uint32_t, getpid)$/;"	f
 _syscall0	lib/user/syscall.c	14;"	d	file:
 _syscall1	lib/user/syscall.c	24;"	d	file:
 _syscall2	lib/user/syscall.c	35;"	d	file:
 _syscall3	lib/user/syscall.c	46;"	d	file:
-a	test/test.c	/^	int a;$/;"	m	struct:foo	file:
 add_dir_entry	fs/dir.c	/^bool add_dir_entry(struct dir *par_dir, struct dir_entry *dir_e){$/;"	f
 addr_v2p	kernel/memory.c	/^uint32_t addr_v2p(uint32_t vaddr){$/;"	f
 all_tag	include/thread.h	/^	struct list_head all_tag;         \/\/\/<  用于所有任务队列的链表节点$/;"	m	struct:task_struct	typeref:struct:task_struct::list_head
@@ -434,6 +433,7 @@ data	include/buffer.h	/^	uint8_t *data;               \/\/\/< 数据指针$/;"	m
 data	include/hash_table.h	/^	struct list_head *data;  \/\/\/< 数据指针$/;"	m	struct:hash_table	typeref:struct:hash_table::list_head
 dcount	kernel/interrupt.c	/^	uint8_t  dcount;$/;"	m	struct:gate_desc	file:
 default_prio	include/process.h	8;"	d
+delete_dir_entry	fs/dir.c	/^bool delete_dir_entry(struct partition *part, struct dir *par_dir, uint32_t i_no){$/;"	f
 desc	kernel/memory.c	/^	struct mem_block_desc *desc;$/;"	m	struct:meta	typeref:struct:meta::mem_block_desc	file:
 dev_no	include/ide.h	/^	uint8_t dev_no;   \/\/\/< 设备号$/;"	m	struct:disk
 devices	include/ide.h	/^	struct disk devices[2];  \/\/\/< 两个磁盘$/;"	m	struct:ide_channel	typeref:struct:ide_channel::disk
@@ -508,7 +508,6 @@ file_types	include/fs.h	/^enum file_types{$/;"	g
 file_write	fs/file.c	/^int32_t file_write(struct file *file, const void *buf, uint32_t count){$/;"	f
 filename	include/dir.h	/^	char filename[MAX_FILE_NAME_LEN];$/;"	m	struct:dir_entry
 filesys_init	fs/fs.c	/^void filesys_init(){$/;"	f
-foo	test/test.c	/^struct foo{$/;"	s	file:
 for_each	include/list.h	/^static inline void for_each(struct list_head *head)$/;"	f
 free_blocks_count	include/group.h	/^	uint16_t free_blocks_count;    \/\/\/< 空闲数据块个数$/;"	m	struct:group
 free_blocks_count	include/group.h	/^	uint16_t free_blocks_count;    \/\/\/< 空闲数据块个数$/;"	m	struct:group_info
@@ -811,6 +810,7 @@ reg_sect_cnt	device/ide.c	12;"	d	file:
 reg_status	device/ide.c	17;"	d	file:
 register_handler	kernel/interrupt.c	/^void register_handler(uint8_t vec_nr, intr_handler function){$/;"	f
 release_block	fs/fs.c	/^void release_block(struct buffer_head *bh){$/;"	f
+remove_last	fs/dir.c	/^void remove_last(struct partition *part, struct inode_info *m_inode){$/;"	f
 res_blocks	include/super_block.h	/^	uint32_t res_blocks;         \/\/\/< 剩余块数$/;"	m	struct:super_block
 root_dir	fs/dir.c	/^struct dir root_dir;$/;"	v	typeref:struct:dir
 s	boot/mbr.S	/^s:  mov dh, [si]$/;"	l
@@ -882,6 +882,7 @@ sys_lseek	fs/fs.c	/^int32_t sys_lseek(int32_t fd, int32_t offset, uint8_t whence
 sys_malloc	kernel/memory.c	/^void *sys_malloc(uint32_t size){$/;"	f
 sys_open	fs/fs.c	/^int32_t sys_open(const char *path, uint8_t flags){$/;"	f
 sys_read	fs/fs.c	/^int32_t sys_read(int32_t fd, void *buf, uint32_t count){$/;"	f
+sys_unlink	fs/fs.c	/^int32_t sys_unlink(const char *path){$/;"	f
 sys_write	fs/fs.c	/^int32_t sys_write(int32_t fd, const void *buf, uint32_t count){$/;"	f
 syscall	lib/user/syscall.c	/^typedef void* syscall;$/;"	t	file:
 syscall_handler	kernel/kernel.S	/^syscall_handler:$/;"	l

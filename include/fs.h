@@ -111,6 +111,7 @@ void write_direct(struct partition *part, uint32_t sta_blk_nr, void *data, uint3
 void read_direct(struct partition *part, uint32_t sta_blk_nr, void *data, uint32_t cnt);
 int32_t sys_open(const char *path, uint8_t flags);
 int32_t sys_close(int32_t fd);
+int32_t sys_unlink(const char *path);
 int32_t sys_write(int32_t fd, const void *buf, uint32_t count);
 void sync();
 #endif

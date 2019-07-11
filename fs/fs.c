@@ -648,6 +648,13 @@ int32_t sys_read(int32_t fd, void *buf, uint32_t count){
 	return file_read(file, buf, count);
 }
 
+/**
+ * 移动文件指针
+ *
+ * @param fd 文件描述符
+ * @param offset 相对偏移量，可以为负数
+ * @param whence 
+ */
 int32_t sys_lseek(int32_t fd, int32_t offset, uint8_t whence){
 
 	FD_LEGAL(fd);
@@ -667,7 +674,6 @@ int32_t sys_lseek(int32_t fd, int32_t offset, uint8_t whence){
 			new_pos = file_size + offset;
 			break;
 	}
-	//TODO 修改文件大小i_size
 	if(new_pos < 0 || new_pos > file_size)
 		return -1;
 
@@ -675,5 +681,54 @@ int32_t sys_lseek(int32_t fd, int32_t offset, uint8_t whence){
 	return new_pos;
 }
 
+int32_t sys_unlink(const char *path){
+
+	char filename[MAX_FILE_NAME_LEN];
+	char dirname[MAX_PATH_LEN];
+	struct dir_entry dir_e;
+
+	split_path(path, filename, dirname);
+	struct dir *par_dir = get_last_dir(dirname);
+
+	//父目录不存在
+	if(!par_dir){
+		printk("open directory error\n");
+		return -1;
+	}
+
+	//先查找
+	bool found = search_dir_entry(cur_par, par_dir, filename, &dir_e);
+
+	//查找失败
+	if(!found){
+		printk("file %s not found!\n", path);
+		dir_close(par_dir);
+		return -1;
+	}
+	//类型不对
+	if(dir_e.f_type == FT_DIRECTORY){
+		printk("can't delete a directory with unlink");
+		dir_close(par_dir);
+		return -1;
+	}
+
+	//查找是否已经在打开文件列表中
+	uint32_t f_idx = 0;
+	while(f_idx < MAX_FILE_OPEN){
+		if(file_table[f_idx].fd_inode != NULL &&\
+			dir_e.i_no == file_table[f_idx].fd_inode->i_no){
+
+			dir_close(par_dir);
+			printk("file %s is in use, not allow to delete\n", path);
+			return -1;
+		}
+		++f_idx;
+	}
+
+	delete_dir_entry(cur_par, par_dir, dir_e.i_no);
+	inode_delete(cur_par, dir_e.i_no);
+	dir_close(par_dir);
+	return 0;
+}
 
 

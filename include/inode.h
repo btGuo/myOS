@@ -66,6 +66,7 @@ void inode_sync(struct partition *part, struct inode_info *m_inode);
 struct inode_info *inode_open(struct partition *part, uint32_t i_no);
 void inode_close(struct inode_info *m_inode);
 void inode_init(struct partition *part, struct inode_info *m_inode, uint32_t i_no);
+void inode_delete(struct partition *part, uint32_t i_no);
 
 struct inode_info *buffer_read_inode(struct disk_buffer *d_buf, uint32_t i_no);
 bool buffer_add_inode(struct disk_buffer *d_buf, struct inode_info *m_inode);

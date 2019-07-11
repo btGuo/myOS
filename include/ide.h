@@ -11,6 +11,7 @@
 /**
  * @brief 分区描述符，对应硬盘上的分区，一个硬盘可以有多个分区
  */
+//TODO 把文件系统拿出来
 struct partition{
 	uint32_t start_lba;   ///< 分区起始地址
 	uint32_t sec_cnt;     ///< 分区总扇区数

@@ -45,13 +45,13 @@ struct dir* dir_open(struct partition *part, uint32_t i_no){
 /**
  * 递归清理
  */
-void _clear_blocks(struct partition *part, uint32_t blk_nr, uint32_t depth){
+static void _clear_blocks(struct partition *part, uint32_t blk_nr, uint32_t depth){
 	
 	if(depth == 0)
 		return;
 
 	struct buffer_head *bh = read_block(part, blk_nr);
-	uint32_t *blk_ptr = bh->data;
+	uint32_t *blk_ptr = (uint32_t *)bh->data;
 
 	int i = 0;
 	for(i = 0; i< LBA_PER_BLK; ++i){
@@ -62,7 +62,7 @@ void _clear_blocks(struct partition *part, uint32_t blk_nr, uint32_t depth){
 			block_bmp_clear(part, blk_ptr[i]);
 			blk_ptr[i] = 0;
 		}else{
-			return;
+			break;
 		}
 	}
 	release_block(bh);
@@ -71,10 +71,11 @@ void _clear_blocks(struct partition *part, uint32_t blk_nr, uint32_t depth){
 /**
  * 清空inode内所有块
  * @attention 均假定文件连续存储
+ * @note 有待debug，只验证了一次间接
  */
 void clear_blocks(struct partition *part, struct inode_info *m_inode){
 	int i = 0;
-	int *blk_ptr;
+	uint32_t *blk_ptr;
 	for(i = 0; i < N_BLOCKS; ++i){
 		blk_ptr = &m_inode->i_block[i];
 		//一旦不存在就返回
@@ -85,11 +86,91 @@ void clear_blocks(struct partition *part, struct inode_info *m_inode){
 		if(i >= BLOCK_LEVEL_0){
 			_clear_blocks(part, *blk_ptr, i + 1 - BLOCK_LEVEL_0);
 		}
+
 		block_bmp_clear(part, *blk_ptr);
 		*blk_ptr = 0;
 	}
 }
 
+/**
+ * remove_last 辅助递归函数
+ */
+bool _remove_last(struct partition *part, uint32_t blk_nr, uint32_t depth){
+
+	if(depth == 0)
+		return true;
+
+	struct buffer_head *bh = read_block(part, blk_nr);
+	uint32_t *blk_ptr = (uint32_t *)bh->data;
+	
+	int i = 0;
+	for(i = 0; i < LBA_PER_BLK; ++i){
+		if(!blk_ptr[i]){
+			--i; break;
+		}
+	}
+	if(_remove_last(part, blk_ptr[i], depth - 1)){
+		block_bmp_clear(part, blk_ptr[i]);
+		blk_ptr[i] = 0;
+	}
+	//记得同步
+	write_block(part, bh);
+	//释放
+	release_block(bh);
+
+	//该间接块已经空了，可以释放
+	if(i == 0)
+		return true;
+
+	return false;
+}
+
+/**
+ * 删除最后一个逻辑块，用于目录项的删除
+ *
+ * @param part 分区指针
+ * @param m_inode inode指针
+ */
+void remove_last(struct partition *part, struct inode_info *m_inode){
+
+	int i = 0;
+	uint32_t *blk_ptr;
+	//找到最后一个块号
+	for(i = 0; i < N_BLOCKS; ++i){
+		blk_ptr = &m_inode->i_block[i];
+		
+		if(!(*blk_ptr)){
+			--i; break;
+		}
+	}
+	blk_ptr = &m_inode->i_block[i];
+	//间接块
+	if(i >= BLOCK_LEVEL_0){
+
+		if(!_remove_last(part, *blk_ptr, i + 1 - BLOCK_LEVEL_0)){
+			//间接块不空，直接返回
+			inode_sync(part, m_inode);
+			return;
+		}
+	}
+	block_bmp_clear(part, *blk_ptr);
+	*blk_ptr = 0;
+	//同步inode
+	inode_sync(part, m_inode);
+}	
+
+/**
+ * 将块号为blk_nr的块清零
+ */
+static void init_block(struct partition *part, uint32_t blk_nr){
+
+	struct buffer_head *bh = read_block(part, blk_nr);
+	memset(bh->data, 0, BLOCK_SIZE);
+	//同步磁盘
+	write_block(part, bh);
+	release_block(bh);
+}
+	
 //有待debug
 /**
  * 将文件内的块号转换为实际块号
@@ -114,30 +195,35 @@ uint32_t get_block_num(struct partition *part, struct inode_info *inode,\
 	struct buffer_head *bh = NULL;
 	uint32_t blk_nr = 0;
 
+	//直接块
 	if(idx < BLOCK_LEVEL_0){
 		blk_nr = inode->i_block[idx];
-		if(blk_nr == 0 || blk_nr < 0 || blk_nr > BLOCK_LEVEL_3){
+		if(!blk_nr){
 
 			//搜索为空，直接返回
 			if(mode == M_SEARCH)
 				return 0;
 
 			uint32_t new_blk_nr = block_bmp_alloc(part);
-			printk("new blk_nr %d\n", new_blk_nr);
 			inode->i_block[idx] = new_blk_nr;
 			blk_nr = new_blk_nr;
+			//inode_sync(part, inode);
 		}
+	//间接块
 	}else {
+
 		idx = BLK_IDX(idx);
 		//间接次数
 		uint32_t cnt = BLK_LEVEL(idx);
 
 		blk_nr = inode->i_block[MAX_BLOCK_DIR_POS + cnt];
 		//基地址不存在，单独处理
-		if(blk_nr == 0 || blk_nr < 0 || blk_nr > BLOCK_LEVEL_3){
+		if(!blk_nr){
+
 			uint32_t new_blk_nr = block_bmp_alloc(part);
 			inode->i_block[MAX_BLOCK_DIR_POS + cnt] = new_blk_nr;
 			blk_nr = new_blk_nr;
+			init_block(part, blk_nr);		
 		}
 
 		uint32_t i = 1;
@@ -159,6 +245,9 @@ uint32_t get_block_num(struct partition *part, struct inode_info *inode,\
 				//写入硬盘
 				write_block(part, bh);
 				blk_nr = new_blk_nr;
+				//attention 第一次申请索引块必须先清0，数据块不需要
+				if(i != cnt)
+					init_block(part, blk_nr);		
 			}
 
 			//释放
@@ -205,6 +294,7 @@ bool search_dir_entry(struct partition *part, struct dir *dir, \
 		while(dir_entry_idx < per_block){
 			if(!strcmp(name, p_de->filename)){
 				memcpy(dir_e, p_de, sizeof(struct dir_entry));
+				release_block(bh);
 				return true;
 			}
 			++dir_entry_idx;
@@ -253,6 +343,78 @@ bool add_dir_entry(struct dir *par_dir, struct dir_entry *dir_e){
 //	printk("%d\n", inode->i_size);
 	write_block(cur_par, bh);
 	release_block(bh);
+	return true;
+}
+
+/**
+ * 删除目录项
+ *
+ * @param part 分区指针
+ * @param par_dir 指定目录指针
+ * @param i_no 待删除的目录项的inode号
+ *
+ * @return 删除是否成功
+ */
+bool delete_dir_entry(struct partition *part, struct dir *par_dir, uint32_t i_no){
+
+	uint32_t per_block = BLOCK_SIZE / sizeof(struct dir_entry);
+	uint32_t idx = 0;
+	struct buffer_head *bh = NULL;
+	uint32_t blk_nr = 0;;
+	uint32_t off_byte = 0;
+	bool hit = false;
+
+	while((blk_nr = get_block_num(part, par_dir->inode, idx, M_SEARCH))){
+		bh = read_block(part, blk_nr);
+		uint32_t dir_entry_idx = 0;
+		struct dir_entry *p_de = (struct dir_entry *)bh->data;
+		while(dir_entry_idx < per_block){
+			if(i_no == p_de->i_no){
+				hit = true;
+				off_byte = dir_entry_idx * sizeof(struct dir_entry);
+				break;
+			}
+			++dir_entry_idx;
+			++p_de;
+		}
+		if(hit)
+			break;
+		++idx;
+		release_block(bh);
+	}
+	//找不到
+	if(!hit)
+		return false;
+
+
+	//找出最后一个目录项，复制到当前位置
+	struct inode_info *inode = par_dir->inode;
+	int fin_idx = inode->i_blocks - 1;
+	int fin_off_byte = inode->i_size % BLOCK_SIZE - sizeof(struct dir_entry);
+	struct buffer_head *fin_bh = NULL;
+
+	//位于同一块内
+	if(fin_idx == idx){
+	
+		fin_bh = bh;	
+	}else {
+		fin_bh = read_block(part, get_block_num(part, inode, fin_idx, M_SEARCH));
+	}
+
+	memcpy((bh->data + off_byte), (fin_bh + fin_off_byte), sizeof(struct dir_entry));
+
+	write_block(part, bh);
+	release_block(bh);
+	if(fin_idx != idx){
+		release_block(fin_bh);
+		write_block(part, fin_bh);
+	}
+
+	//检查是否有块已经空
+	inode->i_size -= sizeof(struct dir_entry);
+	inode->i_blocks = DIV_ROUND_UP(inode->i_size, BLOCK_SIZE);
+	if(!(inode->i_size % BLOCK_SIZE))
+		remove_last(part, inode);
 	return true;
 }
 

@@ -7,6 +7,7 @@
 #include "group.h"
 #include "interrupt.h"
 #include "super_block.h"
+#include "dir.h"
 
 extern struct task_struct *curr;
 extern struct partition *cur_par;
@@ -142,9 +143,12 @@ void inode_delete(struct partition *part, uint32_t i_no){
 
 	struct inode_info *m_inode = inode_open(part, i_no);
 	inode_bmp_clear(part, i_no);
+
+	//清空对应的所有块内容
 	clear_blocks(part, m_inode);
-	//脏为设置为假，不用写入了
+	//脏位设置为假，不用写入了
 	m_inode->i_dirty = false;
+	m_inode->i_lock = false;
 	inode_close(m_inode);
 }
 

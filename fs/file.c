@@ -108,7 +108,11 @@ int32_t block_bmp_alloc(struct partition *part){
  */
 
 void block_bmp_clear(struct partition *part, uint32_t blk_nr){
+	//TODO gp位图可能不在内存中
 	struct group_info *gp = part->groups + blk_nr / BLOCKS_PER_GROUP;
+
+	//前面加上的，这里要减掉，被坑死了T_T
+	blk_nr -= LEADER_BLKS;
 	blk_nr %= BLOCKS_PER_GROUP;
 	bitmap_set(&gp->block_bmp, blk_nr, 0);
 }
@@ -311,7 +315,6 @@ int32_t file_read(struct file *file, void *buf, uint32_t count){
 		}
 
 		blk_nr = get_block_num(cur_par, m_inode, blk_idx, M_CREATE);
-		printk("blk_nr %d\n", blk_nr);
 		bh = read_block(cur_par, blk_nr);
 		memcpy(dest, (bh->data + off_byte), to_read);
 		release_block(bh);

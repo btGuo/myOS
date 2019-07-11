@@ -17,6 +17,7 @@ void u_prog_b(void);
 void k_thread_a(void);
 void k_thread_b(void);
 void k_thread_c(void);
+//filename qqqq awqq bwqq
 
 int main() {
 	init_all();
@@ -28,17 +29,26 @@ int main() {
 	
 //	intr_enable();
 
+	
+	int fd = sys_open("/dwqq", O_CREAT | O_RDWR);
 
-	uint32_t fd = sys_open("/ftest", O_RDWR);
-	printk("fd %d\n", fd);
-	char buf[100];
-	memset(buf, 0, 100);
-	//sys_write(fd, "hello world again", 18);
-	sys_read(fd, buf, 31);
-	printk("content %s\n", buf);
+	char buf[1024];
+	int i = 1024;
+	while(i--)
+		buf[i] = 'i';
+	i = 1;
+	while(i--)
+		sys_write(fd, buf, 1024);
+
 	sys_close(fd);
-	sync();
+	
 
+	if(sys_unlink("/dwqq") == -1){
+		printk("error");
+	}
+
+
+	sync();
 	while(1);
 	return 0;
 }
