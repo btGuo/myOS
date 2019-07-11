@@ -99,7 +99,7 @@ static void buffer_sync_inodes(struct disk_buffer *d_buf){
 			printk("write inode %d %d\n", m_inode->i_no, m_inode->i_size);
 			inode_locate(d_buf->part, m_inode->i_no, &pos);
 			bh = read_block(d_buf->part, pos.blk_nr);
-			memcpy((bh->data + pos.off_size), &m_inode, sizeof(struct inode));
+			memcpy((bh->data + pos.off_size), m_inode, sizeof(struct inode));
 			write_block(d_buf->part, bh);
 			release_block(bh);
 			//复位脏

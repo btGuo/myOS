@@ -610,12 +610,19 @@ int32_t sys_close(int32_t fd){
 	return g_fd;
 }
 
+#define FD_LEGAL(fd)\
+do{\
+	if((fd) < 0 || (fd) >= MAX_FILES_OPEN_PER_PROC){\
+		printk("sys write: fd error\n");\
+		return -1;\
+	}\
+}while(0)
+
+
+
 int32_t sys_write(int32_t fd, const void *buf, uint32_t count){
 
-	if(fd < 0 || fd >= MAX_FILES_OPEN_PER_PROC){
-		printk("sys write: fd error\n");
-		return -1;
-	}
+	FD_LEGAL(fd);
 	if(fd == stdout_no){
 		//TODO
 		console_write(buf);
@@ -634,13 +641,39 @@ int32_t sys_write(int32_t fd, const void *buf, uint32_t count){
 
 int32_t sys_read(int32_t fd, void *buf, uint32_t count){
 
-	if(fd < 0 || fd >= MAX_FILES_OPEN_PER_PROC){
-		printk("sys write: fd error\n");
-		return -1;
-	}
+	FD_LEGAL(fd);
 	uint32_t g_fd = to_global_fd(fd);
 	struct file *file = &file_table[g_fd];
 
 	return file_read(file, buf, count);
 }
+
+int32_t sys_lseek(int32_t fd, int32_t offset, uint8_t whence){
+
+	FD_LEGAL(fd);
+	ASSERT(whence > 0 && whence < 4);
+	struct file *file = &file_table[to_global_fd(fd)];
+	uint32_t file_size = file->fd_inode->i_size;
+	int32_t new_pos = 0;
+
+	switch(whence){
+		case SEEK_SET:
+			new_pos = offset;
+			break;
+		case SEEK_CUR:
+			new_pos = file->fd_pos + offset;
+			break;
+		case SEEK_END:
+			new_pos = file_size + offset;
+			break;
+	}
+	//TODO 修改文件大小i_size
+	if(new_pos < 0 || new_pos > file_size)
+		return -1;
+
+	file->fd_pos = new_pos;
+	return new_pos;
+}
+
+
 

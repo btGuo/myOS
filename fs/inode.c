@@ -23,10 +23,11 @@ void inode_locate(struct partition *part, uint32_t i_no, struct inode_pos *pos){
 	
 	pos->blk_nr = gp->inode_table + offset / BLOCK_SIZE ;
 	pos->off_size = offset % BLOCK_SIZE;
+//	printk("pos->blo_nr %d pos->off_size %d\n", pos->blk_nr, pos->off_size);
 }
 
 /**
- * @brief 释放inode
+ * @brief 释放inode内存
  */
 void inode_release(struct inode_info *m_inode){
 
@@ -84,13 +85,12 @@ struct inode_info *inode_open(struct partition *part, uint32_t i_no){
 	//定位后读出块
 	inode_locate(part, i_no, &pos);
 	bh = read_block(part, pos.blk_nr);
-	printk("off_size %d\n", pos.off_size);
 	memcpy(m_inode, (bh->data + pos.off_size), sizeof(struct inode));
+	release_block(bh);
 	//初始化
 	inode_init(part, m_inode, i_no);
 	++m_inode->i_open_cnts;
 
-	printk("i_size %d i_block %d\n", m_inode->i_size, m_inode->i_block[0]);
 
 	return m_inode;
 }
@@ -135,3 +135,17 @@ void inode_init(struct partition *part, struct inode_info *m_inode, uint32_t i_n
 	m_inode->i_buffered = buffer_add_inode(&part->io_buffer, m_inode);
 }
 
+/**
+ * 删除磁盘上inode
+ */
+void inode_delete(struct partition *part, uint32_t i_no){
+
+	struct inode_info *m_inode = inode_open(part, i_no);
+	inode_bmp_clear(part, i_no);
+	clear_blocks(part, m_inode);
+	//脏为设置为假，不用写入了
+	m_inode->i_dirty = false;
+	inode_close(m_inode);
+}
+
+		

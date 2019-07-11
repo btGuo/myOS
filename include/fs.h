@@ -93,6 +93,14 @@ enum oflags{
 	O_RDWR,      ///< 读写  010b
 	O_CREAT = 4  ///< 创建  100b
 };
+/**
+ * 文件读写指针标志
+ */
+enum whence{
+	SEEK_SET = 1,  ///< 以文件开始处为参照
+	SEEK_CUR,      ///< 以文件当前位置为参照
+	SEEK_END       ///< 以文件末尾为参照
+};
 
 void filesys_init();
 

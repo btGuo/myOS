@@ -193,6 +193,7 @@ int32_t file_open(uint32_t i_no, uint8_t flag){
 	}
 
 	file_table[fd_idx].fd_inode = inode_open(cur_par, i_no);
+
 	file_table[fd_idx].fd_pos = 0;
 	file_table[fd_idx].fd_flag = flag;
 	bool *write_deny = &file_table[fd_idx].fd_inode->i_write_deny;
@@ -257,22 +258,34 @@ int32_t file_write(struct file *file, const void *buf, uint32_t count){
 		memcpy((bh->data + off_byte), src, to_write);
 	       	write_block(cur_par, bh);	
 		release_block(bh);
-		src += to_write;
 
+		src += to_write;
 		//第一次循环时有用
 		off_byte = 0;
-		++m_inode->i_blocks;
 		++blk_idx;
 		if(blk_idx >= BLOCK_LEVEL_3)
 			return count - res;
 	}
-	m_inode->i_size += count;
-	printk("m_inode->i_size %d\n", m_inode->i_size);
+	//大于原来长度时才更新
+	if(file->fd_pos + count > m_inode->i_size){
+		m_inode->i_size = file->fd_pos + count;
+		m_inode->i_blocks = DIV_ROUND_UP(m_inode->i_size, BLOCK_SIZE);
+	}
+//	printk("m_inode->i_size %d\n", m_inode->i_size);
 	inode_sync(cur_par, m_inode);
 	file->fd_pos += count;
 	return count;
 }
 
+/**
+ * 文件读
+ *
+ * @param file 文件描述符指针
+ * @param buf 输出缓冲区
+ * @param count 要读字节数
+ *
+ * @return 读取字节数
+ */
 int32_t file_read(struct file *file, void *buf, uint32_t count){
 
 	struct buffer_head *bh = NULL;

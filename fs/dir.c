@@ -42,6 +42,54 @@ struct dir* dir_open(struct partition *part, uint32_t i_no){
 	return dir;
 }
 
+/**
+ * 递归清理
+ */
+void _clear_blocks(struct partition *part, uint32_t blk_nr, uint32_t depth){
+	
+	if(depth == 0)
+		return;
+
+	struct buffer_head *bh = read_block(part, blk_nr);
+	uint32_t *blk_ptr = bh->data;
+
+	int i = 0;
+	for(i = 0; i< LBA_PER_BLK; ++i){
+
+		if(blk_ptr[i]){
+
+			_clear_blocks(part, blk_ptr[i], depth - 1);
+			block_bmp_clear(part, blk_ptr[i]);
+			blk_ptr[i] = 0;
+		}else{
+			return;
+		}
+	}
+	release_block(bh);
+}
+
+/**
+ * 清空inode内所有块
+ * @attention 均假定文件连续存储
+ */
+void clear_blocks(struct partition *part, struct inode_info *m_inode){
+	int i = 0;
+	int *blk_ptr;
+	for(i = 0; i < N_BLOCKS; ++i){
+		blk_ptr = &m_inode->i_block[i];
+		//一旦不存在就返回
+		if(!(*blk_ptr))
+			return;
+
+		//间接块
+		if(i >= BLOCK_LEVEL_0){
+			_clear_blocks(part, *blk_ptr, i + 1 - BLOCK_LEVEL_0);
+		}
+		block_bmp_clear(part, *blk_ptr);
+		*blk_ptr = 0;
+	}
+}
+
 //有待debug
 /**
  * 将文件内的块号转换为实际块号
@@ -68,7 +116,6 @@ uint32_t get_block_num(struct partition *part, struct inode_info *inode,\
 
 	if(idx < BLOCK_LEVEL_0){
 		blk_nr = inode->i_block[idx];
-		//TODO 磁盘不干净怎么办
 		if(blk_nr == 0 || blk_nr < 0 || blk_nr > BLOCK_LEVEL_3){
 
 			//搜索为空，直接返回

@@ -33,9 +33,9 @@ int main() {
 	printk("fd %d\n", fd);
 	char buf[100];
 	memset(buf, 0, 100);
-//	sys_write(fd, "hello world\n", 13);
-//	sys_read(fd, buf, 18);
-	//printk("content %s\n", buf);
+	//sys_write(fd, "hello world again", 18);
+	sys_read(fd, buf, 31);
+	printk("content %s\n", buf);
 	sys_close(fd);
 	sync();
 
