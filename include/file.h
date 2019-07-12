@@ -25,10 +25,6 @@ enum std_fd{
 
 int32_t get_fd();
 int32_t set_fd(int32_t fd);
-int32_t inode_bmp_alloc(struct partition *part);
-int32_t block_bmp_alloc(struct partition *part);
-void inode_bmp_clear(struct partition *part, uint32_t i_no);
-void block_bmp_clear(struct partition *part, uint32_t blk_nr);
 int32_t file_create(struct dir *par_dir, char *filename, uint8_t flag);
 int32_t file_open(uint32_t i_no, uint8_t flag);
 void file_close(struct file *file);

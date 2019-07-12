@@ -29,7 +29,7 @@ int main() {
 	
 //	intr_enable();
 
-	
+/*	
 	int fd = sys_open("/dwqq", O_CREAT | O_RDWR);
 
 	char buf[1024];
@@ -46,7 +46,16 @@ int main() {
 	if(sys_unlink("/dwqq") == -1){
 		printk("error");
 	}
-
+*/
+	// dir  /a /a/b
+	
+	struct dir *p_dir = sys_opendir("/a/b");
+	if(!p_dir){
+		printk("error\n");
+	}
+	if(sys_closedir(p_dir) == -1){
+		printk("close failed\n");
+	}
 
 	sync();
 	while(1);

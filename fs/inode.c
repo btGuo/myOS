@@ -8,9 +8,50 @@
 #include "interrupt.h"
 #include "super_block.h"
 #include "dir.h"
+#include "block.h"
+#include "memory.h"
+#include "group.h"
+#include "bitmap.h"
 
 extern struct task_struct *curr;
 extern struct partition *cur_par;
+
+
+/**
+ * 分配inode块
+ *
+ * @return 新分配inode号
+ * 	@retval -1 分配失败
+ */
+int32_t inode_bmp_alloc(struct partition *part){
+	struct group_info *cur_gp = part->cur_gp;
+	struct super_block *sb = part->sb;
+
+	if(sb->free_inodes_count <= 0)
+		return -1;
+	//当前组中已经没有空闲位置，切换到下一个组
+	if(cur_gp->free_inodes_count == 0){
+
+		cur_gp = group_switch(part);
+	}
+	//注意减1
+	--cur_gp->free_inodes_count;
+	--sb->free_inodes_count;
+
+	uint32_t idx = bitmap_scan(&cur_gp->inode_bmp, 1);
+	bitmap_set(&cur_gp->inode_bmp, idx, 1);
+	return idx + cur_gp->group_nr * INODES_PER_GROUP;
+}
+
+/**
+ * 复位inode位图
+ */
+void inode_bmp_clear(struct partition *part, uint32_t i_no){
+	struct group_info *gp = part->groups + i_no / INODES_PER_GROUP;
+	i_no %= INODES_PER_GROUP;
+	bitmap_set(&gp->inode_bmp, i_no, 0);
+}
+
 /**
  * @brief 定位inode
  *
@@ -58,15 +99,8 @@ void inode_sync(struct partition *part, struct inode_info *m_inode){
 	release_block(bh);
 }
 
-/** not used */
-void inode_info_init(struct inode_info *m_inode, struct inode *d_inode, uint32_t i_no){
-	memcpy(m_inode, d_inode, sizeof(struct inode));
-	m_inode->i_no = i_no;
-	m_inode->i_blocks = m_inode->i_size / BLOCK_SIZE;
-}
-
 /**
- * @brief 根据索引节点号，打开索引节点
+ * 根据索引节点号，打开索引节点，如果不在内存则将磁盘上的inode加载到内存
  */
 struct inode_info *inode_open(struct partition *part, uint32_t i_no){
 	struct inode_info *m_inode = buffer_read_inode(&part->io_buffer, i_no);
@@ -97,7 +131,7 @@ struct inode_info *inode_open(struct partition *part, uint32_t i_no){
 }
 
 /**
- * 关闭inode
+ * 关闭inode，与inode_open对应
  */
 void inode_close(struct inode_info *m_inode){
 	ASSERT(m_inode->i_open_cnts > 0);
@@ -111,6 +145,28 @@ void inode_close(struct inode_info *m_inode){
 	}
 	intr_set_status(old_stat);
 }
+
+/**
+ * 申请新的inode，并分配内存，初始化
+ */
+bool inode_alloc(struct partition *part, struct inode_info *m_inode){
+	int32_t i_no = inode_bmp_alloc(part);
+	if(i_no < 0){
+		return false;
+	}
+	m_inode = (struct inode_info *)sys_malloc(sizeof(struct inode_info));
+	if(!m_inode){
+		inode_bmp_clear(part, i_no);
+		return false;
+	}
+	//这里应该清零，内存可能不干净
+	memset(m_inode, 0, sizeof(struct inode_info));
+	//初始化
+	inode_init(part, m_inode, i_no);
+	return true;
+}
+
+
 
 /**
  * 初始化inode，并尝试加入缓冲区，这里只初始化了内存中的部分
@@ -142,14 +198,14 @@ void inode_init(struct partition *part, struct inode_info *m_inode, uint32_t i_n
 void inode_delete(struct partition *part, uint32_t i_no){
 
 	struct inode_info *m_inode = inode_open(part, i_no);
+
+	ASSERT(m_inode->i_open_cnts == 1);
 	inode_bmp_clear(part, i_no);
 
 	//清空对应的所有块内容
 	clear_blocks(part, m_inode);
 	//脏位设置为假，不用写入了
 	m_inode->i_dirty = false;
-	m_inode->i_lock = false;
 	inode_close(m_inode);
 }
-
 		

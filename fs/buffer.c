@@ -4,6 +4,7 @@
 #include "inode.h"
 #include "string.h"
 #include "fs.h"
+#include "block.h"
 
 #define BUFFER_HEAD_SIZE 1024
 

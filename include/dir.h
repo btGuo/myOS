@@ -12,7 +12,7 @@
 struct dir{
 	struct inode_info *inode;
 	uint32_t dir_pos;
-	uint8_t dir_buf[512];
+//	uint8_t dir_buf[512];
 };
 
 /**
@@ -24,21 +24,26 @@ struct dir_entry{
 	uint32_t i_no;      ///< i节点号
 };
 
+#define MAX_PATH_LEN 128
 #define M_SEARCH 0
 #define M_CREATE 1
 
-void open_root_dir(struct partition *part);
-void dir_close(struct dir *dir);
-struct dir* dir_open(struct partition *part, uint32_t i_no);
-uint32_t get_block_num(struct partition *part, struct inode_info *inode,\
-	       	uint32_t idx, uint8_t mode);
-void create_dir_entry(char *filename, uint32_t i_no, enum file_types f_type,\
-		struct dir_entry *dir_e);
-bool search_dir_entry(struct partition *part, struct dir *dir, \
-	const char *name, struct dir_entry *dir_e);
-bool add_dir_entry(struct dir *par_dir, struct dir_entry *dir_e);
-
 void print_root(struct inode_info *m_inode);
-void clear_blocks(struct partition *part, struct inode_info *m_inode);
+
+void open_root_dir(struct partition *part);
+struct dir* dir_open(struct partition *part, uint32_t i_no);
+void dir_close(struct dir *dir);
+struct dir_entry *dir_read(struct dir *dir);
+int32_t dir_remove(struct dir *par_dir, struct dir *dir);
+
+uint32_t get_block_num(struct partition *part, struct inode_info *inode, uint32_t idx, uint8_t mode);
+void init_dir_entry(char *filename, uint32_t i_no, enum file_types f_type, struct dir_entry *dir_e);
+
+bool _search_dir_entry(struct partition *part, struct dir *dir, const char *name, struct dir_entry *dir_e);
+struct dir *get_last_dir(const char *path);
+struct dir *search_dir_entry(struct partition *part, const char *path, struct dir_entry *dir_e);
+
+bool add_dir_entry(struct dir *par_dir, struct dir_entry *dir_e);
 bool delete_dir_entry(struct partition *part, struct dir *par_dir, uint32_t i_no);
+
 #endif

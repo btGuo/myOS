@@ -1,8 +1,12 @@
-#include "fs.h"
-#include "dir.h"
 #include "bitmap.h"
 #include "string.h"
+#include "inode.h"
+#include "ide.h"
+#include "dir.h"
+#include "block.h"
+#include "pathparse.h"
 #include "file.h"
+#include "memory.h"
 
 struct dir root_dir;
 extern struct partition *cur_par;
@@ -11,7 +15,6 @@ void print_root(struct inode_info *m_inode){
 	printk("root inode info\n");
 	printk("%d  %d  %d\n", m_inode->i_block[0], m_inode->i_size, m_inode->i_blocks);
 }
-
 /**
  * 打开根目录
  */
@@ -19,6 +22,16 @@ void open_root_dir(struct partition *part){
 	root_dir.inode = inode_open(part, ROOT_INODE);
 	root_dir.dir_pos = 0;
 	print_root(root_dir.inode);
+}
+
+/**
+ * 打开普通目录
+ */
+struct dir* dir_open(struct partition *part, uint32_t i_no){
+	struct dir *dir = (struct dir *)sys_malloc(sizeof(struct dir));
+	dir->inode = inode_open(part, i_no);
+	dir->dir_pos = 0;
+	return dir;
 }
 
 /**
@@ -33,235 +46,59 @@ void dir_close(struct dir *dir){
 }
 
 /**
- * 打开普通目录
+ * 读目录
+ * @param dir 目录指针
+ * @return 目录项
  */
-struct dir* dir_open(struct partition *part, uint32_t i_no){
-	struct dir *dir = (struct dir *)sys_malloc(sizeof(struct dir));
-	dir->inode = inode_open(part, i_no);
-	dir->dir_pos = 0;
-	return dir;
-}
+struct dir_entry *dir_read(struct dir *dir){
 
-/**
- * 递归清理
- */
-static void _clear_blocks(struct partition *part, uint32_t blk_nr, uint32_t depth){
-	
-	if(depth == 0)
-		return;
-
-	struct buffer_head *bh = read_block(part, blk_nr);
-	uint32_t *blk_ptr = (uint32_t *)bh->data;
-
-	int i = 0;
-	for(i = 0; i< LBA_PER_BLK; ++i){
-
-		if(blk_ptr[i]){
-
-			_clear_blocks(part, blk_ptr[i], depth - 1);
-			block_bmp_clear(part, blk_ptr[i]);
-			blk_ptr[i] = 0;
-		}else{
-			break;
-		}
-	}
-	release_block(bh);
-}
-
-/**
- * 清空inode内所有块
- * @attention 均假定文件连续存储
- * @note 有待debug，只验证了一次间接
- */
-void clear_blocks(struct partition *part, struct inode_info *m_inode){
-	int i = 0;
-	uint32_t *blk_ptr;
-	for(i = 0; i < N_BLOCKS; ++i){
-		blk_ptr = &m_inode->i_block[i];
-		//一旦不存在就返回
-		if(!(*blk_ptr))
-			return;
-
-		//间接块
-		if(i >= BLOCK_LEVEL_0){
-			_clear_blocks(part, *blk_ptr, i + 1 - BLOCK_LEVEL_0);
-		}
-
-		block_bmp_clear(part, *blk_ptr);
-		*blk_ptr = 0;
-	}
-}
-
-/**
- * remove_last 辅助递归函数
- */
-bool _remove_last(struct partition *part, uint32_t blk_nr, uint32_t depth){
-
-	if(depth == 0)
-		return true;
-
-	struct buffer_head *bh = read_block(part, blk_nr);
-	uint32_t *blk_ptr = (uint32_t *)bh->data;
-	
-	int i = 0;
-	for(i = 0; i < LBA_PER_BLK; ++i){
-		if(!blk_ptr[i]){
-			--i; break;
-		}
-	}
-	if(_remove_last(part, blk_ptr[i], depth - 1)){
-		block_bmp_clear(part, blk_ptr[i]);
-		blk_ptr[i] = 0;
-	}
-	//记得同步
-	write_block(part, bh);
-	//释放
-	release_block(bh);
-
-	//该间接块已经空了，可以释放
-	if(i == 0)
-		return true;
-
-	return false;
-}
-
-/**
- * 删除最后一个逻辑块，用于目录项的删除
- *
- * @param part 分区指针
- * @param m_inode inode指针
- */
-void remove_last(struct partition *part, struct inode_info *m_inode){
-
-	int i = 0;
-	uint32_t *blk_ptr;
-	//找到最后一个块号
-	for(i = 0; i < N_BLOCKS; ++i){
-		blk_ptr = &m_inode->i_block[i];
-		
-		if(!(*blk_ptr)){
-			--i; break;
-		}
-	}
-	blk_ptr = &m_inode->i_block[i];
-	//间接块
-	if(i >= BLOCK_LEVEL_0){
-
-		if(!_remove_last(part, *blk_ptr, i + 1 - BLOCK_LEVEL_0)){
-			//间接块不空，直接返回
-			inode_sync(part, m_inode);
-			return;
-		}
-	}
-	block_bmp_clear(part, *blk_ptr);
-	*blk_ptr = 0;
-	//同步inode
-	inode_sync(part, m_inode);
-}	
-
-/**
- * 将块号为blk_nr的块清零
- */
-static void init_block(struct partition *part, uint32_t blk_nr){
-
-	struct buffer_head *bh = read_block(part, blk_nr);
-	memset(bh->data, 0, BLOCK_SIZE);
-	//同步磁盘
-	write_block(part, bh);
-	release_block(bh);
-}
-	
-//有待debug
-/**
- * 将文件内的块号转换为实际块号
- *
- * @param part 分区指针
- * @param inode i节点指针
- * @param idx  该i节点中第idx个块
- * @param mode M_SEARCH 或者 M_CREATE 搜索或者创建，
- * 如果为创建数据块不在时则会新分配块号
- *
- * @return 物理块号
- * 	@retval 0 查找失败
- */
-
-uint32_t get_block_num(struct partition *part, struct inode_info *inode,\
-	       	uint32_t idx, uint8_t mode){
-
-	if(idx >= BLOCK_LEVEL_3){
-		PANIC("no more space\n");
-	}
-	
+	uint32_t idx = dir->dir_pos / BLOCK_SIZE;
+	uint32_t off_byte = dir->dir_pos % BLOCK_SIZE;
 	struct buffer_head *bh = NULL;
-	uint32_t blk_nr = 0;
+	uint32_t blk_nr;
 
-	//直接块
-	if(idx < BLOCK_LEVEL_0){
-		blk_nr = inode->i_block[idx];
-		if(!blk_nr){
+	blk_nr = get_block_num(cur_par, dir->inode, idx, M_SEARCH);
+	if(!blk_nr){
+		printk("no more dir_entry in dir\n");
+		return NULL;
+	}
+	//TODO 改成别的方式分配内存
+	struct dir_entry *dir_e = sys_malloc(sizeof(struct dir_entry));
+	if(!dir_e){
+		printk("no more memory\n");
+		return NULL;
+	}
 
-			//搜索为空，直接返回
-			if(mode == M_SEARCH)
-				return 0;
+	bh = read_block(cur_par, blk_nr);
+	memcpy(dir_e, bh->data + off_byte, sizeof(struct dir_entry));
+	release_block(bh);
+	dir->dir_pos += sizeof(struct dir_entry);
+	return dir_e;
+}
 
-			uint32_t new_blk_nr = block_bmp_alloc(part);
-			inode->i_block[idx] = new_blk_nr;
-			blk_nr = new_blk_nr;
-			//inode_sync(part, inode);
-		}
-	//间接块
-	}else {
+/**
+ * 判断目录是否为空
+ */
+static bool dir_is_empty(struct dir *dir){
+	return (dir->inode->i_size == sizeof(struct dir_entry) * 2);
+}
 
-		idx = BLK_IDX(idx);
-		//间接次数
-		uint32_t cnt = BLK_LEVEL(idx);
-
-		blk_nr = inode->i_block[MAX_BLOCK_DIR_POS + cnt];
-		//基地址不存在，单独处理
-		if(!blk_nr){
-
-			uint32_t new_blk_nr = block_bmp_alloc(part);
-			inode->i_block[MAX_BLOCK_DIR_POS + cnt] = new_blk_nr;
-			blk_nr = new_blk_nr;
-			init_block(part, blk_nr);		
-		}
-
-		uint32_t i = 1;
-		uint32_t *pos = NULL;
-		while(i <= cnt){
-
-			bh = read_block(part, blk_nr);
-			pos = (uint8_t *)&bh->data[BLK_IDX_I(idx, i)];
-			blk_nr = *pos;
-
-			//块不存在
-			if(!blk_nr){
-				//最后一块为数据块
-				if(i == cnt && mode == M_SEARCH)
-					return 0;
-				uint32_t new_blk_nr = block_bmp_alloc(part);
-
-				*pos = new_blk_nr;
-				//写入硬盘
-				write_block(part, bh);
-				blk_nr = new_blk_nr;
-				//attention 第一次申请索引块必须先清0，数据块不需要
-				if(i != cnt)
-					init_block(part, blk_nr);		
-			}
-
-			//释放
-			release_block(bh);
-			++i;
-		}
-	}	
-	return blk_nr;
+bool delete_dir_entry(struct partition *part, struct dir *par_dir, uint32_t i_no);
+/**
+ * 删除磁盘上目录
+ * @param par_dir 父目录
+ */
+int32_t dir_remove(struct dir *par_dir, struct dir *dir){
+	if(!delete_dir_entry(cur_par, par_dir, dir->inode->i_no))
+		return -1;
+	inode_delete(cur_par, dir->inode->i_no);
+	return 0;
 }
 
 /**
  * 初始化目录项
  */
-void create_dir_entry(char *filename, uint32_t i_no, enum file_types f_type,\
+void init_dir_entry(char *filename, uint32_t i_no, enum file_types f_type,\
 		struct dir_entry *dir_e){
 
 	memset(dir_e, 0, sizeof(struct dir_entry));
@@ -279,7 +116,7 @@ void create_dir_entry(char *filename, uint32_t i_no, enum file_types f_type,\
  * @return 搜索结果
  * 	@retval false 失败
  */
-bool search_dir_entry(struct partition *part, struct dir *dir, \
+bool _search_dir_entry(struct partition *part, struct dir *dir, \
 		const char *name, struct dir_entry *dir_e){
 
 	uint32_t per_block = BLOCK_SIZE / sizeof(struct dir_entry);
@@ -305,13 +142,80 @@ bool search_dir_entry(struct partition *part, struct dir *dir, \
 	}
 	return false;
 }
-			
+
+/**
+ * 提取路径中最后一项目录
+ *
+ * @param path 目录路径，形式为 /a/b/c/ 最后一个字符是/
+ * @note 对于/a/b/c/ 返回c
+ */
+struct dir *get_last_dir(const char *path){
+	
+	//根目录直接返回
+	if(!strcmp(path, "/") || !strcmp(path, "/.") || !strcmp(path, "/..")){
+		return &root_dir;
+	}
+
+	char name[MAX_FILE_NAME_LEN];
+	struct dir *par_dir = &root_dir;
+	struct dir_entry dir_e;
+	
+	while((path = path_parse(path, name))){
+		if(_search_dir_entry(cur_par, par_dir, name, &dir_e)){
+
+			dir_close(par_dir);
+			if(dir_e.f_type != FT_DIRECTORY){
+				printk("%s is not a directory!\n", name);
+				return NULL;
+			}
+			par_dir = dir_open(cur_par, dir_e.i_no);
+		}
+		else{
+			printk("%s is not found!\n", name);
+			return NULL;
+		}
+	}
+	return par_dir;
+}
+
+/**
+ * 根据文件路径搜索文件目录项，如果成功会打开父目录
+ * 
+ * @param path 路径名
+ * @param dir_e 返回的目录项
+ *
+ * @return 父目录指针
+ * 	@retval NULL 查找为空 
+ */
+struct dir *search_dir_entry(struct partition *part, \
+		const char *path, struct dir_entry *dir_e){
+
+	char filename[MAX_FILE_NAME_LEN];
+	char dirname[MAX_PATH_LEN];
+
+	split_path(path, filename, dirname);
+	struct dir *par_dir = get_last_dir(dirname);
+
+	//父目录不存在
+	if(!par_dir){
+		printk("search_dir_entry: open directory error\n");
+		return NULL;
+	}
+
+	//先查找
+	bool found = _search_dir_entry(part, par_dir, filename, dir_e);
+	if(!found){
+		dir_close(par_dir);
+		return NULL;
+	}
+	return par_dir;
+}
+
 /**
  * @brief 在目录中添加目录项
  *
  * @param par_dir 指定目录指针
  * @param dir_e 目录项指针
- * @param buf 调用方提供缓冲
  *
  * @reture 是否成功
  */
@@ -353,6 +257,7 @@ bool add_dir_entry(struct dir *par_dir, struct dir_entry *dir_e){
  * @param par_dir 指定目录指针
  * @param i_no 待删除的目录项的inode号
  *
+ * @note 目录项是定长设计，每次删除时会把最后一个补到当前空位上
  * @return 删除是否成功
  */
 bool delete_dir_entry(struct partition *part, struct dir *par_dir, uint32_t i_no){
@@ -364,6 +269,7 @@ bool delete_dir_entry(struct partition *part, struct dir *par_dir, uint32_t i_no
 	uint32_t off_byte = 0;
 	bool hit = false;
 
+//先找出要删除的目录项
 	while((blk_nr = get_block_num(part, par_dir->inode, idx, M_SEARCH))){
 		bh = read_block(part, blk_nr);
 		uint32_t dir_entry_idx = 0;
@@ -387,11 +293,15 @@ bool delete_dir_entry(struct partition *part, struct dir *par_dir, uint32_t i_no
 		return false;
 
 
-	//找出最后一个目录项，复制到当前位置
+//找出最后一个目录项，复制到当前位置
 	struct inode_info *inode = par_dir->inode;
 	int fin_idx = inode->i_blocks - 1;
-	int fin_off_byte = inode->i_size % BLOCK_SIZE - sizeof(struct dir_entry);
+	//算错了。。。 先减再求模
+	int fin_off_byte = (inode->i_size - sizeof(struct dir_entry)) % BLOCK_SIZE;
 	struct buffer_head *fin_bh = NULL;
+
+//	printk("fin_off_byte %d\n", fin_off_byte);
+//	printk("off_byte %d\n", off_byte);
 
 	//位于同一块内
 	if(fin_idx == idx){
@@ -401,16 +311,16 @@ bool delete_dir_entry(struct partition *part, struct dir *par_dir, uint32_t i_no
 		fin_bh = read_block(part, get_block_num(part, inode, fin_idx, M_SEARCH));
 	}
 
-	memcpy((bh->data + off_byte), (fin_bh + fin_off_byte), sizeof(struct dir_entry));
+	memcpy((bh->data + off_byte), (fin_bh->data + fin_off_byte), sizeof(struct dir_entry));
 
 	write_block(part, bh);
 	release_block(bh);
 	if(fin_idx != idx){
-		release_block(fin_bh);
 		write_block(part, fin_bh);
+		release_block(fin_bh);
 	}
 
-	//检查是否有块已经空
+//检查是否有块已经空，如果有则调用remove_last释放该块
 	inode->i_size -= sizeof(struct dir_entry);
 	inode->i_blocks = DIV_ROUND_UP(inode->i_size, BLOCK_SIZE);
 	if(!(inode->i_size % BLOCK_SIZE))
@@ -418,3 +328,182 @@ bool delete_dir_entry(struct partition *part, struct dir *par_dir, uint32_t i_no
 	return true;
 }
 
+//===============================================================
+//下面为相关系统调用执行函数
+//===============================================================
+
+/**
+ * 删除空目录
+ */
+int32_t sys_rmdir(char *path){
+
+	struct dir_entry dir_e;
+	struct dir *par_dir = search_dir_entry(cur_par, path, &dir_e);
+
+	//查找为空
+	if(!par_dir){
+		printk("%s isn't exist\n", path);
+		return -1;
+	}
+	
+	//不是目录
+	if(dir_e.f_type == FT_REGULAR){
+		printk("%s is not a directory\n", path);
+		dir_close(par_dir);
+		return -1;
+	}
+
+	//目录不是空的
+	struct dir *dir = dir_open(cur_par, dir_e.i_no);
+	if(!dir_is_empty(dir)){
+
+		printk("dir %s is not empty, it is not allowd to delete\n", path);
+		dir_close(par_dir);
+		dir_close(dir);
+		return -1;
+	}
+
+	int32_t retval = dir_remove(par_dir, dir);
+	dir_close(par_dir);
+	dir_close(dir);
+	return retval;
+}
+	
+/**
+ * 读取目录
+ */
+struct dir_entry *sys_readdir(struct dir *dir){
+	ASSERT(dir != NULL);
+	return dir_read(dir);
+}
+
+/**
+ * 复位目录偏移
+ */
+void sys_rewinddir(struct dir *dir){
+	dir->dir_pos = 0;
+}
+			
+#define FIXUP_PATH(path)\
+do{\
+	uint32_t len = strlen(path);\
+	if(path[len - 1] == '/'){\
+		path[len - 1] = 0;\
+	}\
+}while(0)
+
+/**
+ * 创建目录
+ * @note 目前只能创建单级目录，注意path可能为/a/b/c/
+ */
+int32_t sys_mkdir(char *path){
+
+	FIXUP_PATH(path);
+
+	//先查找
+	struct dir_entry dir_e;
+	char filename[MAX_FILE_NAME_LEN];
+	char dirname[MAX_PATH_LEN];
+
+	split_path(path, filename, dirname);
+	struct dir *par_dir = get_last_dir(dirname);
+
+	//父目录不存在
+	if(!par_dir){
+		printk("search_dir_entry: open directory error\n");
+		return -1;
+	}
+
+	//先查找
+	bool found = _search_dir_entry(cur_par, par_dir, filename, &dir_e);
+
+	if(!found){
+		printk("sys_mkdir: file or directory %s exist!\n", path);
+		dir_close(par_dir);
+		return -1;
+	}
+
+//申请inode
+	struct inode_info *m_inode = NULL;
+	if(!inode_alloc(cur_par, m_inode)){
+
+		printk("sys_mkdir: sys_malloc for inode failed\n");
+		dir_close(par_dir);
+		return -1;
+	}
+	uint32_t i_no = m_inode->i_no;
+
+
+//在父目录中添加目录项
+	init_dir_entry(dir_e.filename, i_no, FT_DIRECTORY, &dir_e);
+	if(!add_dir_entry(par_dir, &dir_e)){
+		printk("sys_mkdir: add_dir_entry failed\n");
+		dir_close(par_dir);
+		inode_release(m_inode);
+		return -1;
+	}
+
+//先磁盘同步两个inode
+	inode_sync(cur_par, par_dir->inode);
+	inode_sync(cur_par, m_inode);
+	inode_release(m_inode);
+	dir_close(par_dir);
+
+	//再打开当前目录
+	struct dir *cur_dir = dir_open(cur_par, i_no);
+
+//TODO 考虑磁盘同步问题
+	//添加目录项
+	init_dir_entry(".",  i_no, FT_DIRECTORY, &dir_e);
+	add_dir_entry(cur_dir, &dir_e);
+	init_dir_entry("..", i_no, FT_DIRECTORY, &dir_e);
+	add_dir_entry(cur_dir, &dir_e);
+
+	//同步inode
+	inode_sync(cur_par, cur_dir->inode);
+	dir_close(cur_dir);
+
+	return 0;
+}
+
+/**
+ * 关闭目录
+ */
+int32_t sys_closedir(struct dir *dir){
+
+	if(!dir)
+		return -1;
+	dir_close(dir);
+	return 0;
+}
+
+/**
+ * 打开目录
+ */
+struct dir *sys_opendir(char *path){
+
+	if(path[0] == '/' && path[1] == 0){
+		return &root_dir;
+	}
+
+	FIXUP_PATH(path);
+
+	//先查找
+	struct dir_entry dir_e;
+	struct dir *par_dir = search_dir_entry(cur_par, path, &dir_e);
+
+	if(!par_dir){
+		dir_close(par_dir);
+		if(dir_e.f_type == FT_REGULAR){
+			printk("%s is a regular file\n", path);
+			return NULL;
+		}
+		else{
+			return dir_open(cur_par, dir_e.i_no);
+		}
+	}
+
+	dir_close(par_dir);
+	printk("%s isn't exist\n", path);
+	return NULL;
+}	
