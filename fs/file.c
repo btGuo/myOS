@@ -56,12 +56,13 @@ int32_t file_create(struct dir *par_dir, char *filename, uint8_t flag){
 
 	//先分配inode
 	struct inode_info *m_inode = NULL;
-	if(!inode_alloc(cur_par, m_inode)){
+	if(!(m_inode = inode_alloc(cur_par))){
 		//内存分配失败，回滚
 		printk("file_create: sys_malloc for inode failed\n");
 		return -1;
 	}
 
+	uint32_t i_no = m_inode->i_no;
 	//申请并安装目录项
 	struct dir_entry dir_entry;
 	init_dir_entry(filename, m_inode->i_no, FT_REGULAR, &dir_entry);
@@ -70,13 +71,14 @@ int32_t file_create(struct dir *par_dir, char *filename, uint8_t flag){
 		inode_release(m_inode);
 		return -1;
 	}
+
 	//磁盘同步两个inode
 	inode_sync(cur_par, par_dir->inode);
 	inode_sync(cur_par, m_inode);
 	//记得释放
 	inode_release(m_inode);
 
-	return m_inode->i_no;
+	return i_no;
 }
 
 /**
@@ -259,7 +261,7 @@ int32_t sys_open(const char *path, uint8_t flags){
 	//父目录不存在
 	if(!par_dir){
 		printk("search_dir_entry: open directory error\n");
-		return NULL;
+		return -1;
 	}
 
 	//先查找，这里需要更高的灵活度，因此用了_开头的
@@ -283,8 +285,10 @@ int32_t sys_open(const char *path, uint8_t flags){
 		printk("create file %s\n", filename);
 		//TODO 错误处理
 		int32_t i_no = file_create(par_dir, filename, flags);
+		printk("i_no %d\n", i_no);
 		fd = file_open(i_no, flags);
 		dir_close(par_dir);
+
 	}else {
 		fd = file_open(dir_e.i_no, flags);
 		printk("open file fd %d name %s i_no %d\n", fd, dir_e.filename, dir_e.i_no);
@@ -428,5 +432,4 @@ int32_t sys_unlink(const char *path){
 	dir_close(par_dir);
 	return 0;
 }
-
 

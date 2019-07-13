@@ -114,7 +114,7 @@ struct inode_info *inode_open(struct partition *part, uint32_t i_no){
 	struct inode_pos pos;
 	struct buffer_head *bh;
 
-	m_inode = (struct inode_info *)sys_malloc(sizeof(struct inode_info));
+	m_inode = (struct inode_info *)kmalloc(sizeof(struct inode_info));
 	MEMORY_OK(m_inode);
 
 	//定位后读出块
@@ -149,24 +149,22 @@ void inode_close(struct inode_info *m_inode){
 /**
  * 申请新的inode，并分配内存，初始化
  */
-bool inode_alloc(struct partition *part, struct inode_info *m_inode){
+struct inode_info *inode_alloc(struct partition *part){
 	int32_t i_no = inode_bmp_alloc(part);
 	if(i_no < 0){
-		return false;
+		return NULL;
 	}
-	m_inode = (struct inode_info *)sys_malloc(sizeof(struct inode_info));
+	struct inode_info *m_inode = (struct inode_info *)kmalloc(sizeof(struct inode_info));
 	if(!m_inode){
 		inode_bmp_clear(part, i_no);
-		return false;
+		return NULL;
 	}
 	//这里应该清零，内存可能不干净
 	memset(m_inode, 0, sizeof(struct inode_info));
 	//初始化
 	inode_init(part, m_inode, i_no);
-	return true;
+	return m_inode;
 }
-
-
 
 /**
  * 初始化inode，并尝试加入缓冲区，这里只初始化了内存中的部分

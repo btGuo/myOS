@@ -15,6 +15,7 @@
 #include "block.h"
 
 //TODO 检查内存块复用
+//添加目录项缓冲
 
 struct partition *cur_par = NULL; ///< 当前活跃分区
 extern uint8_t channel_cnt;
@@ -24,7 +25,7 @@ extern struct file file_table[MAX_FILE_OPEN];
 extern struct task_struct *curr;
 
 
-//============================================================
+//==========================================================================
 //这四个debug用
 
 void print_super_block(struct super_block *sb){

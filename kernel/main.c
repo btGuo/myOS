@@ -10,6 +10,7 @@
 #include "stdint.h"
 #include "syscall.h"
 #include "fs.h"
+#include "fs_sys.h"
 
 
 void u_prog_a(void);
@@ -30,6 +31,7 @@ int main() {
 //	intr_enable();
 
 /*	
+	printk("here\n");
 	int fd = sys_open("/dwqq", O_CREAT | O_RDWR);
 
 	char buf[1024];
@@ -37,27 +39,37 @@ int main() {
 	while(i--)
 		buf[i] = 'i';
 	i = 1;
+	printk("here\n");
 	while(i--)
 		sys_write(fd, buf, 1024);
 
+	printk("here\n");
 	sys_close(fd);
 	
+	printk("here\n");
 
 	if(sys_unlink("/dwqq") == -1){
 		printk("error");
 	}
+	printk("here\n");
 */
-	// dir  /a /a/b
-	
-	struct dir *p_dir = sys_opendir("/a/b");
-	if(!p_dir){
-		printk("error\n");
-	}
-	if(sys_closedir(p_dir) == -1){
-		printk("close failed\n");
-	}
 
+	// /dir1 /dir1/a  /dir1/b  /dir1/fa 
+
+//	int fd = sys_open("/dir1/fa", O_CREAT | O_RDWR);
+//	sys_close(fd);
+
+	struct dir *dir = sys_opendir("/dir1");
+	if(!dir){
+		printk("open failed\n");
+	}
+	struct dir_entry *dir_e = NULL;
+	while((dir_e = sys_readdir(dir))){
+		printk("dir_e.filename %s    ", dir_e->filename);
+	}
+	printk("\n");
 	sync();
+
 	while(1);
 	return 0;
 }

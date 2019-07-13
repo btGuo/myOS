@@ -45,6 +45,7 @@ void dir_close(struct dir *dir){
 	sys_free(dir);
 }
 
+//TODO 感觉接口设计有点问题，得由用户去释放内存
 /**
  * 读目录
  * @param dir 目录指针
@@ -52,16 +53,19 @@ void dir_close(struct dir *dir){
  */
 struct dir_entry *dir_read(struct dir *dir){
 
+//	printk("dir size %d\n", dir->inode->i_size);
+	if(dir->dir_pos == dir->inode->i_size){
+		return NULL;
+	}
+
 	uint32_t idx = dir->dir_pos / BLOCK_SIZE;
 	uint32_t off_byte = dir->dir_pos % BLOCK_SIZE;
 	struct buffer_head *bh = NULL;
 	uint32_t blk_nr;
 
 	blk_nr = get_block_num(cur_par, dir->inode, idx, M_SEARCH);
-	if(!blk_nr){
-		printk("no more dir_entry in dir\n");
-		return NULL;
-	}
+	ASSERT(blk_nr != 0);
+
 	//TODO 改成别的方式分配内存
 	struct dir_entry *dir_e = sys_malloc(sizeof(struct dir_entry));
 	if(!dir_e){
@@ -384,6 +388,7 @@ void sys_rewinddir(struct dir *dir){
 	dir->dir_pos = 0;
 }
 			
+//这个有点随意
 #define FIXUP_PATH(path)\
 do{\
 	uint32_t len = strlen(path);\
@@ -417,7 +422,7 @@ int32_t sys_mkdir(char *path){
 	//先查找
 	bool found = _search_dir_entry(cur_par, par_dir, filename, &dir_e);
 
-	if(!found){
+	if(found){
 		printk("sys_mkdir: file or directory %s exist!\n", path);
 		dir_close(par_dir);
 		return -1;
@@ -425,9 +430,9 @@ int32_t sys_mkdir(char *path){
 
 //申请inode
 	struct inode_info *m_inode = NULL;
-	if(!inode_alloc(cur_par, m_inode)){
+	if(!(m_inode = inode_alloc(cur_par))){
 
-		printk("sys_mkdir: sys_malloc for inode failed\n");
+		printk("sys_mkdir: kmalloc for inode failed\n");
 		dir_close(par_dir);
 		return -1;
 	}
@@ -435,7 +440,7 @@ int32_t sys_mkdir(char *path){
 
 
 //在父目录中添加目录项
-	init_dir_entry(dir_e.filename, i_no, FT_DIRECTORY, &dir_e);
+	init_dir_entry(filename, i_no, FT_DIRECTORY, &dir_e);
 	if(!add_dir_entry(par_dir, &dir_e)){
 		printk("sys_mkdir: add_dir_entry failed\n");
 		dir_close(par_dir);
@@ -463,6 +468,7 @@ int32_t sys_mkdir(char *path){
 	inode_sync(cur_par, cur_dir->inode);
 	dir_close(cur_dir);
 
+//	printk("sys_mkdir done\n");
 	return 0;
 }
 
@@ -492,7 +498,7 @@ struct dir *sys_opendir(char *path){
 	struct dir_entry dir_e;
 	struct dir *par_dir = search_dir_entry(cur_par, path, &dir_e);
 
-	if(!par_dir){
+	if(par_dir){
 		dir_close(par_dir);
 		if(dir_e.f_type == FT_REGULAR){
 			printk("%s is a regular file\n", path);
@@ -503,7 +509,6 @@ struct dir *sys_opendir(char *path){
 		}
 	}
 
-	dir_close(par_dir);
 	printk("%s isn't exist\n", path);
 	return NULL;
 }	

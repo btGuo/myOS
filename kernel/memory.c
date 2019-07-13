@@ -75,30 +75,6 @@ inline uint32_t *pde_ptr(uint32_t vaddr){
 	return (uint32_t*)(PAGE_DIR_TABLE_POS + ((vaddr & 0xffc00000) >> 20));
 }
 
-//分配多页虚拟内存
-/*
-static void* vaddr_get(enum pool_flags pf, uint32_t pg_cnt){
-	int vaddr_start = 0, bit_idx_start = -1;
-	if(pf == PF_KERNEL){
-		bit_idx_start = bitmap_scan(&kernel_vaddr.vaddr_bitmap, pg_cnt);
-		if(bit_idx_start == -1)
-			return NULL;
-		bitmap_set_range(&kernel_vaddr.vaddr_bitmap, bit_idx_start, 1, pg_cnt);
-		vaddr_start = kernel_vaddr.vaddr_start + bit_idx_start * PG_SIZE;
-	}else{
-		bit_idx_start = bitmap_scan(&curr->userprog_vaddr.vaddr_bitmap, \
-			   	pg_cnt);
-		if(bit_idx_start == -1)
-			return NULL;
-		bitmap_set_range(&curr->userprog_vaddr.vaddr_bitmap, \
-			   	bit_idx_start, 1, pg_cnt);
-		vaddr_start = curr->userprog_vaddr.vaddr_start + \
-					  bit_idx_start * PG_SIZE;
-	}
-	return (void*)vaddr_start;
-}
-*/
-
 //寻找pg_cnt 个连续虚拟页
 static void *vaddr_get(enum pool_flags pf, uint32_t pg_cnt){
 	//起始虚拟地址
@@ -270,22 +246,6 @@ void *get_user_pages(uint32_t pg_cnt){
 void *get_a_page(enum pool_flags pf, uint32_t vaddr){
 	struct pool *mem_pool = pf & PF_KERNEL ? &kernel_pool :&user_pool;
 	mutex_lock_acquire(&mem_pool->lock);
-/*
-	int32_t bit_idx = -1;
-	if(curr->pg_dir != NULL && pf == PF_USER){
-
-		bit_idx = (vaddr - curr->userprog_vaddr.vaddr_start) / PG_SIZE;
-		bitmap_set(&curr->userprog_vaddr.vaddr_bitmap, bit_idx, 1);
-
-	}else if(curr->pg_dir == NULL && pf == PF_KERNEL){
-
-		bit_idx = (vaddr - kernel_vaddr.vaddr_start) / PG_SIZE;
-		bitmap_set(&kernel_vaddr.vaddr_bitmap, bit_idx, 1);
-
-	}else{
-		PANIC("get_a_page: error");
-	}
-*/
 
 	void *paddr = palloc(mem_pool);
 	if(paddr == NULL)
@@ -320,27 +280,28 @@ static struct meta *block2meta(mem_block *blk){
 	return (struct meta *)((uint32_t)blk & 0xfffff000);
 }
 
-/**
- * 按字节分配内存
- */
-void *sys_malloc(uint32_t size){
-	enum pool_flags pf;
+static void *_malloc(enum pool_flags pf, uint32_t size){
+
 	uint32_t pool_size = 0;
 	struct mem_block_desc *blk_desc = NULL;
 	mem_block *blk;
 	struct pool * mem_pool;
 
-	if(curr->pg_dir){
+	if(pf == PF_USER){
+
 		blk_desc = curr->u_block_desc;
 		pool_size = user_pool.pool_size;
 		mem_pool  = &user_pool;
-		pf = PF_USER;
-	}else{
+
+	}else if(pf == PF_KERNEL){
+
 		blk_desc = k_block_desc;
 		pool_size = kernel_pool.pool_size;
 		mem_pool = &kernel_pool;
-		pf = PF_KERNEL;
+	}else {
+		PANIC("pool_flags error\n");
 	}
+
 	if(size <= 0 || size > pool_size){
 		return NULL;
 	}
@@ -400,18 +361,20 @@ void *sys_malloc(uint32_t size){
 		mutex_lock_release(&mem_pool->lock);
 		return (void *)blk;
 	}
-}	
+}
 
-void sys_free(void *ptr){
-	ASSERT(ptr != NULL);
-	enum pool_flags pf;
+static void _free(enum pool_flags pf, void *ptr){
+
 	struct pool *mem_pool;
-	if(curr->pg_dir){
+	if(pf == PF_USER){
+		
 		mem_pool = &user_pool;
-		pf = PF_USER;
-	}else {
+
+	}else if(pf == PF_KERNEL){
+
 		mem_pool = &kernel_pool;
-		pf = PF_KERNEL;
+	}else {
+		PANIC("pool flag error\n");
 	}
 
 	mutex_lock_acquire(&mem_pool->lock);
@@ -435,6 +398,45 @@ void sys_free(void *ptr){
 	}
 	
 	mutex_lock_release(&mem_pool->lock);
+}
+
+
+/**
+ * 按字节分配内存
+ */
+void *sys_malloc(uint32_t size){
+
+	if(curr->pg_dir){
+		return _malloc(PF_USER, size);
+	}
+	return _malloc(PF_KERNEL, size);
+}	
+
+void sys_free(void *ptr){
+	ASSERT(ptr != NULL);
+
+	if(curr->pg_dir){
+
+		_free(PF_USER, ptr);
+	}else {
+		_free(PF_KERNEL, ptr);
+	}
+}
+
+/**
+ * 分配内核内存
+ */
+void *kmalloc(uint32_t size){
+
+	return _malloc(PF_KERNEL, size);
+}
+
+/**
+ * 释放内核内存
+ */
+void kfree(void *ptr){
+	ASSERT(ptr != NULL);
+	_free(PF_KERNEL, ptr);
 }
 
 void mem_init(){

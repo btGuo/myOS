@@ -67,7 +67,7 @@ struct inode_info *inode_open(struct partition *part, uint32_t i_no);
 void inode_close(struct inode_info *m_inode);
 void inode_init(struct partition *part, struct inode_info *m_inode, uint32_t i_no);
 void inode_delete(struct partition *part, uint32_t i_no);
-bool inode_alloc(struct partition *part, struct inode_info *m_inode);
+struct inode_info *inode_alloc(struct partition *part);
 
 void inode_bmp_clear(struct partition *part, uint32_t i_no);
 int32_t inode_bmp_alloc(struct partition *part);

@@ -72,7 +72,7 @@ static void buffer_sync_disk(struct disk_buffer *d_buf){
 	while(cur != head){
 		bh = list_entry(struct buffer_head, queue_tag, cur);
 		if(bh->dirty){
-			printk("write %d\n", bh->blk_nr);
+			//printk("write %d\n", bh->blk_nr);
 			//直接写入磁盘
 			write_direct(d_buf->part, bh->blk_nr, bh->data, 1);
 			//复位脏
@@ -97,7 +97,7 @@ static void buffer_sync_inodes(struct disk_buffer *d_buf){
 		//节点是脏的
 		if(m_inode->i_dirty){
 			//定位inode
-			printk("write inode %d %d\n", m_inode->i_no, m_inode->i_size);
+			//printk("write inode %d %d\n", m_inode->i_no, m_inode->i_size);
 			inode_locate(d_buf->part, m_inode->i_no, &pos);
 			bh = read_block(d_buf->part, pos.blk_nr);
 			memcpy((bh->data + pos.off_size), m_inode, sizeof(struct inode));
@@ -181,13 +181,13 @@ bool buffer_add_block(struct disk_buffer *d_buf, struct buffer_head *bh){
 		if(!old_bh){
 			return false;
 		}
-		sys_free(old_bh->data);
-		sys_free(old_bh);
+		kfree(old_bh->data);
+		kfree(old_bh);
 		--d_buf->b_size;
 	}
 
 
-	printk("add block %d\n", bh->blk_nr);
+	//printk("add block %d\n", bh->blk_nr);
 	++d_buf->b_size;
 	list_add_tail(&bh->queue_tag, &d_buf->b_queue);
 	hash_table_insert(&d_buf->b_map, &bh->hash_tag, bh->blk_nr);
@@ -202,14 +202,14 @@ bool buffer_add_inode(struct disk_buffer *d_buf, struct inode_info *m_inode){
 		if(!old_inode){
 			return false;
 		}
-		sys_free(old_inode);
+		kfree(old_inode);
 		--d_buf->i_size;
 	}
 
 	++d_buf->i_size;
 	list_add_tail(&m_inode->queue_tag, &d_buf->i_queue);
 	hash_table_insert(&d_buf->i_map, &m_inode->hash_tag, m_inode->i_no);
-	printk("buffer add inode\n");
+	//printk("buffer add inode\n");
 	return true;
 }
 

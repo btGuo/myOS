@@ -80,19 +80,6 @@ void write_block(struct partition *part, struct buffer_head *bh){
 	write_direct(part, bh->blk_nr, bh->data, 1);
 }
 
-//这个貌似没什么用呢
-#define ALLOC_BH(bh)\
-do{\
-	bh = (struct buffer_head *)sys_malloc(sizeof(struct buffer_head));\
-	if(!bh){\
-		PANIC("no more space\n");\
-	}\
-	bh->data = (uint8_t *)sys_malloc(BLOCK_SIZE);\
-	if(!bh->data){\
-		PANIC("no more space\n");\
-	}\
-}while(0)
-
 /**
  * @brief 读取磁盘块
  * @detail 先在缓冲区中查找，命中则直接返回，否则从磁盘读取块并尝试加入
@@ -106,7 +93,16 @@ struct buffer_head *read_block(struct partition *part, uint32_t blk_nr){
 		//printk("buffer hit\n");
 		return bh;
 	}
-	ALLOC_BH(bh);
+
+	bh = (struct buffer_head *)kmalloc(sizeof(struct buffer_head));
+	if(!bh){
+		PANIC("no more space\n");
+	}
+	bh->data = (uint8_t *)kmalloc(BLOCK_SIZE);
+	if(!bh->data){
+		PANIC("no more space\n");
+	}
+
 	bh->blk_nr = blk_nr;
 	bh->lock = true;
 	bh->is_buffered = true;
@@ -130,8 +126,8 @@ void release_block(struct buffer_head *bh){
 		BUFR_BLOCK(bh);
 		return;
 	}
-	sys_free(bh->data);
-	sys_free(bh);
+	kfree(bh->data);
+	kfree(bh);
 }
 
 /**

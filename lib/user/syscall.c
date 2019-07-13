@@ -4,7 +4,7 @@
 #include "string.h"
 #include "console.h"
 #include "memory.h"
-#include "fs.h"
+#include "fs_sys.h"
 
 #define __NR_getpid 0
 #define __NR_malloc 1
