@@ -13,7 +13,7 @@ int32_t sys_unlink(const char *path);
 
 
 int32_t sys_rmdir(char *path);
-struct dir_entry *sys_readdir(struct dir *dir);
+int32_t sys_readdir(struct dir *dir, struct dir_entry *dir_e);
 void sys_rewinddir(struct dir *dir);
 int32_t sys_mkdir(char *path);
 int32_t sys_closedir(struct dir *dir);

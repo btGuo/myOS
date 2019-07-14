@@ -63,9 +63,9 @@ int main() {
 	if(!dir){
 		printk("open failed\n");
 	}
-	struct dir_entry *dir_e = NULL;
-	while((dir_e = sys_readdir(dir))){
-		printk("dir_e.filename %s    ", dir_e->filename);
+	struct dir_entry dir_e;
+	while(sys_readdir(dir, &dir_e) != -1){
+		printk("dir_e.filename %s    ", dir_e.filename);
 	}
 	printk("\n");
 	sync();

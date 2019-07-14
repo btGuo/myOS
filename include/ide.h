@@ -24,6 +24,7 @@ struct partition{
 	uint32_t groups_cnt;       ///< 块组数
 	uint32_t groups_blks;      ///< 块组struct group所占块数
 	struct disk_buffer io_buffer;     ///< 磁盘缓冲区，换成指针或许更好
+	char mounted_point[32];
 };
 
 /**

@@ -2,6 +2,7 @@
 #include "buffer.h"
 #include "fs.h"
 #include "ide.h"
+#include "block.h"
 
 /**
  * 初始化组描述符，如果位图不在内存中则加载到内存并初始化

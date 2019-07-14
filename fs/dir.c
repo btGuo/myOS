@@ -45,17 +45,17 @@ void dir_close(struct dir *dir){
 	sys_free(dir);
 }
 
-//TODO 感觉接口设计有点问题，得由用户去释放内存
 /**
  * 读目录
  * @param dir 目录指针
- * @return 目录项
+ * @param dir_e 读取的目录项
+ * @return 是否成功
  */
-struct dir_entry *dir_read(struct dir *dir){
+bool dir_read(struct dir *dir, struct dir_entry *dir_e){
 
 //	printk("dir size %d\n", dir->inode->i_size);
 	if(dir->dir_pos == dir->inode->i_size){
-		return NULL;
+		return false;
 	}
 
 	uint32_t idx = dir->dir_pos / BLOCK_SIZE;
@@ -66,18 +66,11 @@ struct dir_entry *dir_read(struct dir *dir){
 	blk_nr = get_block_num(cur_par, dir->inode, idx, M_SEARCH);
 	ASSERT(blk_nr != 0);
 
-	//TODO 改成别的方式分配内存
-	struct dir_entry *dir_e = sys_malloc(sizeof(struct dir_entry));
-	if(!dir_e){
-		printk("no more memory\n");
-		return NULL;
-	}
-
 	bh = read_block(cur_par, blk_nr);
 	memcpy(dir_e, bh->data + off_byte, sizeof(struct dir_entry));
 	release_block(bh);
 	dir->dir_pos += sizeof(struct dir_entry);
-	return dir_e;
+	return true;
 }
 
 /**
@@ -376,9 +369,11 @@ int32_t sys_rmdir(char *path){
 /**
  * 读取目录
  */
-struct dir_entry *sys_readdir(struct dir *dir){
+int32_t sys_readdir(struct dir *dir, struct dir_entry *dir_e){
 	ASSERT(dir != NULL);
-	return dir_read(dir);
+	if(dir_read(dir, dir_e))
+		return 0;
+	return -1;
 }
 
 /**
@@ -452,7 +447,6 @@ int32_t sys_mkdir(char *path){
 	inode_sync(cur_par, par_dir->inode);
 	inode_sync(cur_par, m_inode);
 	inode_release(m_inode);
-	dir_close(par_dir);
 
 	//再打开当前目录
 	struct dir *cur_dir = dir_open(cur_par, i_no);
@@ -461,11 +455,13 @@ int32_t sys_mkdir(char *path){
 	//添加目录项
 	init_dir_entry(".",  i_no, FT_DIRECTORY, &dir_e);
 	add_dir_entry(cur_dir, &dir_e);
-	init_dir_entry("..", i_no, FT_DIRECTORY, &dir_e);
+	init_dir_entry("..", par_dir->inode->i_no, FT_DIRECTORY, &dir_e);
 	add_dir_entry(cur_dir, &dir_e);
 
 	//同步inode
 	inode_sync(cur_par, cur_dir->inode);
+
+	dir_close(par_dir);
 	dir_close(cur_dir);
 
 //	printk("sys_mkdir done\n");

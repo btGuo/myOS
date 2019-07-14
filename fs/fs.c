@@ -13,6 +13,7 @@
 #include "print.h"
 #include "thread.h"
 #include "block.h"
+#include "inode.h"
 
 //TODO 检查内存块复用
 //添加目录项缓冲
@@ -312,7 +313,6 @@ void sync(){
 void filesys_init(){
 
 	printk("filesys_init start\n");
-	char *default_part = "sdb1";
 	int cno = 0;
 	int dno = 0;
 	int pno = 0;
@@ -379,5 +379,34 @@ void filesys_init(){
 	}
 
 	printk("filesys_init done\n");
+}
+
+/**
+ * 获取文件状态
+ * @param path 文件路径
+ * @param st 输出缓冲
+ */
+int32_t sys_stat(const char *path, struct stat *st){
+
+	struct dir_entry dir_e;
+	struct dir *par_dir = search_dir_entry(cur_par, path, &dir_e);
+	if(!par_dir){
+		printk("sys_stat %s not found\n", path);
+		return -1;
+	}
+
+	struct inode_info *m_inode = inode_open(cur_par, dir_e.i_no);
+	if(!m_inode){
+		printk("sys_stat open inode failed\n");
+		return -1;
+	}
+
+	st->st_ino = m_inode->i_no;
+	st->st_size = m_inode->i_size;
+	st->st_ftype = dir_e.f_type;
+
+	dir_close(par_dir);
+	inode_close(m_inode);
+	return 0;
 }
 

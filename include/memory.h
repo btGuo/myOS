@@ -10,6 +10,17 @@
 #define MEM_BITMAP_BASE 0xc009a000
 #define VADDR_START 0xc0100000
 #define PAGE_DIR_TABLE_POS 0xfffff000
+#define MAX_PG_CNT (1 << 20)
+#define DESC_CNT 7
+
+
+/**
+ * 页描述符，每个物理页有一个
+ */
+struct page_desc{
+	struct list_head cache_tag; ///< 缓冲用
+	uint32_t order;      ///< 用于伙伴系统，当前页框的阶
+};
 
 struct pool{
 	struct bitmap pool_bitmap;
@@ -36,7 +47,6 @@ struct mem_block_desc{
 
 typedef struct list_head mem_block;
 
-#define DESC_CNT 7
 extern struct pool kernel_pool, user_pool;
 void mem_init(void);
 void *get_kernel_pages(uint32_t pg_cnt);

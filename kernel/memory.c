@@ -7,6 +7,7 @@
 
 struct virtual_addr kernel_vaddr;
 struct pool kernel_pool, user_pool;
+struct page_desc *page_table;
 extern struct task_struct *curr;
 
 //元数据块，表示两种内存，以页为单位分配时，desc为null;
@@ -19,6 +20,7 @@ struct mem_block_desc k_block_desc[DESC_CNT];
 
 static void mem_pool_init(uint32_t all_mem){
 	put_str("memory pool init start\n");
+	uint32_t all_pages = all_mem / PG_SIZE;
 	//页目录1 + 页表项255
 	uint32_t page_table_size = PG_SIZE * 256;
 	//低端1M内存加页表占用内存
@@ -63,6 +65,11 @@ static void mem_pool_init(uint32_t all_mem){
 	mutex_lock_init(&kernel_pool.lock);
 	mutex_lock_init(&user_pool.lock);
 
+	uint32_t pg_nums = sizeof(struct page_desc) * all_mem / PG_SIZE;
+	page_table = malloc_page(PF_KERNEL, pg_nums);
+	if(!page_table){
+		PANIC("we need more space!\n");
+	}
 	put_str("memory pool init done\n");
 }
 
@@ -321,6 +328,7 @@ static void *_malloc(enum pool_flags pf, uint32_t size){
 			a->desc = NULL;
 			a->cnt = pg_cnt;
 			mutex_lock_release(&mem_pool->lock);
+			//TODO 这里分配的大小可能会有问题，减去meta后可能不够阿
 			return (void *)(a + 1);
 		}
 	}else{

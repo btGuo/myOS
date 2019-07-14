@@ -5,23 +5,34 @@
 #include "string.h"
 #include "fs.h"
 #include "block.h"
+#include "hash_table.h"
+#include "dir.h"
 
 #define BUFFER_HEAD_SIZE 1024
-
 
 /**
  * @brief 比较函数，通过函数指针回调，性能上可能有问题
  */
-bool compare_inode(struct list_head *elem, uint32_t key){
+bool compare_inode(struct list_head *elem, void *key){
 	struct inode_info *m_inode = list_entry(struct inode_info, hash_tag, elem);
-	return m_inode->i_no == key;
+	uint32_t *_key = (uint32_t *)key;
+	return m_inode->i_no == *_key;
 }
 
-bool compare_block(struct list_head *elem, uint32_t key){
+bool compare_block(struct list_head *elem, void *key){
 	struct buffer_head *bh = list_entry(struct buffer_head, hash_tag, elem);
-	return bh->blk_nr == key;
+	uint32_t *_key = (uint32_t *)key;
+	return bh->blk_nr == *_key;
 }
 
+bool compare_dir_e(struct list_head *elem, void *key){
+	struct dir_e_info *m_dire = list_entry(struct dir_e_info, hash_tag, elem);
+	char *str = (char *)key;
+	if(!strcmp(m_dire->filename, str)){
+		return true;
+	}
+	return false;
+}
 
 /**
  * @brief 缓存替换先进先出
@@ -126,8 +137,8 @@ void disk_buffer_init(struct disk_buffer *d_buf, struct partition *part){
 	LIST_HEAD_INIT(d_buf->b_queue);
 	LIST_HEAD_INIT(d_buf->i_queue);
 
-	hash_table_init(&d_buf->b_map, (hash_func)compare_block);
-	hash_table_init(&d_buf->i_map, (hash_func)compare_inode);
+	hash_table_init(&d_buf->b_map, (hash_func)compare_block, (hashf_func)hashf_uint);
+	hash_table_init(&d_buf->i_map, (hash_func)compare_inode, (hashf_func)hashf_uint);
 
 }
 
@@ -141,7 +152,7 @@ void disk_buffer_init(struct disk_buffer *d_buf, struct partition *part){
  */
 struct buffer_head *buffer_read_block(struct disk_buffer *d_buf, uint32_t blk_nr){
 
-	struct list_head *lh = hash_table_find(&d_buf->b_map, blk_nr);
+	struct list_head *lh = hash_table_find(&d_buf->b_map, &blk_nr);
 	struct buffer_head *bh = NULL;
 	if(lh){
 		bh = list_entry(struct buffer_head, hash_tag, lh);
@@ -154,7 +165,7 @@ struct buffer_head *buffer_read_block(struct disk_buffer *d_buf, uint32_t blk_nr
 
 struct inode_info *buffer_read_inode(struct disk_buffer *d_buf, uint32_t i_no){
 	
-	struct list_head *lh = hash_table_find(&d_buf->i_map, i_no);
+	struct list_head *lh = hash_table_find(&d_buf->i_map, &i_no);
 	struct inode_info *m_inode = NULL;
 	if(lh){
 		m_inode = list_entry(struct inode_info, hash_tag, lh);
@@ -190,7 +201,7 @@ bool buffer_add_block(struct disk_buffer *d_buf, struct buffer_head *bh){
 	//printk("add block %d\n", bh->blk_nr);
 	++d_buf->b_size;
 	list_add_tail(&bh->queue_tag, &d_buf->b_queue);
-	hash_table_insert(&d_buf->b_map, &bh->hash_tag, bh->blk_nr);
+	hash_table_insert(&d_buf->b_map, &bh->hash_tag, &bh->blk_nr);
 	//printk("buffer add block\n");
 	return true;
 }
@@ -208,7 +219,7 @@ bool buffer_add_inode(struct disk_buffer *d_buf, struct inode_info *m_inode){
 
 	++d_buf->i_size;
 	list_add_tail(&m_inode->queue_tag, &d_buf->i_queue);
-	hash_table_insert(&d_buf->i_map, &m_inode->hash_tag, m_inode->i_no);
+	hash_table_insert(&d_buf->i_map, &m_inode->hash_tag, &m_inode->i_no);
 	//printk("buffer add inode\n");
 	return true;
 }

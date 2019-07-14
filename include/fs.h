@@ -58,6 +58,29 @@ enum whence{
 	SEEK_END       ///< 以文件末尾为参照
 };
 
+/**
+ * 文件属性结构体
+ */
+struct stat{
+	uint32_t st_ino;    ///< inode号
+	uint32_t st_size;   ///< 文件大小
+	enum file_types st_ftype;  ///< 文件类型
+};
+
+/**
+ * 文件系统描述符，类ext2
+ */
+struct ext2_fs{
+	struct super_block *sb;    ///< 分区超级块
+	struct group_info *groups;  ///< 块组指针
+	struct group_info *cur_gp;  ///< 当前使用块组
+	uint32_t groups_cnt;       ///< 块组数
+	uint32_t groups_blks;      ///< 块组struct group所占块数
+	struct disk_buffer io_buffer;     ///< 磁盘缓冲区，换成指针或许更好
+	struct partition *part;    ///< 挂载分区
+};
+
+const char *default_part = "sdb1";
 void sync();
 void filesys_init();
 #endif
