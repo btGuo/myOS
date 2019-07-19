@@ -5,66 +5,31 @@
 #include "thread.h"
 #include "interrupt.h"
 
-struct virtual_addr kernel_vaddr;
-struct pool kernel_pool, user_pool;
-extern struct task_struct *curr;
+#define VADDR_OFF (0xc0000000 - 0x00100000)
+/**
+ * 内核物理内存固定映射，由伙伴系统统一管理，用户物理内存动态映射，自由链表管理
+ */
 
-//元数据块，表示两种内存，以页为单位分配时，desc为null;
-struct meta{
-	struct mem_block_desc *desc;
-	uint32_t cnt;
-};
-//内核内存块描述符
-struct mem_block_desc k_block_desc[DESC_CNT];
+struct kmem_manager kmm;
+struct umem_manager umm;
 
 static void mem_pool_init(uint32_t all_mem){
-	put_str("memory pool init start\n");
-	uint32_t all_pages = all_mem / PG_SIZE;
-	//页目录1 + 页表项255
-	uint32_t page_table_size = PG_SIZE * 256;
-	//低端1M内存加页表占用内存
-	uint32_t used_mem = page_table_size + 0x100000;
-	uint32_t free_mem = all_mem - used_mem;
-	uint16_t free_pages = free_mem / PG_SIZE;
-
-	uint16_t kernel_free_pages = free_pages / 4;
-	uint16_t user_free_pages = free_pages - kernel_free_pages;
-
-	uint32_t kbm_len = kernel_free_pages / 8;
-	uint32_t ubm_len = user_free_pages / 8;
-
-	kernel_pool.phy_addr_start = used_mem;
-	user_pool.phy_addr_start = used_mem + kernel_free_pages * PG_SIZE;
-
-	kernel_pool.pool_size = kernel_free_pages * PG_SIZE;
-	user_pool.pool_size = user_free_pages * PG_SIZE;
-
-	kernel_pool.pool_bitmap.byte_len = kbm_len;
-	user_pool.pool_bitmap.byte_len = ubm_len;
-
-	kernel_pool.pool_bitmap.bits = (void*)MEM_BITMAP_BASE;
-	user_pool.pool_bitmap.bits = (void*)(MEM_BITMAP_BASE + kbm_len);
-
-	put_str("kernel_pool_phy_addr_start: ");
-	put_int(kernel_pool.phy_addr_start);
-	put_str("\n");
-
-	put_str("user_pool_phy_addr_start: ");
-	put_int(user_pool.phy_addr_start);
-	put_str("\n");
 	
-	bitmap_init(&kernel_pool.pool_bitmap);
-	bitmap_init(&user_pool.pool_bitmap);
+	put_str("memory pool init start\n");
+	uint32_t all_pgs = all_mem >> 12;
+	//内核物理页，占总内存1/4
+	uint32_t k_pgs = all_pgs >> 2;
+	uint32_t u_pgs = all_pgs - k_pgs;
+	km_manager_init(k_pgs, all_pgs, 0);
+	um_manager_init(u_pgs, 0 + k_pgs * PG_SIZE);
+}
 
-//	kernel_vaddr.vaddr_bitmap.byte_len = kbm_len;
-//	kernel_vaddr.vaddr_bitmap.bits = (void*)(MEM_BITMAP_BASE + kbm_len + ubm_len);
-	kernel_vaddr.vaddr_start = VADDR_START;
-//	bitmap_init(&kernel_vaddr.vaddr_bitmap);
+uint32_t pgdesc_to_paddr(struct page_desc *pg_desc){
+	return (pg_desc - kmm.page_table) * PG_SIZE;
+}
 
-	mutex_lock_init(&kernel_pool.lock);
-	mutex_lock_init(&user_pool.lock);
-
-	put_str("memory pool init done\n");
+struct page_desc *paddr_to_pgdesc(uint32_t paddr){
+	return &kmm.page_table[(paddr >> 12)];
 }
 
 inline uint32_t *PTE_PTR(uint32_t vaddr){
@@ -74,6 +39,280 @@ inline uint32_t *PTE_PTR(uint32_t vaddr){
 
 inline uint32_t *PDE_PTR(uint32_t vaddr){
 	return (uint32_t*)(PAGE_DIR_TABLE_POS + ((vaddr & 0xffc00000) >> 20));
+}
+
+static km_manager_init(uint32_t k_pgs, uint32_t all_pgs, uint32_t paddr_start){
+
+	ASSERT((paddr_start & ~(1 >> 22)) == 0)
+
+	uint32_t pgt_pgs = DIV_ROUND_UP(all_pgs * sizeof(struct page_desc), PG_SIZE);
+	uint32_t used_pgs = 512 + pgt_pgs;
+
+	uint32_t free_paddr_s = paddr_start + used_pgs * PG_SIZE;
+	//4M对齐
+	uint32_t buddy_paddr_start = DIV_ROUND_UP(free_paddr_s, (1 << 22));
+	//中间零散的页
+	uint32_t res_pgs = (buddy_paddr_start - free_paddr_s) / PG_SIZE;
+	
+	kmm.vaddr_start = K_VADDR_START;
+	kmm.paddr_start = paddr_start;
+	kmm.pages = k_pgs;
+	kmm.page_table = (struct page_desc *)0xc0200000;
+	//建立内核页表
+	build_k_pgtable(k_pgs);
+	//初始化伙伴系统
+	buddy_sys_init(&kmm.buddy, buddy_paddr_start, buddy_pgs);
+	
+	//剩余零散页加到用户内存池里
+	add_km_pg_cache(free_paddr_s, res_pgs);
+
+	block_desc_init(kmm.block_desc);
+	mutex_lock_init(&kmm.lock);
+}
+
+static void add_km_pg_cache(uint32_t s_paddr, uint32_t pgs){
+	struct page_desc *pg = paddr_to_pgdesc(s_paddr);
+	while(pgs--){
+		list_add(&pg->cache_tag, &kmm.page_caches);
+		++pg;
+	}
+	kmm.pg_cahces_cnt = pgs;
+}
+
+static void um_manager_init(uint32_t u_pgs, uint32_t paddr_start){
+	
+	umm.page_table = kmm.page_table + kmm.pages;
+	umm.pages = u_pgs;
+	umm.paddr_start = paddr_start;
+	umm.free_pages = u_pgs;
+}	
+
+uint32_t palloc(enum pool_flags pf, uint32_t pg_cnt){
+
+	struct page_desc *pg_desc = NULL; 
+	if(pf == PF_KERNEL){
+
+		if(pg_cnt == 1 && !list_empty(&kmm.page_caches)){
+
+			struct list_head *lh = kmm.page_caches.next;
+			list_del(lh);
+			pg_desc = list_entry(struct page_desc, cache_tag, lh);
+		}else {
+			uint32_t cnt = 1;
+			uint32_t order = 0;
+			while(cnt < pg_cnt){
+				cnt <<= 1;
+				++order;
+			}
+			pg_desc = buddy_alloc(&kmm.buddy, order);
+		}
+		return pgdesc_to_paddr(pg_desc);
+	}
+	
+	ASSERT(pg_cnt == 1);
+	if(list_empty(&umm.page_caches)){
+		pg = umm.page_table + (umm.pages - umm.free_pages);
+		--umm.free_pages;
+	}
+	struct list_head *lh = umm.page_caches.next;
+	list_del(lh);
+	pg_desc = list_entry(struct page_desc, cache_tag, lh);
+
+	return pgdesc_to_paddr(pg_desc);
+}
+
+void pfree(uint32_t paddr){
+
+	struct page_desc *pg_desc = paddr_to_pgdesc(paddr);
+	if(paddr < umm.paddr_start){
+
+		if(paddr >= kmm.buddy_paddr_start)
+			buddy_free(&kmm.buddy,pg_desc);
+		else 
+			list_add(&pg_desc->cache_tag, &kmm.page_caches);
+		return;
+	}
+	list_add(&pg_desc->cache_tag, &umm.page_caches);
+}
+
+void *malloc_page(enum pool_flags pf, uint32_t pg_cnt){
+	
+	if(pf == PF_KERNEL){
+		uint32_t paddr = palloc(pf, pg_cnt);
+		return (void *)(paddr + VADDR_OFF);
+	}
+	//TODO pf == PF_USER
+}	
+
+void free_page(enum pool_flags pf, void *_vaddr, uint32_t pg_cnt){
+	
+	if(pf == PF_KERNEL){
+		uint32_t paddr = (uint32_t)_vaddr - VADDR_OFF;
+		pfree(paddr);
+	}
+	//TODO
+}
+
+//申请内核内存
+void *get_kernel_pages(uint32_t pg_cnt){
+	mutex_lock_acquire(&kmm.lock);
+	void *vaddr = malloc_page(PF_KERNEL, pg_cnt);
+	if(vaddr != NULL)
+		memset(vaddr, 0 , pg_cnt * PG_SIZE);
+	mutex_lock_release(&kmm.lock);
+	return vaddr;
+}
+
+//申请用户内存
+//此处要上锁
+void *get_user_pages(uint32_t pg_cnt){
+	//TODO
+}
+
+uint32_t addr_v2p(uint32_t vaddr){
+	uint32_t *pte = PTE_PTR(vaddr);
+	return ((*pte & 0xfffff000) + (vaddr & 0x00000fff));
+}
+
+void block_desc_init(struct mem_block_desc *blk_desc){
+	int i;
+	int block_size = 16;
+	for(i = 0; i < DESC_CNT; ++i){
+		blk_desc[i].block_size = block_size;
+		blk_desc[i].blocks = (PG_SIZE - sizeof(struct meta)) / block_size;
+		LIST_HEAD_INIT(blk_desc[i].free_list);
+		block_size *= 2;
+	}
+}
+
+static mem_block *meta2block(struct meta *a, uint32_t idx){
+	return (mem_block*)(\
+			(uint32_t)a + sizeof(struct meta) + idx * a->desc->block_size);
+}
+
+static struct meta *block2meta(mem_block *blk){
+	return (struct meta *)((uint32_t)blk & 0xfffff000);
+}
+
+void *kmalloc(uint32_t size){
+	
+	if(size <= 0 || size > kmm.pages * PG_SIZE)
+		return NULL;
+
+	struct mem_block_desc *blk_desc = kmm.block_desc;
+
+	mutex_lock_acquire(&kmm->lock);
+	//大于1024时直接分配页
+	if(size > 1024){
+	
+		uint32_t pg_cnt = DIV_ROUND_UP(size + sizeof(struct meta), \
+				PG_SIZE);
+		a = malloc_page(PF_KERNEL, pg_cnt);
+		if(a == NULL){
+			mutex_lock_release(&kmm.lock);
+			return NULL;
+		}else{
+			memset(a, 0, PG_SIZE * pg_cnt);
+			a->desc = NULL;
+			a->cnt = pg_cnt;
+			mutex_lock_release(&kmm.lock);
+			return (void *)(a + 1);
+		}
+	}else{
+		struct meta *a;
+		int idx;
+		//找到合适的块
+		for(idx = 0; idx < DESC_CNT; ++idx){
+			if(size <= blk_desc[idx].block_size){
+				break;
+			}
+		}
+		//自由链表为空，重新申请内存
+		if(list_empty(&blk_desc[idx].free_list)){
+			//分配一页
+			a = malloc_page(PF_KERNEL, 1);
+			if(a == NULL){
+				mutex_lock_release(&mem_pool->lock);
+				return NULL;
+			}
+			memset(a, 0, PG_SIZE);
+			//初始化元数据块
+			a->desc = blk_desc + idx;
+			a->cnt = blk_desc[idx].blocks;
+
+			enum intr_status old_stat = intr_disable();
+			uint32_t i;
+			//加入自由链表
+			for(i = 0; i < a->cnt; ++i){
+				blk = meta2block(a, i);
+				list_add(blk, &blk_desc[idx].free_list);
+			}
+
+			intr_set_status(old_stat);
+		}
+		blk = blk_desc[idx].free_list.next;
+		list_del(blk);
+		a = block2meta(blk);
+		--a->cnt;
+		mutex_lock_release(&mem_pool->lock);
+		return (void *)blk;
+	}
+}
+
+void kfree(void *ptr){
+	
+	mutex_lock_acquire(&kmm.lock);
+	mem_block *blk = ptr;
+	struct meta *m = block2meta(blk);
+	if(m->desc == NULL){
+
+		free_page(PF_KERNEL, m, m->cnt);
+	}else {
+
+		list_add_tail(blk, &m->desc->free_list);
+		//TODO 块满时应该归还内存, 可以有别的策略
+		if(++m->cnt == m->desc->blocks){
+			uint32_t i = m->desc->blocks;
+			mem_block *tmp = NULL;
+			//删除该块在自由链表中的缓存
+			while(i--){
+				tmp = meta2block(m, i);
+				list_del(tmp);
+			}
+			free_page(PF_KERNEL, m, 1);
+		}
+	}
+		
+	mutex_lock_release(&kmm.lock);
+}
+
+
+/**
+ * 内核内存全部映射
+ * @param pg_cnt 内核物理页数
+ */
+
+void build_k_pgtable(uint32_t pg_cnt){
+
+	//前2M已经用了
+	uint32_t paddr = 1 >> 21;
+
+	pg_cnt -= 512;
+
+	uint32_t vaddr = 0xc0100000;
+	uint32_t *pde_ptr = PDE_PTR(vaddr);
+	uint32_t *pte_ptr = PTE_PTR(vaddr);
+
+	while(pg_cnt){
+		uint32_t size = 1024;
+		while(size-- && pg_cnt){	
+			*pte_ptr = paddr;
+			paddr += PG_SIZE;
+			++pte_ptr;
+			--pg_cnt;
+		}
+		++pde_ptr;
+	}
 }
 
 //寻找pg_cnt 个连续虚拟页
@@ -128,31 +367,6 @@ static void *vaddr_get(enum pool_flags pf, uint32_t pg_cnt){
 }
 
 
-//分配一页物理内存
-static void* palloc(struct pool *m_pool){
-	int idx = bitmap_scan(&m_pool->pool_bitmap, 1);
-	if(idx == -1){
-		return NULL;
-	}
-	bitmap_set(&m_pool->pool_bitmap, idx, 1);
-	uint32_t phy_addr = idx * PG_SIZE + m_pool->phy_addr_start;
-	return (void*)phy_addr;
-}
-
-//释放一页物理页
-void pfree(uint32_t paddr){
-	struct pool *mem_pool;
-	uint32_t idx = 0;
-	if(paddr >= user_pool.phy_addr_start){
-		mem_pool = &user_pool;
-	}else {
-		mem_pool = &kernel_pool;
-	}
-	idx = paddr - mem_pool->phy_addr_start;
-	bitmap_set(&mem_pool->pool_bitmap, idx, 0);
-}
-
-
 //映射一页物理内存和虚拟内存
 static void page_table_add(void *_vaddr, void *_paddr){
 	uint32_t vaddr = (uint32_t)_vaddr;
@@ -184,271 +398,46 @@ static void page_table_pte_remove(uint32_t vaddr){
 	asm volatile("invlpg %0" : : "m"(vaddr) : "memory");
 }
 
-//分配多页内存,顶层接口
-//先寻找物理内存和虚拟内存，映射后返回地址
-void *malloc_page(enum pool_flags pf, uint32_t pg_cnt){
-	struct pool *mem_pool = NULL;
-	if(pf == PF_KERNEL){
-		ASSERT(pg_cnt > 0 && pg_cnt < kernel_pool.pool_size / PG_SIZE);
-		mem_pool = &kernel_pool;
-	}else{
-		ASSERT(pg_cnt > 0 && pg_cnt < user_pool.pool_size / PG_SIZE);
-		mem_pool = &user_pool;
-	}
+void copy_page_table(uint32_t *pde){
 
-	void *vaddr_start = vaddr_get(pf, pg_cnt);
-	uint32_t vaddr = (uint32_t)vaddr_start;
+	uint32_t *pde_src = curr->pg_dir;
+	uint32_t *pte_src = PTE_PTR(0);
+	uint32_t cnt = 768;
+	uint32_t paddr = 0;
+	uint32_t *vaddr = NULL;
+	while(cnt--){
 
-	if(vaddr_start == NULL)
-		return NULL;
-	while(pg_cnt--){
-		void *paddr = palloc(mem_pool);
-		if(paddr == NULL)
-			return NULL;
-		page_table_add((void*)vaddr, paddr);
-		vaddr += PG_SIZE;
-	}
-	return vaddr_start;
-}
-
-//释放多页内存，顶层接口
-//pf其实不需要
-void free_page(enum pool_flags pf, void *_vaddr, uint32_t pg_cnt){
-	uint32_t vaddr = (uint32_t)_vaddr;
-	uint32_t paddr = addr_v2p(vaddr);
-	while(pg_cnt--){
-		pfree(paddr);
-		page_table_pte_remove(vaddr);
-
-		vaddr += PG_SIZE;
-		paddr = addr_v2p(vaddr);
-	}
-}
-
-//申请内核内存
-void *get_kernel_pages(uint32_t pg_cnt){
-	void *vaddr = malloc_page(PF_KERNEL, pg_cnt);
-	if(vaddr != NULL)
-		memset(vaddr, 0 , pg_cnt * PG_SIZE);
-	return vaddr;
-}
-
-//申请用户内存
-//此处要上锁
-void *get_user_pages(uint32_t pg_cnt){
-	mutex_lock_acquire(&user_pool.lock);
-	void *vaddr = malloc_page(PF_USER, pg_cnt);
-	if(vaddr != NULL)
-		memset(vaddr, 0, pg_cnt * PG_SIZE);
-	mutex_lock_release(&user_pool.lock);
-	return vaddr;
-}
-
-//指定虚拟内存，只映射一页
-void *get_a_page(enum pool_flags pf, uint32_t vaddr){
-	struct pool *mem_pool = pf & PF_KERNEL ? &kernel_pool :&user_pool;
-	mutex_lock_acquire(&mem_pool->lock);
-
-	void *paddr = palloc(mem_pool);
-	if(paddr == NULL)
-		return NULL;
-	page_table_add((void*)vaddr, paddr);
-	mutex_lock_release(&mem_pool->lock);
-	return (void*)vaddr;
-}
-
-uint32_t addr_v2p(uint32_t vaddr){
-	uint32_t *pte = PTE_PTR(vaddr);
-	return ((*pte & 0xfffff000) + (vaddr & 0x00000fff));
-}
-
-void block_desc_init(struct mem_block_desc *blk_desc){
-	int i;
-	int block_size = 16;
-	for(i = 0; i < DESC_CNT; ++i){
-		blk_desc[i].block_size = block_size;
-		blk_desc[i].blocks = (PG_SIZE - sizeof(struct meta)) / block_size;
-		LIST_HEAD_INIT(blk_desc[i].free_list);
-		block_size *= 2;
-	}
-}
-
-static mem_block *meta2block(struct meta *a, uint32_t idx){
-	return (mem_block*)(\
-			(uint32_t)a + sizeof(struct meta) + idx * a->desc->block_size);
-}
-
-static struct meta *block2meta(mem_block *blk){
-	return (struct meta *)((uint32_t)blk & 0xfffff000);
-}
-
-static void *_malloc(enum pool_flags pf, uint32_t size){
-
-	uint32_t pool_size = 0;
-	struct mem_block_desc *blk_desc = NULL;
-	mem_block *blk;
-	struct pool * mem_pool;
-
-	if(pf == PF_USER){
-
-		blk_desc = curr->u_block_desc;
-		pool_size = user_pool.pool_size;
-		mem_pool  = &user_pool;
-
-	}else if(pf == PF_KERNEL){
-
-		blk_desc = k_block_desc;
-		pool_size = kernel_pool.pool_size;
-		mem_pool = &kernel_pool;
-	}else {
-		PANIC("pool_flags error\n");
-	}
-
-	if(size <= 0 || size > pool_size){
-		return NULL;
-	}
-
-	mutex_lock_acquire(&mem_pool->lock);
-	struct meta *a;
-	//大于1024时直接分配页
-	if(size > 1024){
-		uint32_t pg_cnt = DIV_ROUND_UP(size + sizeof(struct meta), \
-				PG_SIZE);
-		a = malloc_page(pf, pg_cnt);
-		if(a == NULL){
-			mutex_lock_release(&mem_pool->lock);
-			return NULL;
-		}else{
-			memset(a, 0, PG_SIZE * pg_cnt);
-			a->desc = NULL;
-			a->cnt = pg_cnt;
-			mutex_lock_release(&mem_pool->lock);
-			//TODO 这里分配的大小可能会有问题，减去meta后可能不够阿
-			return (void *)(a + 1);
-		}
-	}else{
-		int idx;
-		//找到合适的块
-		for(idx = 0; idx < DESC_CNT; ++idx){
-			if(size <= blk_desc[idx].block_size){
-				break;
+		if(*pde_src & 0x1){
+			//TODO 确认页是否脏
+			paddr = palloc(PF_USER, 1);
+			paddr |= 0x7;
+			*pde = paddr;
+			vaddr = vaddr_get(PF_KERNEL, 1);
+			//临时映射
+			page_table_add(paddr, vaddr);
+			uint32_t size = 1024;
+			while(size--){
+				if(*pte_src & 0x1){
+					*pte_src &= ~2；
+					*vaddr = *pte_src;
+				}
+				++pte_src;
+				++vaddr;
 			}
-		}
-		//自由链表为空，重新申请内存
-		if(list_empty(&blk_desc[idx].free_list)){
-			//分配一页
-			a = malloc_page(pf, 1);
-			if(a == NULL){
-				mutex_lock_release(&mem_pool->lock);
-				return NULL;
-			}
-			memset(a, 0, PG_SIZE);
-			//初始化元数据块
-			a->desc = blk_desc + idx;
-			a->cnt = blk_desc[idx].blocks;
-
-			enum intr_status old_stat = intr_disable();
-			uint32_t i;
-			//加入自由链表
-			for(i = 0; i < a->cnt; ++i){
-				blk = meta2block(a, i);
-				list_add(blk, &blk_desc[idx].free_list);
-			}
-
-			intr_set_status(old_stat);
-		}
-		blk = blk_desc[idx].free_list.next;
-		list_del(blk);
-		a = block2meta(blk);
-		--a->cnt;
-		mutex_lock_release(&mem_pool->lock);
-		return (void *)blk;
+			page_table_pte_remove(vaddr);
+		}	
+		++pde_src;
+		++pde;
+	}
+	//复制内核页表
+	cnt = 255;
+	while(cnt--){
+		*pde++ = *pde_src;
 	}
 }
 
-static void _free(enum pool_flags pf, void *ptr){
-
-	struct pool *mem_pool;
-	if(pf == PF_USER){
-		
-		mem_pool = &user_pool;
-
-	}else if(pf == PF_KERNEL){
-
-		mem_pool = &kernel_pool;
-	}else {
-		PANIC("pool flag error\n");
-	}
-
-	mutex_lock_acquire(&mem_pool->lock);
-	mem_block *blk = ptr;
-	struct meta *m = block2meta(blk);
-	if(m->desc == NULL){
-		free_page(pf, m, m->cnt);
-	}else {
-		list_add_tail(blk, &m->desc->free_list);
-		//块满时应该归还内存, 可以有别的策略
-		if(++m->cnt == m->desc->blocks){
-			uint32_t i = m->desc->blocks;
-			mem_block *tmp = NULL;
-			//删除该块在自由链表中的缓存
-			while(i--){
-				tmp = meta2block(m, i);
-				list_del(tmp);
-			}
-			free_page(pf, m, 1);
-		}
-	}
-	
-	mutex_lock_release(&mem_pool->lock);
-}
 
 
-/**
- * 按字节分配内存
- */
-void *sys_malloc(uint32_t size){
-
-	if(curr->pg_dir){
-		return _malloc(PF_USER, size);
-	}
-	return _malloc(PF_KERNEL, size);
-}	
-
-void sys_free(void *ptr){
-	ASSERT(ptr != NULL);
-
-	if(curr->pg_dir){
-
-		_free(PF_USER, ptr);
-	}else {
-		_free(PF_KERNEL, ptr);
-	}
-}
-
-/**
- * 分配内核内存
- */
-void *kmalloc(uint32_t size){
-
-	return _malloc(PF_KERNEL, size);
-}
-
-/**
- * 释放内核内存
- */
-void kfree(void *ptr){
-	ASSERT(ptr != NULL);
-	_free(PF_KERNEL, ptr);
-}
-
-void mem_init(){
-	put_str("mem_init start\n");
-	mutex_lock_init(&user_pool.lock);
-	mutex_lock_init(&kernel_pool.lock);
-	uint32_t all_mem = *((uint32_t*)0xb00);
-	mem_pool_init(all_mem);
-	block_desc_init(k_block_desc);
-	put_str("mem_init done\n");
-}
+			
+			
 
