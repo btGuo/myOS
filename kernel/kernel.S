@@ -21,11 +21,13 @@ intr%1entry:
 	push fs
 	push gs
 	pushad
+	mov eax, [esp + 4 * 12]
 ;向8259发送信号
 	mov al, 0x20
 	out 0xa0, al
 	out 0x20, al
 
+	push eax
 	push %1
 	call [idt_table + %1 * 4]
 	jmp intr_exit
@@ -38,7 +40,7 @@ section .data
 section .text
 global intr_exit
 intr_exit:
-	add esp, 4
+	add esp, 8
 	popad
 	pop gs
 	pop fs

@@ -18,6 +18,7 @@
 //TODO 检查内存块复用
 //添加目录项缓冲
 
+const char *default_part = "sdb1";
 struct partition *cur_par = NULL; ///< 当前活跃分区
 extern uint8_t channel_cnt;
 extern struct ide_channel channels[2];

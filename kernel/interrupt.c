@@ -69,7 +69,7 @@ static void idt_desc_init(void){
 	put_str("   idt_desc_init done\n");
 }
 
-static void general_intr_handler(uint8_t vec_nr){
+static void general_intr_handler(uint8_t vec_nr, uint8_t err_code){
 	if(vec_nr == 0x27 || vec_nr == 0x2f){
 		return;
 	}

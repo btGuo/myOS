@@ -1,6 +1,8 @@
 #ifndef __FS_FS_H
 #define __FS_FS_H
 
+#include "buffer.h"
+
 #define SECTOR_SIZE 512
 #define BLOCK_SIZE 1024
 #define GROUP_SIZE (8192 * BLOCK_SIZE)
@@ -80,7 +82,6 @@ struct ext2_fs{
 	struct partition *part;    ///< 挂载分区
 };
 
-const char *default_part = "sdb1";
 void sync();
 void filesys_init();
 #endif

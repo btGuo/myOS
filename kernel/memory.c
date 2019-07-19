@@ -7,7 +7,6 @@
 
 struct virtual_addr kernel_vaddr;
 struct pool kernel_pool, user_pool;
-struct page_desc *page_table;
 extern struct task_struct *curr;
 
 //元数据块，表示两种内存，以页为单位分配时，desc为null;
@@ -65,20 +64,15 @@ static void mem_pool_init(uint32_t all_mem){
 	mutex_lock_init(&kernel_pool.lock);
 	mutex_lock_init(&user_pool.lock);
 
-	uint32_t pg_nums = sizeof(struct page_desc) * all_mem / PG_SIZE;
-	page_table = malloc_page(PF_KERNEL, pg_nums);
-	if(!page_table){
-		PANIC("we need more space!\n");
-	}
 	put_str("memory pool init done\n");
 }
 
-inline uint32_t *pte_ptr(uint32_t vaddr){
+inline uint32_t *PTE_PTR(uint32_t vaddr){
 	return (uint32_t*)(0xffc00000 + ((vaddr & 0xffc00000) >> 10) + \
 			((vaddr & 0x003ff000) >> 10));
 }
 
-inline uint32_t *pde_ptr(uint32_t vaddr){
+inline uint32_t *PDE_PTR(uint32_t vaddr){
 	return (uint32_t*)(PAGE_DIR_TABLE_POS + ((vaddr & 0xffc00000) >> 20));
 }
 
@@ -91,13 +85,13 @@ static void *vaddr_get(enum pool_flags pf, uint32_t pg_cnt){
 	//记录当前遍历到的虚拟地址
 	uint32_t vaddr = start_addr;
 
-	uint32_t *pde = pde_ptr(start_addr);
+	uint32_t *pde = PDE_PTR(start_addr);
 	//最后一个页目录项不能用
 	//用户虚拟内存最高为0xc0000000
 	uint32_t *pde_end = (pf == PF_KERNEL) ?
-		 pde_ptr(0xffffffff) : pde_ptr(0xbfffffff);
+		 PDE_PTR(0xffffffff) : PDE_PTR(0xbfffffff);
 
-	uint32_t *pte = pte_ptr(start_addr);
+	uint32_t *pte = PTE_PTR(start_addr);
 	uint32_t *pte_end = NULL;
 	uint32_t cnt = 0;
 	
@@ -163,8 +157,8 @@ void pfree(uint32_t paddr){
 static void page_table_add(void *_vaddr, void *_paddr){
 	uint32_t vaddr = (uint32_t)_vaddr;
 	uint32_t paddr = (uint32_t)_paddr;
-	uint32_t *pde = pde_ptr(vaddr);
-	uint32_t *pte = pte_ptr(vaddr);
+	uint32_t *pde = PDE_PTR(vaddr);
+	uint32_t *pte = PTE_PTR(vaddr);
 
 	if(*pde & 0x00000001){
 	//页表存在
@@ -182,10 +176,11 @@ static void page_table_add(void *_vaddr, void *_paddr){
 }
 
 static void page_table_pte_remove(uint32_t vaddr){
-	uint32_t *pte = pte_ptr(vaddr);
+	uint32_t *pte = PTE_PTR(vaddr);
 	//p位置0
 	*pte &= (~ 1);
 	//刷新TLB
+	//TODO 频繁刷新会导致效率底下，应尽量一次操作完再刷新
 	asm volatile("invlpg %0" : : "m"(vaddr) : "memory");
 }
 
@@ -263,7 +258,7 @@ void *get_a_page(enum pool_flags pf, uint32_t vaddr){
 }
 
 uint32_t addr_v2p(uint32_t vaddr){
-	uint32_t *pte = pte_ptr(vaddr);
+	uint32_t *pte = PTE_PTR(vaddr);
 	return ((*pte & 0xfffff000) + (vaddr & 0x00000fff));
 }
 
