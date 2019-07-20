@@ -16,6 +16,7 @@ void init_all(){
 	idt_init();
 	timer_init();
 	mem_init();
+/*
 	thread_init();
 	console_init();
 	keyboard_init();
@@ -23,5 +24,6 @@ void init_all(){
 	sys_call_init();
 	ide_init();
 	filesys_init();
+*/
 	put_str("init_all done\n");
 }

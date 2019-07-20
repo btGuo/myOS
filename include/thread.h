@@ -3,6 +3,7 @@
 #include "stdint.h"
 #include "list.h"
 #include "memory.h"
+#include "vm_area.h"
 
 typedef void thread_func(void*);
 void schedule();
@@ -15,7 +16,7 @@ void thread_yield(void);
 void thread_create(struct task_struct *pthread, thread_func function, void *func_arg);
 
 void thread_init();
-typedef uint32_t pid_t;
+typedef int32_t pid_t;
 
 #define PG_SIZE 4096         ///< 页大小
 #define MAIN_PCB 0xc009e000     ///< 主线程pcb所在地址
@@ -91,9 +92,11 @@ struct task_struct{
 	uint32_t *pg_dir;                 ///<  页目录指针
 	struct virtual_addr userprog_vaddr; ///<  虚拟地址 
 	pid_t pid;                          ///<  任务号
-	struct mem_block_desc u_block_desc[DESC_CNT]; ///< 内存块描述符表
+	pid_t par_pid;
+//	struct mem_block_desc u_block_desc[DESC_CNT]; ///< 内存块描述符表
 	int32_t fd_table[MAX_FILES_OPEN_PER_PROC];    ///< 文件号表
 	uint32_t stack_magic;                        ///< 魔数，标记是否越界
+	struct vm_struct vm_struct;
 };
 
 

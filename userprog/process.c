@@ -5,13 +5,47 @@
 #include "tss.h"
 #include "interrupt.h"
 #include "print.h"
+#include "vm_area.h"
 
 extern void intr_exit(void);
 extern struct task_struct *curr;
 extern struct list_head thread_ready_list;
 extern struct list_head thread_all_list;
 
+/**
+ * 初始化进程内存区
+ */
+void vm_struct_init(){
+
+	struct vm_area *area = NULL;
+
+	//堆线性区
+	area = &curr->vm_struct.vm_heap;
+	area->start_addr = USER_HEAP_VADDR;
+	area->size = (1 << 20);
+	area->vm_type = VM_DOWNWARD;
+
+	//栈线性区
+	area = &curr->vm_struct.vm_stack;
+	area->start_addr = USER_STAKC_VADDR;
+	area->size = (1 << 20);
+	area->vm_type = VM_UPWARD;
+
+	//内核线性区
+	area = &curr->vm_struct.vm_kernel;
+	area->start_addr = kmm.vm_kernel.start_addr;
+	area->size = kmm.vm_kernel.size;
+	area->vm_type = kmm.vm_kernel.vm_type;
+
+	LIST_HEAD_INIT(curr->vm_struct.vm_list);
+}
+
+/**
+ * 进程开始，这里任务已经切换，已经是新进程地址空间
+ */
 void start_process(void *filename_){
+	
+	vm_struct_init();
 	void *function = filename_;
 
 	curr->self_kstack += sizeof(struct thread_stack);
@@ -24,13 +58,16 @@ void start_process(void *filename_){
 
 	proc_stack->eip = function;
 	proc_stack->eflags = EFLAGS_MBS | EFLAGS_IF_ON | EFLAGS_IOPL_0;
-	proc_stack->esp = (void *) ((uint32_t)get_a_page(PF_USER, \
-			   	USER_STAKC_VADDR) + PG_SIZE);
+	//分配用户栈
+	proc_stack->esp = (void *)USER_STAKC_VADDR;
 
 	asm volatile("movl %0, %%esp; jmp intr_exit;"\
 			::"g"(proc_stack):"memory");
 }
 
+/**
+ * 激活页目录
+ */
 void page_dir_activate(struct task_struct *p_thread){
 	uint32_t paddr = 0x100000;
 	if(p_thread->pg_dir){
@@ -39,6 +76,9 @@ void page_dir_activate(struct task_struct *p_thread){
 	asm volatile("movl %0, %%cr3"::"r"(paddr):"memory");
 }
 
+/**
+ * 激活进程，在schedule中被调用
+ */
 void process_activate(struct task_struct *p_thread){
 	page_dir_activate(p_thread);
 	if(p_thread->pg_dir){
@@ -46,6 +86,9 @@ void process_activate(struct task_struct *p_thread){
 	}
 }
 
+/**
+ * 创建新进程页目录
+ */
 uint32_t *create_page_dir(void){
 	uint32_t *vaddr = get_kernel_pages(1);
 	if(vaddr == NULL){
@@ -61,18 +104,9 @@ uint32_t *create_page_dir(void){
 	return vaddr;
 }
 
-/*
-void create_user_vaddr_bitmap(struct task_struct *user_prog){
-	user_prog->userprog_vaddr.vaddr_start = USER_VADDR_START;
-	//以页为单位申请空间
-	uint32_t cnt = DIV_ROUND_UP((0xc0000000 - USER_VADDR_START) /\
-		   	PG_SIZE / 8, PG_SIZE);
-	user_prog->userprog_vaddr.vaddr_bitmap.bits = get_kernel_pages(cnt);
-	user_prog->userprog_vaddr.vaddr_bitmap.byte_len = cnt;
-	bitmap_init(&user_prog->userprog_vaddr.vaddr_bitmap);
-}
-*/
-
+/**
+ * 创建新进程，分配相关资源
+ */
 void process_execute(void *filename, char *name){
 	struct task_struct *thread = get_kernel_pages(1);
 	init_thread(thread, name, default_prio);
@@ -81,7 +115,6 @@ void process_execute(void *filename, char *name){
 	thread->pg_dir= create_page_dir();
 	//初始化虚拟地址
 	thread->userprog_vaddr.vaddr_start = USER_VADDR_START;
-	block_desc_init(thread->u_block_desc);
 	
 	enum intr_status old_stat = intr_disable();
 	list_add_tail(&thread->ready_tag, &thread_ready_list);

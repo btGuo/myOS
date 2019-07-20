@@ -59,6 +59,7 @@ int main() {
 //	int fd = sys_open("/dir1/fa", O_CREAT | O_RDWR);
 //	sys_close(fd);
 
+/*
 	struct dir *dir = sys_opendir("/dir1");
 	if(!dir){
 		printk("open failed\n");
@@ -69,6 +70,8 @@ int main() {
 	}
 	printk("\n");
 	sync();
+*/
+
 
 	while(1);
 	return 0;

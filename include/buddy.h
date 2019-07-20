@@ -3,7 +3,7 @@
 
 #include "list.h"
 
-#define MAX_ORDER 11
+#define MAX_ORDER 10
 
 struct free_area{
 	struct list_head free_list;
@@ -15,6 +15,8 @@ struct buddy_sys{
 	uint32_t start_addr;
 };
 
-typedef struct list_head area_head;
+void buddy_sys_init(struct buddy_sys *buddy, uint32_t s_paddr, uint32_t pgs);
+struct page_desc *buddy_alloc(struct buddy_sys *buddy, uint32_t order);
+void buddy_free(struct buddy_sys *buddy, struct page_desc *pg_desc);
 
 #endif

@@ -18,15 +18,11 @@ struct vm_area{
 	uint32_t size;
 };
 
-struct proc_heap{
-	struct bitmap bmp;
-	struct vm_area *vm_heap;
-}
 struct vm_struct{
 	struct list_head vm_list;
-	struct vm_area *vm_stack;
-	struct vm_area *vm_heap;
-	
+	struct vm_area vm_stack;
+	struct vm_area vm_heap;
+	struct vm_area vm_kernel;
 };	
 
 #endif
