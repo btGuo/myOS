@@ -12,6 +12,27 @@ extern struct task_struct *curr;
 extern struct list_head thread_ready_list;
 extern struct list_head thread_all_list;
 
+bool try_expend_heap(){
+	struct vm_area *heap = &curr->vm_struct.vm_heap;
+	struct vm_area *stack = &curr->vm_struct.vm_stack;
+	//这里比较暴力，直接扩大1M
+	heap->size += (1 << 20);
+	if(heap->start_addr + heap->size > stack->start_addr)
+		return false;
+	return true;
+}
+
+bool try_expend_stack(){
+	struct vm_area *heap = &curr->vm_struct.vm_heap;
+	struct vm_area *stack = &curr->vm_struct.vm_stack;
+	//这里比较暴力，直接扩大1M
+	stack->start_addr -= (1 << 20);
+	stack->size += (1 << 20);
+	if(heap->start_addr + heap->size > stack->start_addr)
+		return false;
+	return true;
+}
+
 /**
  * 初始化进程内存区
  */
@@ -59,7 +80,7 @@ void start_process(void *filename_){
 	proc_stack->eip = function;
 	proc_stack->eflags = EFLAGS_MBS | EFLAGS_IF_ON | EFLAGS_IOPL_0;
 	//分配用户栈
-	proc_stack->esp = (void *)USER_STAKC_VADDR;
+	proc_stack->esp = (void *)(USER_STAKC_VADDR + (1 << 20));
 
 	asm volatile("movl %0, %%esp; jmp intr_exit;"\
 			::"g"(proc_stack):"memory");

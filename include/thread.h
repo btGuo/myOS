@@ -99,5 +99,15 @@ struct task_struct{
 	struct vm_struct vm_struct;
 };
 
+#define MAX_PID 32768
+struct pid_pool{
+	struct bitmap bmp;
+	struct mutex_lock lock;
+	uint32_t pid_start;
+};
+
+extern struct task_struct *curr;
+extern struct list_head thread_all_list;
+extern struct list_head thread_ready_list;
 
 #endif

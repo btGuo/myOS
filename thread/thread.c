@@ -10,6 +10,7 @@ struct task_struct *curr;
 struct task_struct *idle_thread;
 LIST_HEAD(thread_all_list);
 LIST_HEAD(thread_ready_list);
+struct pid_pool pid_pool;
 
 void print_thread(struct task_struct *task){
 	put_str("vaddr :");put_int((uint32_t)task);put_char('\n');
@@ -24,11 +25,20 @@ static void kernel_thread(thread_func *function, void *func_arg){
 	function(func_arg);
 }
 
-static pid_t allocate_pid(void){
+void pid_pool_init(void){
+	pid_pool.pid_start = 1;
+	mutex_lock_init(&pid_pool.lock);
+	//TODO
+}
+
+pid_t allocate_pid(void){
 	static pid_t next_pid = 0;
 	++next_pid;
 	return next_pid;
 }
+
+void release_pid(pid_t pid){
+
 
 static void idle(void UNUSED){
 	while(1){

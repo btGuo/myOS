@@ -144,7 +144,72 @@ static void mem_pool_init(uint32_t all_mem){
 }
 
 /**
- * 分配物理地址
+ * 在页表中寻找pg_cnt 个页
+ * @param pg_cnt 内核物理页数
+ * @param vm_area 指定查找范围
+ *
+ * @note 这里假设start_addr 是4k对齐的，size也是4k对齐的
+ * @note 根据页表pte是连续的
+ */
+//TODO debug
+static void *vaddr_get(struct vm_area *vm_area, uint32_t pg_cnt){
+
+	if(vm_area->size < pg_cnt * PG_SIZE){
+		printk("no more space in vm_area\n");
+		return NULL;
+	}
+
+	uint32_t start_addr = vm_area->start_addr;
+	uint32_t pgs = vm_area->size >> 12;
+
+	//记录当前遍历到的虚拟地址
+	uint32_t vaddr = start_addr;
+	uint32_t *pde = PDE_PTR(start_addr);
+	uint32_t *pte = PTE_PTR(start_addr);
+	uint32_t *pte_end = PTE_PTR((start_addr + 0x003fffff) & 0xffc00000); 
+	uint32_t cnt = 0;
+	
+	while(pgs > 0){
+		if(*pde & 0x1){
+			
+			while(pte != pte_end && pgs > 0){
+				vaddr += PG_SIZE;
+
+				if(!(*pte & 0x1)){
+
+					++cnt;
+					if(cnt == pg_cnt)
+						return (void *)start_addr;
+				}else {
+					cnt = 0;
+					start_addr = vaddr;
+				}
+				++pte;
+				--pgs;
+			}
+			pte_end = pte + 1024;
+		}else {
+			vaddr += PG_SIZE * 1024;
+			if(pgs < 1024){
+
+				cnt += pgs;
+				pgs = 0;
+			}else {
+				cnt += 1024;
+				pgs -= 1024;
+			}
+			if(cnt >= pg_cnt)
+				return (void *)start_addr;
+		}
+		++pde;
+	}
+
+	return NULL;
+}
+
+
+/**
+ * 分配物理内存
  * @param pg_cnt 物理页数
  */
 uint32_t palloc(enum pool_flags pf, uint32_t pg_cnt){
@@ -186,7 +251,7 @@ uint32_t palloc(enum pool_flags pf, uint32_t pg_cnt){
 }
 
 /**
- * 释放一页物理内存
+ * 释放物理内存
  */
 void pfree(uint32_t paddr){
 
@@ -202,6 +267,46 @@ void pfree(uint32_t paddr){
 	list_add(&pg_desc->cache_tag, &umm.page_caches);
 }
 
+static void page_table_pte_remove(uint32_t vaddr){
+	uint32_t *pte = PTE_PTR(vaddr);
+	//p位置0
+	*pte &= (~ 1);
+	//刷新TLB
+	//TODO 频繁刷新会导致效率底下，应尽量一次操作完再刷新
+	asm volatile("invlpg %0" : : "m"(vaddr) : "memory");
+}
+
+/**
+ * 分配用户内存，以页为单位
+ * @return 分配地址
+ * 	@retval NULL 分配失败
+ */
+void *vmalloc(uint32_t pg_cnt){
+
+	uint32_t *vaddr = vaddr_get(&curr->vm_struct.vm_heap, pg_cnt);
+	if(vaddr == NULL){
+		//尝试扩大栈，并再次申请
+		if(try_expend_heap())
+			return vaddr_get(&curr->vm_struct.vm_heap, pg_cnt);
+
+		return NULL;
+	}
+	return (void *)vaddr;
+}
+
+/**
+ * 释放用户内存
+ */
+void vfree(void *vaddr, uint32_t pg_cnt){
+	
+	while(pg_cnt--){
+		uint32_t paddr = addr_v2p((uint32_t)vaddr);
+		pfree(paddr);
+		page_table_pte_remove((uint32_t)vaddr);
+		vaddr += PG_SIZE;
+	}
+}
+
 /**
  * 分配内存
  */
@@ -211,8 +316,7 @@ void *malloc_page(enum pool_flags pf, uint32_t pg_cnt){
 		uint32_t paddr = palloc(pf, pg_cnt);
 		return (void *)(paddr + VADDR_OFF);
 	}
-	//TODO pf == PF_USER
-	return NULL;
+	return vmalloc(pg_cnt);
 }	
 
 /**
@@ -223,8 +327,9 @@ void free_page(enum pool_flags pf, void *_vaddr, uint32_t pg_cnt){
 	if(pf == PF_KERNEL){
 		uint32_t paddr = (uint32_t)_vaddr - VADDR_OFF;
 		pfree(paddr);
+		return;
 	}
-	//TODO
+	vfree(_vaddr, pg_cnt);
 }
 
 //申请内核内存
@@ -352,62 +457,6 @@ void kfree(void *ptr){
 }
 
 
-/**
- * 内核内存全部映射
- * @param pg_cnt 内核物理页数
- */
-
-//寻找pg_cnt 个连续虚拟页
-static void *vaddr_get(enum pool_flags pf, uint32_t pg_cnt){
-	//起始虚拟地址
-	uint32_t start_addr = pf == PF_KERNEL ?
-		kmm.vaddr_start :
-		curr->userprog_vaddr.vaddr_start;
-	//记录当前遍历到的虚拟地址
-	uint32_t vaddr = start_addr;
-
-	uint32_t *pde = PDE_PTR(start_addr);
-	//最后一个页目录项不能用
-	//用户虚拟内存最高为0xc0000000
-	uint32_t *pde_end = (pf == PF_KERNEL) ?
-		 PDE_PTR(0xffffffff) : PDE_PTR(0xbfffffff);
-
-	uint32_t *pte = PTE_PTR(start_addr);
-	uint32_t *pte_end = NULL;
-	uint32_t cnt = 0;
-	
-	while(pde != pde_end){
-		if(*pde & 0x00000001){
-
-			pte_end = pte + 1024;
-			while(pte != pte_end){
-				vaddr += 4096;
-
-				if(!(*pte & 0x00000001)){
-
-					++cnt;
-					if(cnt == pg_cnt)
-						return (void *)start_addr;
-
-				}else {
-					cnt = 0;
-					start_addr = vaddr;
-				}
-				++pte;
-			}
-		}else {
-			//页目录为空，直接计数
-			vaddr += 4096 * 1024;
-			cnt += 1024;
-			if(cnt >= pg_cnt)
-				return (void *)start_addr;
-		}
-		++pde;
-	}
-
-	return NULL;
-}
-
 
 /**
  * 映射一页物理内存和虚拟内存
@@ -434,15 +483,6 @@ static void page_table_add(uint32_t vaddr, uint32_t paddr){
 		memset((void*)((int)pte & 0xfffff000), 0, PG_SIZE);
 		*pte = (paddr | 0x7);
 	}
-}
-
-static void page_table_pte_remove(uint32_t vaddr){
-	uint32_t *pte = PTE_PTR(vaddr);
-	//p位置0
-	*pte &= (~ 1);
-	//刷新TLB
-	//TODO 频繁刷新会导致效率底下，应尽量一次操作完再刷新
-	asm volatile("invlpg %0" : : "m"(vaddr) : "memory");
 }
 
 //指定虚拟内存，只映射一页
@@ -477,7 +517,7 @@ void copy_page_table(uint32_t *pde){
 			paddr = palloc(PF_USER, 1);
 			paddr |= 0x7;
 			*pde = paddr;
-			vaddr = vaddr_get(PF_KERNEL, 1);
+			vaddr = vaddr_get(&curr->vm_struct.vm_kernel, 1);
 			//临时映射
 			page_table_add((uint32_t)vaddr, paddr);
 			uint32_t size = 1024;
@@ -509,15 +549,6 @@ void mem_init(){
 	put_str("mem_init done\n");
 }
 
-void *sys_malloc(uint32_t size){
-	//TODO 
-	return NULL;
-}
-
-void sys_free(void *ptr){
-	//TODO
-}
-			
 void do_page_fault(uint32_t vaddr){
 
 	if(vaddr & 0xc0000000){
@@ -549,7 +580,7 @@ void do_wp_page(uint32_t _vaddr){
 	--pg_desc->count;
 
 	//建立临时映射
-	uint32_t *swap_vaddr = vaddr_get(PF_USER, 1);
+	uint32_t *swap_vaddr = vaddr_get(&curr->vm_struct.vm_kernel, 1);
 	page_table_add((uint32_t)swap_vaddr, paddr);
 
 	//分配新物理地址，映射当前页

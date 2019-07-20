@@ -1,7 +1,7 @@
 #ifndef __PROCESS_H
 #define __PROCESS_H
 
-#define USER_STAKC_VADDR 0xc0000000  ///< 用户栈地址
+#define USER_STAKC_VADDR 0xbff00000  ///< 用户栈地址
 #define USER_VADDR_START 0x8048000    ///< 用户内存起始地址
 #define USER_HEAP_VADDR 0xbf800000   ///< 堆区默认起始地址
 
