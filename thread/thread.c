@@ -25,20 +25,37 @@ static void kernel_thread(thread_func *function, void *func_arg){
 	function(func_arg);
 }
 
+/**
+ * 初始化pid池
+ */
 void pid_pool_init(void){
+
 	pid_pool.pid_start = 1;
 	mutex_lock_init(&pid_pool.lock);
-	//TODO
+	pid_pool.bmp.byte_len = PG_SIZE;
+	pid_pool.bmp.bits = kmalloc(PG_SIZE);
 }
 
+/**
+ * 分配pid
+ */
 pid_t allocate_pid(void){
-	static pid_t next_pid = 0;
-	++next_pid;
-	return next_pid;
+	mutex_lock_acquire(&pid_pool.bmp);
+	int32_t idx = bitmap_scan(&pid_pool.bmp);
+	bitmap_set(&pid_pool.bmp, idx, 1);
+	mutex_lock_release(&pid_pool.bmp);
+	return idx + pid_pool.pid_start;
 }
 
+/**
+ * 释放pid
+ */
 void release_pid(pid_t pid){
-
+	mutex_lock_acquire(&pid_pool.bmp);
+	uint32_t idx = pid - pid_pool.pid_start;
+	bitmap_set(&pid_pool.bmp, idx, 0);
+	mutex_lock_release(&pid_pool.bmp);
+}
 
 static void idle(void UNUSED){
 	while(1){
