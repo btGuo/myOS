@@ -12,6 +12,7 @@
 #define MAX_PID 32768    ///< 最大进程数
 
 typedef int32_t pid_t;
+typedef void thread_func(void*);
 /**
  * 中断栈，切换任务时保存上下文信息
  */
@@ -100,7 +101,6 @@ extern struct task_struct *curr;
 extern struct list_head thread_all_list;
 extern struct list_head thread_ready_list;
 
-typedef void thread_func(void*);
 void schedule();
 void print_thread();
 void thread_block();

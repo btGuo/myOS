@@ -15,10 +15,10 @@ void init_all(){
 	put_str("init_all start\n");
 	idt_init();
 	timer_init();
+	console_init();
 	mem_init();
 /*
 	thread_init();
-	console_init();
 	keyboard_init();
 	tss_init();
 	sys_call_init();

@@ -40,10 +40,10 @@ void pid_pool_init(void){
  * 分配pid
  */
 pid_t allocate_pid(void){
-	mutex_lock_acquire(&pid_pool.bmp);
-	int32_t idx = bitmap_scan(&pid_pool.bmp);
+	mutex_lock_acquire(&pid_pool.lock);
+	int32_t idx = bitmap_scan(&pid_pool.bmp, 1);
 	bitmap_set(&pid_pool.bmp, idx, 1);
-	mutex_lock_release(&pid_pool.bmp);
+	mutex_lock_release(&pid_pool.lock);
 	return idx + pid_pool.pid_start;
 }
 
@@ -51,10 +51,10 @@ pid_t allocate_pid(void){
  * 释放pid
  */
 void release_pid(pid_t pid){
-	mutex_lock_acquire(&pid_pool.bmp);
+	mutex_lock_acquire(&pid_pool.lock);
 	uint32_t idx = pid - pid_pool.pid_start;
 	bitmap_set(&pid_pool.bmp, idx, 0);
-	mutex_lock_release(&pid_pool.bmp);
+	mutex_lock_release(&pid_pool.lock);
 }
 
 static void idle(void UNUSED){

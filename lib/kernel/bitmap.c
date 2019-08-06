@@ -17,7 +17,7 @@ void bitmap_init(struct bitmap *bmap){
 uint8_t bitmap_verify(struct bitmap *bmap, uint32_t idx){
 	
 	ASSERT(idx < bmap->byte_len * 8);
-	uint8_t mask = BITMAP_MASK;
+	uint8_t mask = 1;
 	mask <<= idx % 8;
 	return (bmap->bits[idx / 8] & mask);
 }
@@ -40,11 +40,11 @@ int bitmap_scan(struct bitmap *bmap, uint32_t len){
 	uint32_t i = idx_byte * 8;
 	uint32_t start = i;
 	uint32_t max_len = bmap->byte_len * 8;
-	uint8_t  mask = BITMAP_MASK;
+	uint8_t  mask = 1;
 
 	for(; i < max_len; ++i){
 		if(!mask)
-			mask = BITMAP_MASK;
+			mask = 1;
 		if(!(bmap->bits[i/8] & mask)){
 			++cnt;
 			if(cnt == len)
@@ -63,7 +63,7 @@ int bitmap_scan(struct bitmap *bmap, uint32_t len){
  */
 void bitmap_set(struct bitmap *bmap, uint32_t bit_idx, int8_t value){
 	ASSERT(value == 0 || value == 1);
-	uint8_t mask = BITMAP_MASK;
+	uint8_t mask = 1;
 	mask <<= bit_idx % 8;
 	if(value)
 		bmap->bits[bit_idx / 8] |= mask;

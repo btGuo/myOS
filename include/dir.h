@@ -33,8 +33,8 @@ struct dir_e_info{
 	enum file_types f_type;    ///< 文件或目录
 	uint32_t i_no;      ///< i节点号
 	//以下为内存中才有
-	struct list_head *hash_tag;   ///< 用于哈希表
-	struct list_head *queue_tag;  ///< 用于队列
+	struct list_head hash_tag;   ///< 用于哈希表
+	struct list_head queue_tag;  ///< 用于队列
 };
 
 

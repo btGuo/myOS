@@ -79,12 +79,23 @@ static void general_intr_handler(uint8_t vec_nr, uint8_t err_code){
 	put_char('\n');
 	put_str(intr_name[vec_nr]);
 	put_char('\n');
-	if(vec_nr == 0xe){
-		int page_fault_vaddr = 0;
-		asm("movl %%cr2, %0":"=r"(page_fault_vaddr));
-		put_str("page fault address is"); put_int(page_fault_vaddr); put_char('\n');
-	}
 	while(1);
+}
+
+static void page_fault_handler(uint8_t vec_nr, uint8_t err_code){
+
+	ASSERT(vec_nr == 0xe);
+
+	put_str("error code is ");put_int(err_code);put_char('\n');
+	uint32_t vaddr = 0;
+	asm("movl %%cr2, %0":"=r"(vaddr));
+	put_str("page fault address is"); put_int(vaddr); put_char('\n');
+
+	if(err_code & 0x1){
+		do_wp_page(vaddr);
+	}else {
+		do_page_fault(vaddr);
+	}
 }
 
 static void exception_init(void){
@@ -112,6 +123,9 @@ static void exception_init(void){
 	intr_name[17] = "#AC Alignment Check Exception";
 	intr_name[18] = "#MC Machine-Check Exception";
 	intr_name[19] = "#XF SIMD Floating-Point Exception";
+	
+	//注册缺页处理程序
+	idt_table[14] = page_fault_handler;
 }
 
 void idt_init(){

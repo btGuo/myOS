@@ -42,7 +42,7 @@ uint32_t hashf_str(void *key, uint32_t max_size){
  * @param ht 哈希表指针
  */
 inline void hash_table_init(struct hash_table *ht, hash_func comp, hashf_func hf){
-	ht->data = (struct list_head *)sys_malloc(HASH_SIZE);
+	ht->data = (struct list_head *)kmalloc(HASH_SIZE);
 	ht->size = HASH_SIZE / sizeof(struct list_head);
 	uint32_t cnt = ht->size;
 	while(cnt--){
@@ -97,3 +97,14 @@ inline void hash_table_remove(struct hash_table *ht, \
 inline void hash_table_clear(struct hash_table *ht){
 	memset(ht->data, 0, HASH_SIZE);
 }
+
+/**
+ * 释放哈希表
+ */
+inline void hash_table_del(struct hash_table *ht){
+
+	kfree(ht->data);
+	ht->size = 0;
+	ht->data = NULL;
+}
+

@@ -17,13 +17,20 @@ void buddy_add(struct buddy_sys *buddy, uint32_t s_addr, uint32_t pg_cnt){
 			pg_desc = paddr_to_pgdesc(paddr);
 			pg_desc->order = i;
 			pg_desc->free = true;
+#ifdef DEBUG
+			printk("pos %d, order %d  ", pg_desc->pos, pg_desc->order);
+#endif
 			list_add(&pg_desc->cache_tag, &f_area->free_list);
+			paddr += pg_size;
 		}
 		pg_cnt >>= 1;
 		++f_area;
-		paddr += pg_size;
 		pg_size <<= 1;
+		++i;
 	}
+#ifdef DEBUG
+	printk("\n");
+#endif
 }
 
 /**
@@ -55,7 +62,7 @@ void buddy_sys_init(struct buddy_sys *buddy, uint32_t s_paddr, uint32_t pgs){
 		pg_desc = paddr_to_pgdesc(paddr);
 		pg_desc->order = MAX_ORDER;
 		pg_desc->free = true;
-		list_add(&pg_desc->cache_tag, &f_area->free_list);
+		list_add_tail(&pg_desc->cache_tag, &f_area->free_list);
 		paddr += (1 << 22);
 		++f_area->nr_free;
 	}
@@ -72,7 +79,8 @@ struct page_desc *get_buddy(struct buddy_sys *buddy, struct page_desc *pg_desc){
 		return NULL;
 
 	uint32_t paddr = pgdesc_to_paddr(pg_desc);
-	uint32_t buddy_paddr = paddr ^ (1 << pg_desc->order);
+	uint32_t buddy_paddr = paddr ^ (PG_SIZE << pg_desc->order);
+	//printk("* %h %h *", paddr, buddy_paddr);
 	return paddr_to_pgdesc(buddy_paddr);
 }
 
@@ -93,6 +101,10 @@ struct page_desc *buddy_alloc(struct buddy_sys *buddy, uint32_t order){
 	struct list_head *lh = f_area->free_list.next;
 	list_del(lh);
 	struct page_desc *pg_desc = list_entry(struct page_desc, cache_tag, lh);
+#ifdef DEBUG
+	printk("pg_desc->pos %d\n", pg_desc->pos);
+	printk("paddr %h\n", pgdesc_to_paddr(pg_desc));
+#endif
 	pg_desc->order = order;
 	pg_desc->free = false;
 	
@@ -128,6 +140,9 @@ void buddy_free(struct buddy_sys *buddy, struct page_desc *pg_desc){
 	}
 
 	struct page_desc *buddy_pg = get_buddy(buddy, pg_desc);
+#ifdef DEBUG
+	printk("buddy_pg : %d\n", buddy_pg->pos);
+#endif
 
 	while(order < MAX_ORDER && buddy_pg->free){
 
@@ -140,9 +155,15 @@ void buddy_free(struct buddy_sys *buddy, struct page_desc *pg_desc){
 		//加入新区域
 		f_area[order].nr_free++;
 		pg_desc = merge_page(pg_desc, buddy_pg);
+#ifdef DEBUG
+		printk("pos %d, order %d, ", pg_desc->pos, pg_desc->order);
+#endif
 		list_add(&pg_desc->cache_tag, &f_area[order].free_list);
 
 		buddy_pg = get_buddy(buddy, pg_desc);
 	}
+#ifdef DEBUG
+	printk("\n");
+#endif
 }
 

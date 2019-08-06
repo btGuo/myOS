@@ -52,12 +52,6 @@ void vm_struct_init(){
 	area->size = (1 << 20);
 	area->vm_type = VM_UPWARD;
 
-	//内核线性区
-	area = &curr->vm_struct.vm_kernel;
-	area->start_addr = kmm.vm_kernel.start_addr;
-	area->size = kmm.vm_kernel.size;
-	area->vm_type = kmm.vm_kernel.vm_type;
-
 	LIST_HEAD_INIT(curr->vm_struct.vm_list);
 }
 
