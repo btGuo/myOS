@@ -1,4 +1,3 @@
-test.c
 note.txt
 hd90.img
 hd60.img
@@ -6,8 +5,8 @@ build/
 run.sh
 a.out
 tags
-test/
 hex
 hex.old
 hdump.sh
+tmp
 
