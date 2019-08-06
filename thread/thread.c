@@ -166,8 +166,10 @@ void schedule(){
 void thread_init(){
 	put_str("init_thread start\n");
 	pid_pool_init();
-	make_main_thread();
 	
+	process_execute(init, "init");
+	make_main_thread();
 	idle_thread = thread_start("idle", 10, idle, NULL);
+
 	put_str("init_thread done\n");
 }

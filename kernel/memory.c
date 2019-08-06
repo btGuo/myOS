@@ -321,6 +321,13 @@ static void page_table_add(uint32_t vaddr, uint32_t paddr){
 	}
 }
 
+static void page_table_remap(uint32_t vaddr, uint32_t paddr){
+	uint32_t *pte = PTE_PTR(vaddr);
+
+	ASSERT(*pte & 0x1);
+	*pte = (paddr | 0x7);
+}
+
 /**
  * 分配动态内存
  */
@@ -573,6 +580,7 @@ void copy_page_table(uint32_t *pde){
 	uint32_t cnt = 768;
 	uint32_t paddr = 0;
 	uint32_t *vaddr = NULL;
+	vaddr = vaddr_get(1);
 	while(cnt--){
 
 		if(*pde_src & 0x1){
@@ -580,28 +588,29 @@ void copy_page_table(uint32_t *pde){
 			paddr = palloc(PF_USER, 1);
 			paddr |= 0x7;
 			*pde = paddr;
-			vaddr = vaddr_get(1);
 			//临时映射
-			page_table_add((uint32_t)vaddr, paddr);
+			if(cnt == 767){
+				page_table_add((uint32_t)vaddr, paddr);
+			}else {
+				page_table_remap((uint32_t)vaddr, paddr);
+			}
 			uint32_t size = 1024;
 			while(size--){
 				if(*pte_src & 0x1){
+
 					*pte_src &= ~2;
 					*vaddr = *pte_src;
+				}else {
+					*vaddr = 0;
 				}
 				++pte_src;
 				++vaddr;
 			}
-			page_table_pte_remove((uint32_t)vaddr);
 		}	
 		++pde_src;
 		++pde;
 	}
-	//复制内核页表
-	cnt = 255;
-	while(cnt--){
-		*pde++ = *pde_src++;
-	}
+	page_table_pte_remove((uint32_t)vaddr);
 }
 
 void mem_init(){
