@@ -108,7 +108,7 @@ static void partition_format(struct partition *part){
 			     + INODES_BMP_BLKS + INODES_BLKS;
 
 //初始化超级块
-	struct super_block *sb = (struct super_block *)sys_malloc(SUPER_BLKS * BLOCK_SIZE);
+	struct super_block *sb = (struct super_block *)kmalloc(SUPER_BLKS * BLOCK_SIZE);
 	MEMORY_OK(sb);
 	memset(sb, 0, SUPER_BLKS * BLOCK_SIZE);
  	
@@ -132,7 +132,7 @@ static void partition_format(struct partition *part){
 	sb->groups_table = 2;
 
 //初始化块组
-	struct group *gp_head = (struct group *)sys_malloc(gp_blks * BLOCK_SIZE);
+	struct group *gp_head = (struct group *)kmalloc(gp_blks * BLOCK_SIZE);
 	MEMORY_OK(gp_head);
 	memset(gp_head, 0, gp_blks * BLOCK_SIZE);
 	struct group *gp = gp_head;
@@ -159,7 +159,7 @@ static void partition_format(struct partition *part){
 //创建位图
 	struct bitmap bitmap;
 	bitmap.byte_len = GROUP_BLKS / 8;
-	bitmap.bits = (uint8_t *)sys_malloc(bitmap.byte_len);
+	bitmap.bits = (uint8_t *)kmalloc(bitmap.byte_len);
 	bitmap_set_range(&bitmap, 0, 1, gp_used_blks);
 
 //同步位图
@@ -193,7 +193,7 @@ static void create_root(struct partition *part){
 	uint32_t i_no = inode_bmp_alloc(part);
 	ASSERT(i_no == ROOT_INODE);
 
-	struct inode_info *m_inode = (struct inode_info *)sys_malloc(sizeof(struct inode_info));
+	struct inode_info *m_inode = (struct inode_info *)kmalloc(sizeof(struct inode_info));
 	inode_init(part, m_inode, i_no);
 	struct dir_entry dir_e;
 	root_dir.inode = m_inode;
@@ -222,7 +222,7 @@ static void mount_partition(struct partition *part){
 	cur_par = part;
 
 //先处理超级块
-	part->sb = sys_malloc(sizeof(struct super_block));
+	part->sb = kmalloc(sizeof(struct super_block));
 	MEMORY_OK(part->sb);
 //	memset(part->sb, 0, sizeof(struct super_block));
 	//直接读取超级块
@@ -235,12 +235,12 @@ static void mount_partition(struct partition *part){
 
 //处理块组，由于块组磁盘上和内存上存储形式不同，处理方法和超级块不同
 
-	part->cur_gp = part->groups = sys_malloc(part->groups_cnt * sizeof(struct group_info));
+	part->cur_gp = part->groups = kmalloc(part->groups_cnt * sizeof(struct group_info));
 	MEMORY_OK(part->groups);
 	memset(part->groups, 0, part->groups_cnt * sizeof(struct group_info));
 
 	//读取磁盘上块组
-	uint8_t *buf = sys_malloc(part->groups_blks * BLOCK_SIZE);
+	uint8_t *buf = kmalloc(part->groups_blks * BLOCK_SIZE);
 	struct group *gp = (struct group *)buf;
 	struct group_info *gp_info = part->groups;
 	read_direct(part, part->sb->groups_table, gp, part->groups_blks);
@@ -274,7 +274,7 @@ static void mount_partition(struct partition *part){
 void sync(){
 	struct partition *part = cur_par;
 
-	uint8_t *buf = sys_malloc(part->groups_blks * BLOCK_SIZE);
+	uint8_t *buf = kmalloc(part->groups_blks * BLOCK_SIZE);
 	MEMORY_OK(buf);
 	struct group *gp = (struct group *)buf;
 	struct group_info *gp_info = part->groups;

@@ -17,13 +17,11 @@ void init_all(){
 	timer_init();
 	console_init();
 	mem_init();
-/*
 	thread_init();
 	keyboard_init();
 	tss_init();
 	sys_call_init();
 	ide_init();
 	filesys_init();
-*/
 	put_str("init_all done\n");
 }

@@ -142,6 +142,7 @@ syscall_handler:
 	call [syscall_table + eax * 4]
 	;跳过参数
 	add esp, 12
+	push 0 ;对齐用的
 
 	;写入返回值
 	mov [esp + 8 * 4], eax

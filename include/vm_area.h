@@ -18,12 +18,10 @@ struct vm_area{
 	uint32_t size;
 };
 
-//TODO 堆区管理还有问题
 struct vm_struct{
 	struct list_head vm_list;
 	struct vm_area vm_stack;
 	struct vm_area vm_heap;
-	struct vm_area vm_kernel;
 };	
 
 #endif

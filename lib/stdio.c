@@ -7,6 +7,7 @@ uint32_t printf(const char *fmt, ...){
 	va_list args;
 	
 	char buf[1024] = {0};
+	buf[100] = 'T';
 	va_start(args, fmt);
 	vsprintf(buf, fmt, args);
 	va_end(args);

@@ -546,9 +546,9 @@ void kfree(void *ptr){
 	mutex_lock_release(&kmm.lock);
 }
 
-
-
-//指定虚拟内存，只映射一页
+/**
+ * 指定虚拟内存，只映射一页
+ */
 void *get_a_page(enum pool_flags pf, uint32_t vaddr){
 	if(pf == PF_KERNEL) mutex_lock_acquire(&kmm.lock);
 	else mutex_lock_acquire(&umm.lock);
@@ -612,14 +612,24 @@ void mem_init(){
 	put_str("mem_init done\n");
 }
 
+/**
+ * 缺页异常处理
+ */
 void do_page_fault(uint32_t vaddr){
 
 	if(vaddr >= 0xc0000000){
 		PANIC("error page\n");		
 		return;
 	}
+	
+	if(!is_in_vm_area(vaddr)){
+		PANIC("error page not in vm_area\n");
+		return;
+	}
 
-	//TODO 检查vaddr合法性
+	//地址合法
+	printk("legal vaddr\n");
+	vaddr &= 0xfffff000;
 	
 	uint32_t paddr = palloc(PF_USER, 1);
 	page_table_add(vaddr, paddr);
@@ -627,6 +637,9 @@ void do_page_fault(uint32_t vaddr){
 	return;
 }
 
+/**
+ * 写时复制
+ */
 void do_wp_page(uint32_t _vaddr){
 
 	uint32_t *vaddr = (uint32_t *)_vaddr;
@@ -660,11 +673,11 @@ void do_wp_page(uint32_t _vaddr){
 	page_table_pte_remove((uint32_t)swap_vaddr);
 }
 
-
 void *sys_malloc(uint32_t size){
 	//TODO
 	return NULL;
 }
+
 void sys_free(void *ptr){
 	//TODO
 }

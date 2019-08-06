@@ -58,7 +58,7 @@ int32_t file_create(struct dir *par_dir, char *filename, uint8_t flag){
 	struct inode_info *m_inode = NULL;
 	if(!(m_inode = inode_alloc(cur_par))){
 		//内存分配失败，回滚
-		printk("file_create: sys_malloc for inode failed\n");
+		printk("file_create: kmalloc for inode failed\n");
 		return -1;
 	}
 

@@ -32,6 +32,9 @@ intr_handler idt_table[IDT_DESC_CNT];
 extern intr_handler intr_entry_table[IDT_DESC_CNT];
 extern uint32_t syscall_handler(void);
 
+/**
+ * 初始化8259
+ */
 static void pic_init(void){
 	/* 初始化主片，ICW1 - ICW4 */
 	outb(PIC_M_CTRL, 0x11);
@@ -50,6 +53,9 @@ static void pic_init(void){
 	put_str("   pic_init done\n");
 }
 
+/**
+ * 构建idt描述符
+ */
 static void make_idt_desc(struct gate_desc *p_gdesc, uint8_t attr, intr_handler function){
 	p_gdesc->func_offset_low_word = (uint32_t)function & 0x0000ffff;
 	p_gdesc->selector = SELECTOR_K_CODE;
@@ -58,6 +64,9 @@ static void make_idt_desc(struct gate_desc *p_gdesc, uint8_t attr, intr_handler 
 	p_gdesc->func_offset_high_word = ((uint32_t)function & 0xffff0000) >> 16;
 }
 
+/**
+ * 初始化中断描述符表
+ */
 static void idt_desc_init(void){ 
 	int i; 
 	for(i = 0; i < IDT_DESC_CNT; ++i)
@@ -128,18 +137,6 @@ static void exception_init(void){
 	idt_table[14] = page_fault_handler;
 }
 
-void idt_init(){
-	put_str("idt_init start\n");
-	idt_desc_init();
-	exception_init();
-	pic_init();
-
-	uint64_t idt_operand = ((sizeof(idt) - 1) | 
-			((uint64_t)(uint32_t)idt << 16));
-	asm volatile("lidt %0"::"m"(idt_operand));
-	put_str("idt_init done\n");
-}
-
 enum intr_status intr_enable(){
 	if(INTR_ON == intr_get_status()){
 		return INTR_ON;
@@ -157,6 +154,7 @@ enum intr_status intr_disable(){
 		return INTR_OFF;
 	}
 }
+
 enum intr_status intr_set_status(enum intr_status status){
 	return status & INTR_ON ? intr_enable(): intr_disable();
 }
@@ -170,3 +168,16 @@ enum intr_status intr_get_status(){
 void register_handler(uint8_t vec_nr, intr_handler function){
 	idt_table[vec_nr] = function;
 }
+
+void idt_init(){
+	put_str("idt_init start\n");
+	idt_desc_init();
+	exception_init();
+	pic_init();
+
+	uint64_t idt_operand = ((sizeof(idt) - 1) | 
+			((uint64_t)(uint32_t)idt << 16));
+	asm volatile("lidt %0"::"m"(idt_operand));
+	put_str("idt_init done\n");
+}
+

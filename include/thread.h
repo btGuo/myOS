@@ -17,6 +17,7 @@ typedef void thread_func(void*);
  * 中断栈，切换任务时保存上下文信息
  */
 struct intr_stack{
+	uint32_t pad;  ///< 对齐用
 	uint32_t vec_no;
 	uint32_t edi;
 	uint32_t esi;

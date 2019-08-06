@@ -33,7 +33,8 @@ void pid_pool_init(void){
 	pid_pool.pid_start = 1;
 	mutex_lock_init(&pid_pool.lock);
 	pid_pool.bmp.byte_len = PG_SIZE;
-	pid_pool.bmp.bits = kmalloc(PG_SIZE);
+	pid_pool.bmp.bits = get_kernel_pages(1);
+	bitmap_init(&pid_pool.bmp);
 }
 
 /**
@@ -164,7 +165,9 @@ void schedule(){
 				
 void thread_init(){
 	put_str("init_thread start\n");
+	pid_pool_init();
 	make_main_thread();
+	
 	idle_thread = thread_start("idle", 10, idle, NULL);
 	put_str("init_thread done\n");
 }

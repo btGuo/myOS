@@ -9,5 +9,8 @@
 #define default_prio 32
 void process_execute(void *filename, char *name);
 void process_activate(struct task_struct *p_thread);
+bool try_expend_heap();
+bool try_expend_stack();
+bool is_in_vm_area(uint32_t vaddr);
 
 #endif

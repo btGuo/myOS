@@ -12,6 +12,9 @@ extern struct task_struct *curr;
 extern struct list_head thread_ready_list;
 extern struct list_head thread_all_list;
 
+/**
+ * 增加用户堆
+ */
 bool try_expend_heap(){
 	struct vm_area *heap = &curr->vm_struct.vm_heap;
 	struct vm_area *stack = &curr->vm_struct.vm_stack;
@@ -22,6 +25,9 @@ bool try_expend_heap(){
 	return true;
 }
 
+/**
+ * 增加用户栈
+ */
 bool try_expend_stack(){
 	struct vm_area *heap = &curr->vm_struct.vm_heap;
 	struct vm_area *stack = &curr->vm_struct.vm_stack;
@@ -34,10 +40,42 @@ bool try_expend_stack(){
 }
 
 /**
+ * 判断给定虚拟地址是否在线性区中
+ */
+bool is_in_vm_area(uint32_t vaddr){
+	struct list_head *head = &curr->vm_struct.vm_list;
+	struct list_head *walk = head->next;
+	struct vm_area *vm = NULL;
+	while(walk != head){
+		vm = list_entry(struct vm_area, vm_tag, walk);
+		if(vaddr >= vm->start_addr && vaddr < vm->start_addr + vm->size)
+			return true;
+		walk = walk->next;
+	}
+	return false;
+}
+
+struct vm_area *vm_area_alloc(uint32_t saddr, uint32_t size){
+	struct vm_area *vm = (struct vm_area *)kmalloc(sizeof(struct vm_area));
+
+	if(!vm){
+		return NULL;
+	}
+
+	saddr &= 0xfffff000;
+	//默认fix
+	vm->vm_type = VM_FIX;
+	vm->size = size;
+	vm->start_addr = saddr;
+	return vm;
+}
+	
+/**
  * 初始化进程内存区
  */
 void vm_struct_init(){
 
+	LIST_HEAD_INIT(curr->vm_struct.vm_list);
 	struct vm_area *area = NULL;
 
 	//堆线性区
@@ -45,14 +83,15 @@ void vm_struct_init(){
 	area->start_addr = USER_HEAP_VADDR;
 	area->size = (1 << 20);
 	area->vm_type = VM_DOWNWARD;
+	list_add(&area->vm_tag, &curr->vm_struct.vm_list);
 
 	//栈线性区
 	area = &curr->vm_struct.vm_stack;
 	area->start_addr = USER_STAKC_VADDR;
 	area->size = (1 << 20);
 	area->vm_type = VM_UPWARD;
+	list_add(&area->vm_tag, &curr->vm_struct.vm_list);
 
-	LIST_HEAD_INIT(curr->vm_struct.vm_list);
 }
 
 /**
@@ -60,6 +99,7 @@ void vm_struct_init(){
  */
 void start_process(void *filename_){
 	
+//	printk("start process\n");
 	vm_struct_init();
 	void *function = filename_;
 
@@ -74,7 +114,7 @@ void start_process(void *filename_){
 	proc_stack->eip = function;
 	proc_stack->eflags = EFLAGS_MBS | EFLAGS_IF_ON | EFLAGS_IOPL_0;
 	//分配用户栈
-	proc_stack->esp = (void *)(USER_STAKC_VADDR + (1 << 20));
+	proc_stack->esp = (void *)((uint32_t)get_a_page(PF_USER, 0xbffff000) + PG_SIZE);
 
 	asm volatile("movl %0, %%esp; jmp intr_exit;"\
 			::"g"(proc_stack):"memory");

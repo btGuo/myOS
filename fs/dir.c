@@ -28,7 +28,7 @@ void open_root_dir(struct partition *part){
  * 打开普通目录
  */
 struct dir* dir_open(struct partition *part, uint32_t i_no){
-	struct dir *dir = (struct dir *)sys_malloc(sizeof(struct dir));
+	struct dir *dir = (struct dir *)kmalloc(sizeof(struct dir));
 	dir->inode = inode_open(part, i_no);
 	dir->dir_pos = 0;
 	return dir;
