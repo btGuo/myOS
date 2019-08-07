@@ -3,6 +3,10 @@
 #include "fs.h"
 #include "string.h"
 #include "memory.h"
+#include "thread.h"
+#include "fs_sys.h"
+#include "vm_area.h"
+#include "process.h"
 
 extern void intr_exit(void);
 
@@ -13,14 +17,14 @@ extern void intr_exit(void);
  *
  * @return 是否成功
  */
-static int32_t segmemt_load(int32_t fd, Elf32_Phdr *prog_header){
+static int32_t segmemt_load(int32_t fd, struct Elf32_Phdr *prog_header){
 
 	uint32_t vaddr = prog_header->p_vaddr & 0xfffff000;
 	uint32_t off   = prog_header->p_vaddr & 0x00000fff;
 	uint32_t size  = prog_header->p_filesz;
 	uint32_t sz    = 0;
 
-	uint32_t vm_area *vm =  vm_area_alloc(prog_header->p_vaddr, size);
+	struct vm_area *vm =  vm_area_alloc(prog_header->p_vaddr, size);
 	if(!vm){
 		printk("vm alloc failed\n");
 		return false;
@@ -44,7 +48,7 @@ static int32_t segmemt_load(int32_t fd, Elf32_Phdr *prog_header){
 			sz += off;
 		else sz += PG_SIZE;
 	}
-	sys_lseek(fd, prog_header.p_offset, SEEK_SET);
+	sys_lseek(fd, prog_header->p_offset, SEEK_SET);
 	sys_read(fd, (void *)prog_header->p_vaddr, size);
 	return true;
 }
@@ -58,8 +62,8 @@ static int32_t segmemt_load(int32_t fd, Elf32_Phdr *prog_header){
  */
 static int32_t load(const char *path){
 	
-	const uint32_t EH_SIZE sizeof(struct Elf32_Ehdr);
-	const uint32_t PH_SIZE sizeof(struct Elf32_Phdr);
+	const uint32_t EH_SIZE = sizeof(struct Elf32_Ehdr);
+	const uint32_t PH_SIZE = sizeof(struct Elf32_Phdr);
 
 	int32_t ret = -1;
 	struct Elf32_Ehdr elf_header;
@@ -90,14 +94,13 @@ static int32_t load(const char *path){
 	}
 
 	Elf32_Off  ph_off  = elf_header.e_phoff;
-	Elf32_Half ph_size = elf_header.e_phentsize;
 
 	uint32_t i = 0;
 	while(i < elf_header.e_phnum){
 		memset(&prog_header, 0, PH_SIZE);
 
 		//每次都重新定位
-		sys_seek(fd, ph_off, SEEK_SET);
+		sys_lseek(fd, ph_off, SEEK_SET);
 
 		if(sys_read(fd, &prog_header, PH_SIZE) != \
 				PH_SIZE){
@@ -131,7 +134,7 @@ int32_t sys_execv(const char *path, const char *argv[]){
 	if(entry == -1)
 		return -1;
 
-	memcpy(curr->name, path, TASK_NAME_LEN);
+	memcpy(curr->name, (void *)path, TASK_NAME_LEN);
 	curr->name[TASK_NAME_LEN - 1] = '\0';
 
 	struct intr_stack *stack0 = (struct intr_stack *)\
@@ -140,7 +143,7 @@ int32_t sys_execv(const char *path, const char *argv[]){
 	stack0->eip = (void *)entry;
 	stack0->esp = (void *)0xc0000000;
 	asm volatile("movl %0, %%esp; jmp intr_exit"::\
-			(stack0): "memory");
+			"g"(stack0): "memory");
 	return 0;
 }
 	

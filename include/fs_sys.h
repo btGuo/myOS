@@ -3,6 +3,7 @@
 
 #include "stdint.h"
 #include "dir.h"
+#include "fs.h"
 
 int32_t sys_open(const char *path, uint8_t flags);
 int32_t sys_close(int32_t fd);
@@ -18,5 +19,6 @@ void sys_rewinddir(struct dir *dir);
 int32_t sys_mkdir(char *path);
 int32_t sys_closedir(struct dir *dir);
 struct dir *sys_opendir(char *path);
+int32_t sys_stat(const char *path, struct stat *st);
 
 #endif

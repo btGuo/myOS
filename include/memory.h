@@ -123,8 +123,10 @@ void kfree(void *ptr);
 void *vmalloc(uint32_t pg_cnt);
 void vfree(void *vaddr);
 
-struct page_desc *paddr_to_pgdesc(uint32_t paddr);
-uint32_t pgdesc_to_paddr(struct page_desc *pg_desc);
+inline uint32_t *PTE_PTR(uint32_t vaddr);
+inline uint32_t *PDE_PTR(uint32_t vaddr);
+inline struct page_desc *paddr_to_pgdesc(uint32_t paddr);
+inline uint32_t pgdesc_to_paddr(struct page_desc *pg_desc);
 
 void do_wp_page(uint32_t _vaddr);
 void do_page_fault(uint32_t vaddr);
