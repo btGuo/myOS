@@ -7,9 +7,10 @@
 #include "console.h"
 #include "keyboard.h"
 #include "tss.h"
-#include "syscall.h"
 #include "ide.h"
 #include "fs.h"
+
+extern void sys_call_init(void);
 
 void init_all(){
 	put_str("init_all start\n");

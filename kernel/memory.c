@@ -276,6 +276,22 @@ static void *vaddr_get(uint32_t pg_cnt){
 	return NULL;
 }
 
+//TODO 检查tlb刷新问题
+
+/**
+ * 刷新全部tlb
+ */
+void flush_tlb_all(){
+
+	uint32_t paddr = addr_v2p((uint32_t)curr->pg_dir);
+	asm volatile("movl %0, %%cr3"::"r"(paddr):"memory");
+}
+
+/**
+ * 刷新指定tlb项
+ */
+#define FLUSH_TLB_PAGE(vaddr) asm volatile("invlpg %0" : : "m"(vaddr) : "memory")
+
 /**
  * 删除页表项
  */
@@ -284,7 +300,7 @@ static void page_table_pte_remove(uint32_t vaddr){
 	//p位置0
 	*pte &= (~ 1);
 	//刷新TLB
-	asm volatile("invlpg %0" : : "m"(vaddr) : "memory");
+	FLUSH_TLB_PAGE(vaddr);
 }
 
 /**
@@ -310,9 +326,6 @@ static void page_table_add(uint32_t vaddr, uint32_t paddr){
 			PANIC("pte repeat");
 		}
 	}else{
-		if(vaddr >= 0xc0000000){
-			PANIC("pde error\n");
-		}
 		//这里拿user页
 		uint32_t pde_paddr = palloc(PF_USER, 1);
 		*pde = (pde_paddr | 0x7);
@@ -326,6 +339,8 @@ static void page_table_remap(uint32_t vaddr, uint32_t paddr){
 
 	ASSERT(*pte & 0x1);
 	*pte = (paddr | 0x7);
+	//这里得刷新
+	FLUSH_TLB_PAGE(vaddr);
 }
 
 /**
@@ -575,42 +590,64 @@ void *get_a_page(enum pool_flags pf, uint32_t vaddr){
  */
 void copy_page_table(uint32_t *pde){
 
+#ifdef DEBUG	
+	printk("copy_page_table start\n");
+#endif
+
 	uint32_t *pde_src = curr->pg_dir;
-	uint32_t *pte_src = PTE_PTR(0);
 	uint32_t cnt = 768;
+	uint32_t addr = 0;
 	uint32_t paddr = 0;
 	uint32_t *vaddr = NULL;
-	vaddr = vaddr_get(1);
+	struct page_desc *pg_desc = NULL;
 	while(cnt--){
 
 		if(*pde_src & 0x1){
+#ifdef DEBUG
+			printk("hit addr %h\n", addr);
+#endif
 			//TODO 确认页是否脏
 			paddr = palloc(PF_USER, 1);
 			paddr |= 0x7;
 			*pde = paddr;
 			//临时映射
-			if(cnt == 767){
+			if(!vaddr){
+				vaddr = vaddr_get(1);
+				//printk("vaddr %h\n", vaddr);
 				page_table_add((uint32_t)vaddr, paddr);
 			}else {
 				page_table_remap((uint32_t)vaddr, paddr);
 			}
 			uint32_t size = 1024;
+			uint32_t *pte_src = PTE_PTR(addr);
 			while(size--){
 				if(*pte_src & 0x1){
 
+					//记得增加引用计数
+					pg_desc = paddr_to_pgdesc(*pte_src);
+					++pg_desc->count;
+
+					//写保护
 					*pte_src &= ~2;
 					*vaddr = *pte_src;
 				}else {
+					//这里记得置0
 					*vaddr = 0;
 				}
 				++pte_src;
 				++vaddr;
 			}
+			//还原
+			vaddr -= 1024;
 		}	
+		addr += (1 << 22);
 		++pde_src;
 		++pde;
 	}
 	page_table_pte_remove((uint32_t)vaddr);
+#ifdef DEBUG
+	printk("copy_page_table done\n");
+#endif
 }
 
 void mem_init(){
@@ -651,11 +688,25 @@ void do_page_fault(uint32_t vaddr){
  */
 void do_wp_page(uint32_t _vaddr){
 
+#ifdef DEBUG
+	printk("do write protect page\n");
+#endif
+
+	_vaddr &= 0xfffff000;
 	uint32_t *vaddr = (uint32_t *)_vaddr;
 
 	uint32_t paddr = addr_v2p(_vaddr);
 	uint32_t *pte_ptr = PTE_PTR(_vaddr);
 	struct page_desc *pg_desc = paddr_to_pgdesc(paddr);
+
+	if(pg_desc->count == 0){
+		PANIC("error\n");
+		return;
+	}
+
+#ifdef DEBUG
+	printk("count : %d\n", pg_desc->count);
+#endif
 
 	if(pg_desc->count == 1){
 		*pte_ptr |= 2;
@@ -670,16 +721,23 @@ void do_wp_page(uint32_t _vaddr){
 
 	//分配新物理地址，映射当前页
 	uint32_t new_paddr = palloc(PF_USER, 1);
-	new_paddr |= 0x7;
-	*pte_ptr = new_paddr;
+	page_table_remap((uint32_t)vaddr, new_paddr);
+
+	//全部刷新
+	flush_tlb_all();
 
 	//复制当前页
 	uint32_t cnt = 1024;
+	uint32_t *src = swap_vaddr;
 	while(cnt--){
-		*vaddr++ = *swap_vaddr++;
+		*vaddr++ = *src++;
 	}
 	//删除临时映射
 	page_table_pte_remove((uint32_t)swap_vaddr);
+
+#ifdef DEBUG
+	printk("done write protect page\n");
+#endif
 }
 
 void *sys_malloc(uint32_t size){

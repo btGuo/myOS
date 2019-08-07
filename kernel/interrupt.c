@@ -1,8 +1,9 @@
-#include"interrupt.h"
-#include"stdint.h"
-#include"global.h"
-#include"io.h"
-#include"print.h"
+#include "interrupt.h"
+#include "stdint.h"
+#include "global.h"
+#include "io.h"
+#include "print.h"
+#include "thread.h"
 
 #define IDT_DESC_CNT 0x81
 #define PIC_M_CTRL 0x20
@@ -78,7 +79,7 @@ static void idt_desc_init(void){
 	put_str("   idt_desc_init done\n");
 }
 
-static void general_intr_handler(uint8_t vec_nr, uint8_t err_code){
+static void general_intr_handler(uint8_t vec_nr, uint32_t err_code){
 	if(vec_nr == 0x27 || vec_nr == 0x2f){
 		return;
 	}
@@ -91,14 +92,18 @@ static void general_intr_handler(uint8_t vec_nr, uint8_t err_code){
 	while(1);
 }
 
-static void page_fault_handler(uint8_t vec_nr, uint8_t err_code){
+static void page_fault_handler(uint8_t vec_nr, uint32_t err_code){
 
 	ASSERT(vec_nr == 0xe);
 
-	put_str("error code is ");put_int(err_code);put_char('\n');
 	uint32_t vaddr = 0;
 	asm("movl %%cr2, %0":"=r"(vaddr));
+
+#ifdef DEBUG
+	put_str("error code is ");put_int(err_code);put_char('\n');
+	put_str("curr->pid :"); put_int(curr->pid); put_char('\n');
 	put_str("page fault address is"); put_int(vaddr); put_char('\n');
+#endif
 
 	if(err_code & 0x1){
 		do_wp_page(vaddr);

@@ -67,6 +67,7 @@ enum task_status{
 	TASK_DIED              ///<  死亡
 };
 
+#define TASK_NAME_LEN 16
 
 /**
  * 程序控制任务块
@@ -79,7 +80,7 @@ struct task_struct{
 	uint32_t elapsed_ticks;          ///<   总共占用的cpu时间
 	struct list_head ready_tag;       ///<  用于任务队列的链表节点
 	struct list_head all_tag;         ///<  用于所有任务队列的链表节点
-	char name[16];                    ///<  任务名称
+	char name[TASK_NAME_LEN];                    ///<  任务名称
 	uint32_t *pg_dir;                 ///<  页目录指针
 	struct virtual_addr userprog_vaddr; ///<  虚拟地址 
 	pid_t pid;                          ///<  任务号
@@ -110,6 +111,7 @@ struct tack_struct* thread_start(char *name, int prio, thread_func function, voi
 void init_thread(struct task_struct *pthread, char *name, int prio);
 void thread_yield(void);
 void thread_create(struct task_struct *pthread, thread_func function, void *func_arg);
+pid_t fork_pid(void);
 
 void thread_init();
 #endif

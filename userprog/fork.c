@@ -5,11 +5,11 @@
 #include "interrupt.h"
 #include "file.h"
 #include "memory.h"
+#include "file.h"
+#include "process.h"
+#include "string.h"
 
 extern void intr_exit(void);
-extern struct task_struct *curr;
-extern struct list_head thread_ready_list;
-extern struct list_head thread_all_list;
 
 /**
  * 复制任务块
@@ -27,9 +27,9 @@ static int32_t copy_pcb(struct task_struct *child, struct task_struct *parent){
 }
 
 /**
- * 构建子进程栈
+ * 构建子进程内核栈
  */
-static int32_t build_child_stack(struct task_struct *child){
+static int32_t build_child_stack0(struct task_struct *child){
 
 	struct intr_stack *i_sta = (struct intr_stack *)((uint32_t)child + \
 			PG_SIZE - sizeof(struct intr_stack));
@@ -68,6 +68,9 @@ static void up_inode(struct task_struct *thread){
 
 static int32_t copy_process(struct task_struct *child, struct task_struct *parent){
 
+#ifdef DEBUG
+	printk("copy_process\n");
+#endif
 	copy_pcb(child, parent);
 	child->pg_dir = create_page_dir();
 	if(child->pg_dir == NULL)
@@ -75,13 +78,19 @@ static int32_t copy_process(struct task_struct *child, struct task_struct *paren
 
 	copy_page_table(child->pg_dir);		
 
-	build_child_stack(child);
+	build_child_stack0(child);
 	up_inode(child);
+#ifdef DEBUG
+	printk("copy_process done\n");
+#endif
 	return 0;
 }
 
 pid_t sys_fork(void){
 
+#ifdef DEBUG
+	printk("sys_fork\n");
+#endif
 	struct task_struct *parent = curr;
 	struct task_struct *child = get_kernel_pages(1);
 	if(child == NULL)
@@ -95,7 +104,9 @@ pid_t sys_fork(void){
 
 	list_add_tail(&child->ready_tag, &thread_ready_list);
 	list_add_tail(&child->all_tag, &thread_all_list);
-
+#ifdef DEBUG
+	printk("sys_fork done\n");
+#endif
 	return child->pid;
 }
 

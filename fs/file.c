@@ -11,7 +11,6 @@
 
 
 struct file file_table[MAX_FILE_OPEN];   ///< 文件表
-extern struct task_struct *curr;
 extern struct partition *cur_par;
 
 /**

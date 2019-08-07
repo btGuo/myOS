@@ -62,12 +62,16 @@ struct vm_area *vm_area_alloc(uint32_t saddr, uint32_t size){
 		return NULL;
 	}
 
-	saddr &= 0xfffff000;
+	//saddr &= 0xfffff000;
 	//默认fix
 	vm->vm_type = VM_FIX;
 	vm->size = size;
 	vm->start_addr = saddr;
 	return vm;
+}
+
+void vm_area_add(struct vm_area *vm){
+	list_add_tail(&vm->vm_tag, &curr->vm_struct.vm_list);
 }
 	
 /**

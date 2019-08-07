@@ -10,6 +10,7 @@ AS	kernel/makefile	/^AS = nasm$/;"	m
 AS	lib/kernel/makefile	/^AS = nasm$/;"	m
 AS	lib/makefile	/^AS = nasm$/;"	m
 AS	makefile	/^AS = nasm$/;"	m
+AS	test/makefile	/^AS = nasm$/;"	m
 AS	thread/makefile	/^AS = nasm$/;"	m
 AS	userprog/makefile	/^AS = nasm$/;"	m
 ASFLAGS	fs/makefile	/^ASFLAGS = -f elf$/;"	m
@@ -17,14 +18,13 @@ ASFLAGS	kernel/makefile	/^ASFLAGS = -f elf$/;"	m
 ASFLAGS	lib/kernel/makefile	/^ASFLAGS = -f elf$/;"	m
 ASFLAGS	lib/makefile	/^ASFLAGS = -f elf$/;"	m
 ASFLAGS	makefile	/^ASFLAGS = -f elf$/;"	m
+ASFLAGS	test/makefile	/^ASFLAGS = -f elf$/;"	m
 ASFLAGS	thread/makefile	/^ASFLAGS = -f elf$/;"	m
 ASFLAGS	userprog/makefile	/^ASFLAGS = -f elf$/;"	m
 ASSERT	include/debug.h	10;"	d
 ASSERT	include/debug.h	8;"	d
-ASSERT	test/bitmap.c	4;"	d	file:
-BITMAP_MASK	include/bitmap.h	/^static const uint8_t BITMAP_MASK = 1;$/;"	v
-BITMAP_MASK	test/bitmap.h	/^static const uint8_t BITMAP_MASK = 1;$/;"	v
-BITS_PER_BLOCK	include/fs.h	10;"	d
+BITS	test/test_bitmap.c	5;"	d	file:
+BITS_PER_BLOCK	include/fs.h	12;"	d
 BIT_DEV_DEV	device/ide.c	30;"	d	file:
 BIT_DEV_LBA	device/ide.c	29;"	d	file:
 BIT_DEV_MBS	device/ide.c	28;"	d	file:
@@ -37,10 +37,10 @@ BLK_IDX_2	include/block.h	24;"	d
 BLK_IDX_3	include/block.h	25;"	d
 BLK_IDX_I	include/block.h	27;"	d
 BLK_LEVEL	include/block.h	32;"	d
-BLK_PER_SEC	include/fs.h	15;"	d
+BLK_PER_SEC	include/fs.h	17;"	d
 BLOCKS	include/super_block.h	8;"	d
-BLOCKS_BMP_BLKS	include/fs.h	21;"	d
-BLOCKS_PER_GROUP	include/fs.h	12;"	d
+BLOCKS_BMP_BLKS	include/fs.h	23;"	d
+BLOCKS_PER_GROUP	include/fs.h	14;"	d
 BLOCK_LEVEL_0	include/block.h	14;"	d
 BLOCK_LEVEL_1	include/block.h	15;"	d
 BLOCK_LEVEL_2	include/block.h	16;"	d
@@ -48,8 +48,9 @@ BLOCK_LEVEL_3	include/block.h	17;"	d
 BLOCK_MASK_1	include/block.h	19;"	d
 BLOCK_MASK_2	include/block.h	20;"	d
 BLOCK_MASK_3	include/block.h	21;"	d
-BLOCK_SIZE	include/fs.h	5;"	d
-BUFFER_HEAD_SIZE	fs/buffer.c	9;"	d	file:
+BLOCK_SIZE	include/fs.h	7;"	d
+BUDDY_H	include/buddy.h	2;"	d
+BUFFER_HEAD_SIZE	fs/buffer.c	11;"	d	file:
 BUFR_BLOCK	include/buffer.h	38;"	d
 BUFR_INODE	include/buffer.h	40;"	d
 BUFW_BLOCK	include/buffer.h	37;"	d
@@ -61,6 +62,7 @@ BUILD_DIR	lib/kernel/makefile	/^BUILD_DIR = ..\/..\/build$/;"	m
 BUILD_DIR	lib/makefile	/^BUILD_DIR = ..\/build$/;"	m
 BUILD_DIR	lib/user/makefile	/^BUILD_DIR = ..\/..\/build$/;"	m
 BUILD_DIR	makefile	/^BUILD_DIR = $(PWD)\/build$/;"	m
+BUILD_DIR	test/makefile	/^BUILD_DIR = ..\/build$/;"	m
 BUILD_DIR	thread/makefile	/^BUILD_DIR = ..\/build$/;"	m
 BUILD_DIR	userprog/makefile	/^BUILD_DIR = ..\/build$/;"	m
 CC	device/makefile	/^CC = gcc$/;"	m
@@ -70,6 +72,7 @@ CC	lib/kernel/makefile	/^CC = gcc$/;"	m
 CC	lib/makefile	/^CC = gcc$/;"	m
 CC	lib/user/makefile	/^CC = gcc$/;"	m
 CC	makefile	/^CC = gcc$/;"	m
+CC	test/makefile	/^CC = gcc$/;"	m
 CC	thread/makefile	/^CC = gcc$/;"	m
 CC	userprog/makefile	/^CC = gcc$/;"	m
 CEIL	include/global.h	25;"	d
@@ -80,6 +83,7 @@ CFLAGS	lib/kernel/makefile	/^CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall$/;"	m
 CFLAGS	lib/makefile	/^CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall$/;"	m
 CFLAGS	lib/user/makefile	/^CFLAGS = $(LIB) -c -fno-builtin -m32  -Wall$/;"	m
 CFLAGS	makefile	/^CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall$/;"	m
+CFLAGS	test/makefile	/^CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall$/;"	m
 CFLAGS	thread/makefile	/^CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall$/;"	m
 CFLAGS	userprog/makefile	/^CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall$/;"	m
 CMD_IDENTIFY	device/ide.c	33;"	d	file:
@@ -93,9 +97,10 @@ DEPS	kernel/makefile	/^DEPS = $(SRCS:%.c=$(BUILD_DIR)\/%.d)$/;"	m
 DEPS	lib/kernel/makefile	/^DEPS = $(SRCS:%.c=$(BUILD_DIR)\/%.d)$/;"	m
 DEPS	lib/makefile	/^DEPS = $(SRCS:%.c=$(BUILD_DIR)\/%.d)$/;"	m
 DEPS	lib/user/makefile	/^DEPS = $(SRCS:%.c=$(BUILD_DIR)\/%.d)$/;"	m
+DEPS	test/makefile	/^DEPS = $(SRCS:%.c=$(BUILD_DIR)\/%.d)$/;"	m
 DEPS	thread/makefile	/^DEPS = $(SRCS:%.c=$(BUILD_DIR)\/%.d)$/;"	m
 DEPS	userprog/makefile	/^DEPS = $(SRCS:%.c=$(BUILD_DIR)\/%.d)$/;"	m
-DESC_CNT	include/memory.h	39;"	d
+DESC_CNT	include/memory.h	16;"	d
 DIV_ROUND_UP	include/global.h	23;"	d
 EFLAGS_IF	kernel/interrupt.c	13;"	d	file:
 EFLAGS_IF_OFF	include/global.h	19;"	d
@@ -105,8 +110,14 @@ EFLAGS_IOPL_3	include/global.h	20;"	d
 EFLAGS_MBS	include/global.h	17;"	d
 ENTRY_POINT	makefile	/^ENTRY_POINT = 0xc0001500$/;"	m
 EXT_CODE	device/keyboard.c	8;"	d	file:
+Elf32_Addr	include/exec.h	/^typedef uint32_t Elf32_Word, Elf32_Addr, Elf32_Off;$/;"	t
+Elf32_Ehdr	include/exec.h	/^struct Elf32_Ehdr{$/;"	s
+Elf32_Half	include/exec.h	/^typedef uint16_t Elf32_Half;$/;"	t
+Elf32_Off	include/exec.h	/^typedef uint32_t Elf32_Word, Elf32_Addr, Elf32_Off;$/;"	t
+Elf32_Phdr	include/exec.h	/^struct Elf32_Phdr{$/;"	s
+Elf32_Word	include/exec.h	/^typedef uint32_t Elf32_Word, Elf32_Addr, Elf32_Off;$/;"	t
 FD_LEGAL	fs/file.c	319;"	d	file:
-FIXUP_PATH	fs/dir.c	392;"	d	file:
+FIXUP_PATH	fs/dir.c	387;"	d	file:
 FS_BLOCK_H	include/block.h	2;"	d
 FS_PATH_PARSE_H	include/pathparse.h	2;"	d
 FS_SYS_H	include/fs_sys.h	2;"	d
@@ -118,23 +129,25 @@ GDT_LIMIT	boot/loader.S	/^GDT_LIMIT equ GDT_SIZE - 1$/;"	d
 GDT_SIZE	boot/loader.S	/^GDT_SIZE  equ $ - gdt$/;"	d
 GET_EFLAGS	kernel/interrupt.c	15;"	d	file:
 GROUP_BLK	include/super_block.h	16;"	d
-GROUP_BLKS	include/fs.h	7;"	d
-GROUP_INNER	include/fs.h	29;"	d
+GROUP_BLKS	include/fs.h	9;"	d
+GROUP_INNER	include/fs.h	31;"	d
 GROUP_PTR	include/group.h	8;"	d
-GROUP_SIZE	include/fs.h	6;"	d
-HASH_SIZE	lib/kernel/hash_table.c	8;"	d	file:
+GROUP_SIZE	include/fs.h	8;"	d
+HASH_SIZE	lib/kernel/hash_table.c	6;"	d	file:
 IDT_DESC_ATTR_DPL0	include/global.h	12;"	d
 IDT_DESC_ATTR_DPL3	include/global.h	13;"	d
 IDT_DESC_CNT	kernel/interrupt.c	7;"	d	file:
-INODES_BLKS	include/fs.h	23;"	d
-INODES_BMP_BLKS	include/fs.h	22;"	d
-INODES_PER_GROUP	include/fs.h	11;"	d
-INODE_SIZE	include/fs.h	19;"	d
+INODES_BLKS	include/fs.h	25;"	d
+INODES_BMP_BLKS	include/fs.h	24;"	d
+INODES_PER_GROUP	include/fs.h	13;"	d
+INODE_SIZE	include/fs.h	21;"	d
 INPUT_FREQUENCY	device/timer.c	10;"	d	file:
 INTR_OFF	include/interrupt.h	/^	INTR_OFF,$/;"	e	enum:intr_status
 INTR_ON	include/interrupt.h	/^	INTR_ON$/;"	e	enum:intr_status
 IRQ0_FREQUENCY	device/timer.c	9;"	d	file:
 KBD_BUF_PORT	device/keyboard.c	7;"	d	file:
+KEY_LEN	test/test_hashtable.c	12;"	d	file:
+K_VADDR_START	include/memory.h	17;"	d
 LBA_PER_BLK	include/block.h	13;"	d
 LD	device/makefile	/^LD = ld$/;"	m
 LD	fs/makefile	/^LD = ld$/;"	m
@@ -143,6 +156,7 @@ LD	lib/kernel/makefile	/^LD = ld$/;"	m
 LD	lib/makefile	/^LD = ld$/;"	m
 LD	lib/user/makefile	/^LD = ld$/;"	m
 LD	makefile	/^LD = ld$/;"	m
+LD	test/makefile	/^LD = ld$/;"	m
 LD	thread/makefile	/^LD = ld$/;"	m
 LD	userprog/makefile	/^LD = ld$/;"	m
 LDFALGS	makefile	/^LDFALGS = -Ttext $(ENTRY_POINT) -e main -Map $(BUILD_DIR)\/kernel.map \\$/;"	m
@@ -152,9 +166,10 @@ LDFLAGS	kernel/makefile	/^LDFLAGS = -m elf_i386 -r$/;"	m
 LDFLAGS	lib/kernel/makefile	/^LDFLAGS = -m elf_i386 -r$/;"	m
 LDFLAGS	lib/makefile	/^LDFLAGS = -m elf_i386 -r $/;"	m
 LDFLAGS	lib/user/makefile	/^LDFLAGS = -m elf_i386 -r$/;"	m
+LDFLAGS	test/makefile	/^LDFLAGS = -m elf_i386 -r$/;"	m
 LDFLAGS	thread/makefile	/^LDFLAGS = -m elf_i386 -r$/;"	m
 LDFLAGS	userprog/makefile	/^LDFLAGS = -m elf_i386 -r$/;"	m
-LEADER_BLKS	include/fs.h	17;"	d
+LEADER_BLKS	include/fs.h	19;"	d
 LIB	device/makefile	/^LIB = -I ..\/include$/;"	m
 LIB	fs/makefile	/^LIB = -I ..\/include$/;"	m
 LIB	kernel/makefile	/^LIB = -I ..\/include$/;"	m
@@ -162,30 +177,34 @@ LIB	lib/kernel/makefile	/^LIB = -I ..\/..\/include$/;"	m
 LIB	lib/makefile	/^LIB = -I ..\/include$/;"	m
 LIB	lib/user/makefile	/^LIB = -I ..\/..\/include$/;"	m
 LIB	makefile	/^LIB = -I include$/;"	m
+LIB	test/makefile	/^LIB = -I ..\/include$/;"	m
 LIB	thread/makefile	/^LIB = -I ..\/include$/;"	m
 LIB	userprog/makefile	/^LIB = -I ..\/include$/;"	m
 LIB_STRING_H	include/string.h	2;"	d
-LIB_STRING_H	test/string.h	2;"	d
 LIB_USER_SYSCALL_H	include/syscall.h	2;"	d
 LIST_HEAD	include/list.h	21;"	d
 LIST_HEAD_INIT	include/list.h	24;"	d
 LOADER_STACK_TOP	boot/loader.S	/^LOADER_STACK_TOP equ LOADER_BASE_ADDR$/;"	d
-MAIN_PCB	include/thread.h	21;"	d
+MAIN_PCB	include/thread.h	9;"	d
 MAJOR	include/super_block.h	5;"	d
-MAX_BLOCK_DIR_POS	include/fs.h	27;"	d
-MAX_FILES_OPEN_PER_PROC	include/thread.h	23;"	d
+MAX_BLOCK_DIR_POS	include/fs.h	29;"	d
+MAX_BYTES	test/test_bitmap.c	4;"	d	file:
+MAX_FILES_OPEN_PER_PROC	include/thread.h	11;"	d
 MAX_FILE_NAME_LEN	include/dir.h	4;"	d
 MAX_FILE_OPEN	include/file.h	9;"	d
 MAX_LBA	device/ide.c	38;"	d	file:
+MAX_ORDER	include/buddy.h	6;"	d
 MAX_PATH_LEN	fs/file.c	233;"	d	file:
-MAX_PATH_LEN	include/dir.h	27;"	d
+MAX_PATH_LEN	include/dir.h	41;"	d
+MAX_PG_CNT	include/memory.h	15;"	d
+MAX_PID	include/thread.h	12;"	d
 MEMORY_OK	include/global.h	35;"	d
-MEM_BITMAP_BASE	include/memory.h	10;"	d
+MEM_BITMAP_BASE	include/memory.h	12;"	d
 MINOR	include/super_block.h	6;"	d
 M_CREATE	include/block.h	10;"	d
-M_CREATE	include/dir.h	29;"	d
+M_CREATE	include/dir.h	43;"	d
 M_SEARCH	include/block.h	9;"	d
-M_SEARCH	include/dir.h	28;"	d
+M_SEARCH	include/dir.h	42;"	d
 NULL	include/global.h	28;"	d
 N_BLOCKS	include/inode.h	10;"	d
 OBJS	device/makefile	/^OBJS = $(SRCS:%.c=$(BUILD_DIR)\/%.o)$/;"	m
@@ -195,6 +214,7 @@ OBJS	lib/kernel/makefile	/^OBJS = $(SRCS:%.c=$(BUILD_DIR)\/%.o)$/;"	m
 OBJS	lib/makefile	/^OBJS = $(SRCS:%.c=$(BUILD_DIR)\/%.o)$/;"	m
 OBJS	lib/user/makefile	/^OBJS = $(SRCS:%.c=$(BUILD_DIR)\/%.o)$/;"	m
 OBJS	makefile	/^OBJS = $(BUILD_DIR)\/main.o $(BUILD_DIR)\/_kernel.o $(BUILD_DIR)\/_thread.o $(BUILD_DIR)\/_lib.o  \\$/;"	m
+OBJS	test/makefile	/^OBJS = $(SRCS:%.c=$(BUILD_DIR)\/%.o)$/;"	m
 OBJS	thread/makefile	/^OBJS = $(SRCS:%.c=$(BUILD_DIR)\/%.o)$/;"	m
 OBJS	userprog/makefile	/^OBJS = $(SRCS:%.c=$(BUILD_DIR)\/%.o)$/;"	m
 ORDER	include/block.h	12;"	d
@@ -205,25 +225,34 @@ OUT	lib/kernel/makefile	/^OUT = $(BUILD_DIR)\/_lib_kernel.o$/;"	m
 OUT	lib/makefile	/^OUT = $(BUILD_DIR)\/_lib.o  $/;"	m
 OUT	lib/user/makefile	/^OUT = $(BUILD_DIR)\/_lib_user.o$/;"	m
 OUT	makefile	/^OUT = $(BUILD_DIR)\/kernel.bin$/;"	m
+OUT	test/makefile	/^OUT = $(BUILD_DIR)\/_test.o$/;"	m
 OUT	thread/makefile	/^OUT = $(BUILD_DIR)\/_thread.o$/;"	m
 OUT	userprog/makefile	/^OUT = $(BUILD_DIR)\/_userprog.o$/;"	m
 O_CREAT	include/fs.h	/^	O_CREAT = 4  \/\/\/< 创建  100b$/;"	e	enum:oflags
 O_RDONLY	include/fs.h	/^	O_RDONLY,    \/\/\/< 只读  000b$/;"	e	enum:oflags
 O_RDWR	include/fs.h	/^	O_RDWR,      \/\/\/< 读写  010b$/;"	e	enum:oflags
 O_WRONLY	include/fs.h	/^	O_WRONLY,    \/\/\/< 只写  001b$/;"	e	enum:oflags
-PAGE_DIR_TABLE_POS	include/memory.h	12;"	d
 PANIC	include/debug.h	5;"	d
+PDE_PTR	kernel/memory.c	/^inline uint32_t *PDE_PTR(uint32_t vaddr){$/;"	f
 PF_KERNEL	include/memory.h	/^	PF_KERNEL,$/;"	e	enum:pool_flags
 PF_USER	include/memory.h	/^	PF_USER$/;"	e	enum:pool_flags
-PG_SIZE	include/memory.h	9;"	d
-PG_SIZE	include/thread.h	20;"	d
+PG_SIZE	include/memory.h	11;"	d
+PG_SIZE	include/thread.h	8;"	d
 PIC_M_CTRL	kernel/interrupt.c	8;"	d	file:
 PIC_M_DATA	kernel/interrupt.c	9;"	d	file:
 PIC_S_CTRL	kernel/interrupt.c	10;"	d	file:
 PIC_S_DATA	kernel/interrupt.c	11;"	d	file:
 PIT_CONTROL_PORT	device/timer.c	13;"	d	file:
-ROOT_INODE	include/fs.h	25;"	d
-SECTOR_SIZE	include/fs.h	4;"	d
+PTE_PTR	kernel/memory.c	/^inline uint32_t *PTE_PTR(uint32_t vaddr){$/;"	f
+PT_DYNAMIC	include/exec.h	/^	PT_DYNAMIC,$/;"	e	enum:segment_type
+PT_INTERP	include/exec.h	/^	PT_INTERP,$/;"	e	enum:segment_type
+PT_LOAD	include/exec.h	/^	PT_LOAD,$/;"	e	enum:segment_type
+PT_NOTE	include/exec.h	/^	PT_NOTE,$/;"	e	enum:segment_type
+PT_NULL	include/exec.h	/^	PT_NULL,$/;"	e	enum:segment_type
+PT_PHDR	include/exec.h	/^	PT_PHDR,$/;"	e	enum:segment_type
+PT_SHLIB	include/exec.h	/^	PT_SHLIB,$/;"	e	enum:segment_type
+ROOT_INODE	include/fs.h	27;"	d
+SECTOR_SIZE	include/fs.h	6;"	d
 SEEK_CUR	include/fs.h	/^	SEEK_CUR,      \/\/\/< 以文件当前位置为参照$/;"	e	enum:whence
 SEEK_END	include/fs.h	/^	SEEK_END       \/\/\/< 以文件末尾为参照$/;"	e	enum:whence
 SEEK_SET	include/fs.h	/^	SEEK_SET = 1,  \/\/\/< 以文件开始处为参照$/;"	e	enum:whence
@@ -244,11 +273,12 @@ SRCS	kernel/makefile	/^SRCS = $(_SRCS:main.c= )$/;"	m
 SRCS	lib/kernel/makefile	/^SRCS = $(wildcard *.c)$/;"	m
 SRCS	lib/makefile	/^SRCS = $(wildcard *.c)$/;"	m
 SRCS	lib/user/makefile	/^SRCS = $(wildcard *.c)$/;"	m
+SRCS	test/makefile	/^SRCS = $(_SRCS:main.c= )$/;"	m
 SRCS	thread/makefile	/^SRCS = $(wildcard *.c)$/;"	m
 SRCS	userprog/makefile	/^SRCS = $(wildcard *.c)$/;"	m
-STACK_MAGIC	include/thread.h	22;"	d
+STACK_MAGIC	include/thread.h	10;"	d
 SUBDIRS	lib/makefile	/^SUBDIRS = kernel user$/;"	m
-SUBDIRS	makefile	/^SUBDIRS = device kernel lib thread userprog fs$/;"	m
+SUBDIRS	makefile	/^SUBDIRS = device kernel lib thread userprog fs test$/;"	m
 SUPER_BLK	include/super_block.h	18;"	d
 SUPER_BLKS	include/super_block.h	20;"	d
 SUPER_MAGIC	include/super_block.h	4;"	d
@@ -258,12 +288,15 @@ TASK_HANGING	include/thread.h	/^	TASK_HANGING,          \/\/\/<  挂起$/;"	e	en
 TASK_READY	include/thread.h	/^	TASK_READY,            \/\/\/<  已准备好，随时可运行$/;"	e	enum:task_status
 TASK_RUNNING	include/thread.h	/^	TASK_RUNNING,          \/\/\/<  运行$/;"	e	enum:task_status
 TASK_WATTING	include/thread.h	/^	TASK_WATTING,          \/\/\/<  等待$/;"	e	enum:task_status
+TEST_H	include/test.h	2;"	d
 TSS_ATTR_HIGH	kernel/tss.c	48;"	d	file:
 TSS_ATTR_LOW	kernel/tss.c	49;"	d	file:
 UNUSED	include/global.h	27;"	d
+USER_HEAP_VADDR	include/process.h	6;"	d
 USER_STAKC_VADDR	include/process.h	4;"	d
 USER_VADDR_START	include/process.h	5;"	d
-VADDR_START	include/memory.h	11;"	d
+VADDR_OFF	include/memory.h	18;"	d
+VADDR_START	include/memory.h	13;"	d
 VECTOR	kernel/kernel.S	/^VECTOR 0x00, ZERO$/;"	l
 VECTOR	kernel/kernel.S	/^VECTOR 0x01, ZERO$/;"	l
 VECTOR	kernel/kernel.S	/^VECTOR 0x02, ZERO$/;"	l
@@ -313,7 +346,12 @@ VECTOR	kernel/kernel.S	/^VECTOR 0x2d, ZERO $/;"	l
 VECTOR	kernel/kernel.S	/^VECTOR 0x2e, ZERO $/;"	l
 VECTOR	kernel/kernel.S	/^VECTOR 0x2f, ZERO$/;"	l
 VECTOR	kernel/kernel.S	/^VECTOR 0x30, ZERO$/;"	l
+VM_DOWNWARD	include/vm_area.h	/^	VM_DOWNWARD,$/;"	e	enum:vm_area_type
+VM_FIX	include/vm_area.h	/^	VM_FIX$/;"	e	enum:vm_area_type
+VM_UPWARD	include/vm_area.h	/^	VM_UPWARD,$/;"	e	enum:vm_area_type
 _SRCS	kernel/makefile	/^_SRCS = $(wildcard *.c)$/;"	m
+_SRCS	test/makefile	/^_SRCS = $(wildcard *.c)$/;"	m
+_VM_AREA_H	include/vm_area.h	2;"	d
 __DEVICE_CONSOLE_H	include/console.h	2;"	d
 __DEVICE_IDE_H	include/ide.h	2;"	d
 __DEVICE_IOQUEUE_H	include/ioqueue.h	2;"	d
@@ -335,37 +373,37 @@ __KERNEL_TSS_H	include/tss.h	2;"	d
 __LIB_IO_BUFFER_H	include/buffer.h	2;"	d
 __LIB_IO_H	include/io.h	2;"	d
 __LIB_KERNEL_BITMAP_H	include/bitmap.h	2;"	d
-__LIB_KERNEL_BITMAP_H	test/bitmap.h	2;"	d
 __LIB_KERNEL_HASHTABLE_H	include/hash_table.h	2;"	d
 __LIB_KERNEL_PRINT_H	include/print.h	2;"	d
 __LIB_STDINT_H	include/stdint.h	2;"	d
 __LIB_STDIO_H	include/stdio.h	2;"	d
 __LIST_HEAD_INIT	include/list.h	19;"	d
-__NR_free	lib/user/syscall.c	12;"	d	file:
-__NR_getpid	lib/user/syscall.c	9;"	d	file:
-__NR_malloc	lib/user/syscall.c	10;"	d	file:
-__NR_write	lib/user/syscall.c	11;"	d	file:
+__NR_fork	lib/user/syscall.c	14;"	d	file:
+__NR_free	lib/user/syscall.c	13;"	d	file:
+__NR_getpid	lib/user/syscall.c	10;"	d	file:
+__NR_malloc	lib/user/syscall.c	11;"	d	file:
+__NR_write	lib/user/syscall.c	12;"	d	file:
 __PROCESS_H	include/process.h	2;"	d
 __STDARG_H	include/stdarg.h	2;"	d
 __THREAD_SYNC_H	include/sync.h	2;"	d
 __THREAD_THREAD_H	include/thread.h	2;"	d
+__USERPROG_EXEC_H	include/exec.h	2;"	d
 __list_add	include/list.h	/^static inline void __list_add(struct list_head *new,$/;"	f
 __va_round_size	include/stdarg.h	7;"	d
 _clear_blocks	fs/block.c	/^static void _clear_blocks(struct partition *part, uint32_t blk_nr, uint32_t depth){$/;"	f	file:
-_free	kernel/memory.c	/^static void _free(enum pool_flags pf, void *ptr){$/;"	f	file:
-_malloc	kernel/memory.c	/^static void *_malloc(enum pool_flags pf, uint32_t size){$/;"	f	file:
 _remove_last	fs/block.c	/^static bool _remove_last(struct partition *part, uint32_t blk_nr, uint32_t depth){$/;"	f	file:
 _search_dir_entry	fs/dir.c	/^bool _search_dir_entry(struct partition *part, struct dir *dir, \\$/;"	f
 _start	boot/grub/header.s	/^_start:$/;"	l
 _syscall0	lib/user/syscall.c	/^_syscall0(uint32_t, getpid)$/;"	f
-_syscall0	lib/user/syscall.c	14;"	d	file:
-_syscall1	lib/user/syscall.c	24;"	d	file:
-_syscall2	lib/user/syscall.c	35;"	d	file:
-_syscall3	lib/user/syscall.c	46;"	d	file:
+_syscall0	lib/user/syscall.c	16;"	d	file:
+_syscall1	lib/user/syscall.c	26;"	d	file:
+_syscall2	lib/user/syscall.c	37;"	d	file:
+_syscall3	lib/user/syscall.c	48;"	d	file:
 add_dir_entry	fs/dir.c	/^bool add_dir_entry(struct dir *par_dir, struct dir_entry *dir_e){$/;"	f
+add_km_pg_cache	kernel/memory.c	/^static void add_km_pg_cache(uint32_t s_paddr, uint32_t pgs){$/;"	f	file:
 addr_v2p	kernel/memory.c	/^uint32_t addr_v2p(uint32_t vaddr){$/;"	f
 all_tag	include/thread.h	/^	struct list_head all_tag;         \/\/\/<  用于所有任务队列的链表节点$/;"	m	struct:task_struct	typeref:struct:task_struct::list_head
-allocate_pid	thread/thread.c	/^static pid_t allocate_pid(void){$/;"	f	file:
+allocate_pid	thread/thread.c	/^pid_t allocate_pid(void){$/;"	f
 alt_status	device/keyboard.c	/^static bool ctrl_status, shift_status, alt_status, caps_lock_status;$/;"	v	file:
 ards_buf	boot/grub/header.s	/^ards_buf:$/;"	l
 ards_buf	boot/loader.S	/^ards_buf times 244 db 0$/;"	l
@@ -383,21 +421,14 @@ base_high	kernel/tss.c	/^	uint8_t base_high;$/;"	m	struct:gdt_desc	file:
 base_low	kernel/tss.c	/^	uint16_t base_low;$/;"	m	struct:gdt_desc	file:
 base_mid	kernel/tss.c	/^	uint8_t base_mid;$/;"	m	struct:gdt_desc	file:
 bitmap	include/bitmap.h	/^struct bitmap{$/;"	s
-bitmap	test/bitmap.h	/^struct bitmap{$/;"	s
 bitmap_init	lib/kernel/bitmap.c	/^void bitmap_init(struct bitmap *bmap){$/;"	f
-bitmap_init	test/bitmap.c	/^void bitmap_init(struct bitmap *bmap){$/;"	f
 bitmap_scan	lib/kernel/bitmap.c	/^int bitmap_scan(struct bitmap *bmap, uint32_t len){$/;"	f
-bitmap_scan	test/bitmap.c	/^int bitmap_scan(struct bitmap *bmap, uint32_t len){$/;"	f
 bitmap_set	lib/kernel/bitmap.c	/^void bitmap_set(struct bitmap *bmap, uint32_t bit_idx, int8_t value){$/;"	f
-bitmap_set	test/bitmap.c	/^void bitmap_set(struct bitmap *bmap, uint32_t bit_idx, int8_t value){$/;"	f
 bitmap_set_range	lib/kernel/bitmap.c	/^void bitmap_set_range(struct bitmap *bmap, uint32_t bit_idx_start, \\$/;"	f
-bitmap_set_range	test/bitmap.c	/^void bitmap_set_range(struct bitmap *bmap, uint32_t bit_idx_start, \\$/;"	f
 bitmap_toString	lib/kernel/bitmap.c	/^void bitmap_toString(struct bitmap *bmap){$/;"	f
-bitmap_toString	test/bitmap.c	/^void bitmap_toString(struct bitmap *bmap){$/;"	f
 bitmap_verify	lib/kernel/bitmap.c	/^uint8_t bitmap_verify(struct bitmap *bmap, uint32_t idx){$/;"	f
-bitmap_verify	test/bitmap.c	/^uint8_t bitmap_verify(struct bitmap *bmap, uint32_t idx){$/;"	f
 bits	include/bitmap.h	/^	uint8_t *bits;$/;"	m	struct:bitmap
-bits	test/bitmap.h	/^	uint8_t *bits;$/;"	m	struct:bitmap
+bkdr_hash	lib/kernel/hash_table.c	/^static uint32_t bkdr_hash(const char *str){$/;"	f	file:
 blk_nr	include/buffer.h	/^	uint32_t blk_nr;             \/\/\/< 块号$/;"	m	struct:buffer_head
 blk_nr	include/inode.h	/^	uint32_t blk_nr;    \/\/\/< 块号$/;"	m	struct:inode_pos
 block2meta	kernel/memory.c	/^static struct meta *block2meta(mem_block *blk){$/;"	f	file:
@@ -407,15 +438,24 @@ block_bmp	include/group.h	/^	struct bitmap block_bmp;       \/\/\/< 块节点位
 block_bmp_alloc	fs/block.c	/^int32_t block_bmp_alloc(struct partition *part){$/;"	f
 block_bmp_bh	include/group.h	/^	struct buffer_head *block_bmp_bh;  \/\/\/< 当前block位图缓冲区指针$/;"	m	struct:group_info	typeref:struct:group_info::buffer_head
 block_bmp_clear	fs/block.c	/^void block_bmp_clear(struct partition *part, uint32_t blk_nr){$/;"	f
+block_desc	include/memory.h	/^	struct mem_block_desc block_desc[DESC_CNT]; \/\/\/< 分配小块内存用$/;"	m	struct:kmem_manager	typeref:struct:kmem_manager::mem_block_desc
 block_desc_init	kernel/memory.c	/^void block_desc_init(struct mem_block_desc *blk_desc){$/;"	f
 block_size	include/memory.h	/^	uint32_t block_size;$/;"	m	struct:mem_block_desc
 block_size	include/super_block.h	/^	uint32_t block_size;        \/\/\/< 块大小$/;"	m	struct:super_block
 blocks	include/memory.h	/^	uint32_t blocks;$/;"	m	struct:mem_block_desc
 blocks_count	include/super_block.h	/^	uint32_t blocks_count;        \/\/\/< 块总数$/;"	m	struct:super_block
 blocks_per_group	include/super_block.h	/^	uint32_t blocks_per_group;   \/\/\/< 每组块数量$/;"	m	struct:super_block
+bmp	include/thread.h	/^	struct bitmap bmp;$/;"	m	struct:pid_pool	typeref:struct:pid_pool::bitmap
 bool	include/global.h	29;"	d
 boot_sector	device/ide.c	/^struct boot_sector{$/;"	s	file:
 bootable	device/ide.c	/^	uint8_t bootable;       \/\/\/<  是否可引导      $/;"	m	struct:partition_table_entry	file:
+buddy	include/memory.h	/^	struct buddy_sys buddy;     \/\/\/< 伙伴系统$/;"	m	struct:kmem_manager	typeref:struct:kmem_manager::buddy_sys
+buddy_add	kernel/buddy.c	/^void buddy_add(struct buddy_sys *buddy, uint32_t s_addr, uint32_t pg_cnt){$/;"	f
+buddy_alloc	kernel/buddy.c	/^struct page_desc *buddy_alloc(struct buddy_sys *buddy, uint32_t order){$/;"	f
+buddy_free	kernel/buddy.c	/^void buddy_free(struct buddy_sys *buddy, struct page_desc *pg_desc){$/;"	f
+buddy_paddr_start	include/memory.h	/^	uint32_t buddy_paddr_start; \/\/\/< 伙伴系统起始物理地址$/;"	m	struct:kmem_manager
+buddy_sys	include/buddy.h	/^struct buddy_sys{$/;"	s
+buddy_sys_init	kernel/buddy.c	/^void buddy_sys_init(struct buddy_sys *buddy, uint32_t s_paddr, uint32_t pgs){$/;"	f
 buffer_add_block	fs/buffer.c	/^bool buffer_add_block(struct disk_buffer *d_buf, struct buffer_head *bh){$/;"	f
 buffer_add_inode	fs/buffer.c	/^bool buffer_add_inode(struct disk_buffer *d_buf, struct inode_info *m_inode){$/;"	f
 buffer_head	include/buffer.h	/^struct buffer_head{$/;"	s
@@ -424,22 +464,31 @@ buffer_read_inode	fs/buffer.c	/^struct inode_info *buffer_read_inode(struct disk
 buffer_sync	fs/buffer.c	/^void buffer_sync(struct disk_buffer *d_buf){$/;"	f
 buffer_sync_disk	fs/buffer.c	/^static void buffer_sync_disk(struct disk_buffer *d_buf){$/;"	f	file:
 buffer_sync_inodes	fs/buffer.c	/^static void buffer_sync_inodes(struct disk_buffer *d_buf){$/;"	f	file:
+build_child_stack	userprog/fork.c	/^static int32_t build_child_stack(struct task_struct *child){$/;"	f	file:
+build_k_pgtable	kernel/memory.c	/^static void build_k_pgtable(uint32_t pg_cnt){$/;"	f	file:
 busy_wait	device/ide.c	/^static void busy_wait(struct disk *hd){$/;"	f	file:
 byte_len	include/bitmap.h	/^	uint32_t byte_len;$/;"	m	struct:bitmap
-byte_len	test/bitmap.h	/^	uint32_t byte_len;$/;"	m	struct:bitmap
+cache_tag	include/memory.h	/^	struct list_head cache_tag; \/\/\/< 缓冲用$/;"	m	struct:page_desc	typeref:struct:page_desc::list_head
 caps_lock_status	device/keyboard.c	/^static bool ctrl_status, shift_status, alt_status, caps_lock_status;$/;"	v	file:
 channel	include/ide.h	/^	struct ide_channel *channel;   \/\/\/< 磁盘所在的通道$/;"	m	struct:disk	typeref:struct:disk::ide_channel
 channel_cnt	device/ide.c	/^uint8_t channel_cnt;     \/\/\/< 通道数 1或者2 $/;"	v
 channels	device/ide.c	/^struct ide_channel channels[2];  \/\/\/< 两条ide通道$/;"	v	typeref:struct:ide_channel
 clear_blocks	fs/block.c	/^void clear_blocks(struct partition *part, struct inode_info *m_inode){$/;"	f
 cmd_out	device/ide.c	/^static void cmd_out(struct ide_channel *channel, uint8_t cmd){$/;"	f	file:
-cnt	kernel/memory.c	/^	uint32_t cnt;$/;"	m	struct:meta	file:
-compare	include/hash_table.h	/^	hash_func compare;$/;"	m	struct:hash_table
-compare_block	fs/buffer.c	/^bool compare_block(struct list_head *elem, uint32_t key){$/;"	f
-compare_inode	fs/buffer.c	/^bool compare_inode(struct list_head *elem, uint32_t key){$/;"	f
+cnt	include/memory.h	/^	uint32_t cnt;$/;"	m	struct:meta
+compare	include/hash_table.h	/^	hash_func compare;   \/\/\/< 关键字比较函数$/;"	m	struct:hash_table
+compare1	test/test_hashtable.c	/^bool compare1(struct list_head *elem, void *key){$/;"	f
+compare2	test/test_hashtable.c	/^bool compare2(struct list_head *elem, void *key){$/;"	f
+compare_block	fs/buffer.c	/^bool compare_block(struct list_head *elem, void *key){$/;"	f
+compare_dir_e	fs/buffer.c	/^bool compare_dir_e(struct list_head *elem, void *key){$/;"	f
+compare_inode	fs/buffer.c	/^bool compare_inode(struct list_head *elem, void *key){$/;"	f
 console_init	device/console.c	/^void console_init(){$/;"	f
 console_lock	device/console.c	/^static struct mutex_lock console_lock;$/;"	v	typeref:struct:mutex_lock	file:
 console_write	device/console.c	/^void console_write(const char *str){$/;"	f
+copy_page_table	kernel/memory.c	/^void copy_page_table(uint32_t *pde){$/;"	f
+copy_pcb	userprog/fork.c	/^static int32_t copy_pcb(struct task_struct *child, struct task_struct *parent){$/;"	f	file:
+copy_process	userprog/fork.c	/^static int32_t copy_process(struct task_struct *child, struct task_struct *parent){$/;"	f	file:
+count	include/memory.h	/^	uint16_t count;      \/\/\/< 页引用计数，共享内存时用$/;"	m	struct:page_desc
 cr3	kernel/tss.c	/^	uint32_t  cr3;$/;"	m	struct:tss	file:
 create_page_dir	userprog/process.c	/^uint32_t *create_page_dir(void){$/;"	f
 create_root	fs/fs.c	/^static void create_root(struct partition *part){$/;"	f	file:
@@ -447,32 +496,53 @@ create_time	include/super_block.h	/^	uint32_t create_time;   \/\/\/< 创建时�
 cs	include/thread.h	/^	uint32_t cs;$/;"	m	struct:intr_stack
 cs	kernel/tss.c	/^	uint32_t  cs;$/;"	m	struct:tss	file:
 ctrl_status	device/keyboard.c	/^static bool ctrl_status, shift_status, alt_status, caps_lock_status;$/;"	v	file:
+cur_gp	include/fs.h	/^	struct group_info *cur_gp;  \/\/\/< 当前使用块组$/;"	m	struct:ext2_fs	typeref:struct:ext2_fs::group_info
 cur_gp	include/ide.h	/^	struct group_info *cur_gp;  \/\/\/< 当前使用块组$/;"	m	struct:partition	typeref:struct:partition::group_info
 cur_par	fs/fs.c	/^struct partition *cur_par = NULL; \/\/\/< 当前活跃分区$/;"	v	typeref:struct:partition
 curr	thread/thread.c	/^struct task_struct *curr;$/;"	v	typeref:struct:task_struct
 data	include/buffer.h	/^	uint8_t *data;               \/\/\/< 数据指针$/;"	m	struct:buffer_head
 data	include/hash_table.h	/^	struct list_head *data;  \/\/\/< 数据指针$/;"	m	struct:hash_table	typeref:struct:hash_table::list_head
+data	test/test_hashtable.c	/^	char data;$/;"	m	struct:foo	file:
+data	test/test_hashtable.c	/^	char data;$/;"	m	struct:strfoo	file:
 dcount	kernel/interrupt.c	/^	uint8_t  dcount;$/;"	m	struct:gate_desc	file:
-default_prio	include/process.h	8;"	d
+default_part	fs/fs.c	/^const char *default_part = "sdb1";$/;"	v
+default_prio	include/process.h	9;"	d
 delete_dir_entry	fs/dir.c	/^bool delete_dir_entry(struct partition *part, struct dir *par_dir, uint32_t i_no){$/;"	f
-desc	kernel/memory.c	/^	struct mem_block_desc *desc;$/;"	m	struct:meta	typeref:struct:meta::mem_block_desc	file:
+desc	include/memory.h	/^	struct mem_block_desc *desc;$/;"	m	struct:meta	typeref:struct:meta::mem_block_desc
 dev_no	include/ide.h	/^	uint8_t dev_no;   \/\/\/< 设备号$/;"	m	struct:disk
 devices	include/ide.h	/^	struct disk devices[2];  \/\/\/< 两个磁盘$/;"	m	struct:ide_channel	typeref:struct:ide_channel::disk
 dir	include/dir.h	/^struct dir{$/;"	s
 dir_close	fs/dir.c	/^void dir_close(struct dir *dir){$/;"	f
+dir_e_info	include/dir.h	/^struct dir_e_info{$/;"	s
 dir_entry	include/dir.h	/^struct dir_entry{$/;"	s
 dir_is_empty	fs/dir.c	/^static bool dir_is_empty(struct dir *dir){$/;"	f	file:
 dir_open	fs/dir.c	/^struct dir* dir_open(struct partition *part, uint32_t i_no){$/;"	f
 dir_pos	include/dir.h	/^	uint32_t dir_pos;$/;"	m	struct:dir
-dir_read	fs/dir.c	/^struct dir_entry *dir_read(struct dir *dir){$/;"	f
+dir_read	fs/dir.c	/^bool dir_read(struct dir *dir, struct dir_entry *dir_e){$/;"	f
 dir_remove	fs/dir.c	/^int32_t dir_remove(struct dir *par_dir, struct dir *dir){$/;"	f
 dirty	include/buffer.h	/^	bool dirty;                  \/\/\/< 脏标志位$/;"	m	struct:buffer_head
 disk	include/ide.h	/^	struct disk *disk;    \/\/\/< 该分区所在磁盘$/;"	m	struct:partition	typeref:struct:partition::disk
 disk	include/ide.h	/^struct disk{$/;"	s
 disk_buffer	include/buffer.h	/^struct disk_buffer{$/;"	s
 disk_buffer_init	fs/buffer.c	/^void disk_buffer_init(struct disk_buffer *d_buf, struct partition *part){$/;"	f
+do_page_fault	kernel/memory.c	/^void do_page_fault(uint32_t vaddr){$/;"	f
+do_wp_page	kernel/memory.c	/^void do_wp_page(uint32_t _vaddr){$/;"	f
 ds	include/thread.h	/^	uint32_t ds;$/;"	m	struct:intr_stack
 ds	kernel/tss.c	/^	uint32_t  ds;$/;"	m	struct:tss	file:
+e_ehsize	include/exec.h	/^	Elf32_Half e_ehsize;$/;"	m	struct:Elf32_Ehdr
+e_entry	include/exec.h	/^	Elf32_Addr e_entry;$/;"	m	struct:Elf32_Ehdr
+e_flags	include/exec.h	/^	Elf32_Word e_flags;$/;"	m	struct:Elf32_Ehdr
+e_ident	include/exec.h	/^	unsigned char e_ident[16];$/;"	m	struct:Elf32_Ehdr
+e_machine	include/exec.h	/^	Elf32_Half e_machine;$/;"	m	struct:Elf32_Ehdr
+e_phentsize	include/exec.h	/^	Elf32_Half e_phentsize;$/;"	m	struct:Elf32_Ehdr
+e_phnum	include/exec.h	/^	Elf32_Half e_phnum;$/;"	m	struct:Elf32_Ehdr
+e_phoff	include/exec.h	/^	Elf32_Off  e_phoff;$/;"	m	struct:Elf32_Ehdr
+e_shentsize	include/exec.h	/^	Elf32_Half e_shentsize;$/;"	m	struct:Elf32_Ehdr
+e_shnum	include/exec.h	/^	Elf32_Half e_shnum;$/;"	m	struct:Elf32_Ehdr
+e_shoff	include/exec.h	/^	Elf32_Off  e_shoff;$/;"	m	struct:Elf32_Ehdr
+e_shstrndx	include/exec.h	/^	Elf32_Half e_shstrndx;$/;"	m	struct:Elf32_Ehdr
+e_type	include/exec.h	/^	Elf32_Half e_type;$/;"	m	struct:Elf32_Ehdr
+e_version	include/exec.h	/^	Elf32_Word e_version;$/;"	m	struct:Elf32_Ehdr
 eax	include/thread.h	/^	uint32_t eax;$/;"	m	struct:intr_stack
 eax	kernel/tss.c	/^	uint32_t  eax;$/;"	m	struct:tss	file:
 ebp	include/thread.h	/^	uint32_t ebp;$/;"	m	struct:intr_stack
@@ -511,10 +581,12 @@ esp1	kernel/tss.c	/^	uint32_t* esp1;$/;"	m	struct:tss	file:
 esp2	kernel/tss.c	/^	uint32_t* esp2;$/;"	m	struct:tss	file:
 esp_dummy	include/thread.h	/^	uint32_t esp_dummy;$/;"	m	struct:intr_stack
 exception_init	kernel/interrupt.c	/^static void exception_init(void){$/;"	f	file:
+ext2_fs	include/fs.h	/^struct ext2_fs{$/;"	s
 ext_lba_base	device/ide.c	/^uint32_t ext_lba_base = 0;$/;"	v
 extern	kernel/kernel.S	/^extern idt_table$/;"	l
 extern	kernel/kernel.S	/^extern put_str$/;"	l
 extern	kernel/kernel.S	/^extern syscall_table$/;"	l
+f_type	include/dir.h	/^	enum file_types f_type;    \/\/\/< 文件或目录$/;"	m	struct:dir_e_info	typeref:enum:dir_e_info::file_types
 f_type	include/dir.h	/^	enum file_types f_type;    \/\/\/< 文件或目录$/;"	m	struct:dir_entry	typeref:enum:dir_entry::file_types
 false	include/global.h	31;"	d
 fd_flag	include/file.h	/^	uint32_t fd_flag;   \/\/\/< 文件属性$/;"	m	struct:file
@@ -529,17 +601,24 @@ file_read	fs/file.c	/^int32_t file_read(struct file *file, void *buf, uint32_t c
 file_table	fs/file.c	/^struct file file_table[MAX_FILE_OPEN];   \/\/\/< 文件表$/;"	v	typeref:struct:file
 file_types	include/fs.h	/^enum file_types{$/;"	g
 file_write	fs/file.c	/^int32_t file_write(struct file *file, const void *buf, uint32_t count){$/;"	f
+filename	include/dir.h	/^	char filename[MAX_FILE_NAME_LEN];$/;"	m	struct:dir_e_info
 filename	include/dir.h	/^	char filename[MAX_FILE_NAME_LEN];$/;"	m	struct:dir_entry
 filesys_init	fs/fs.c	/^void filesys_init(){$/;"	f
+foo	test/test_hashtable.c	/^struct foo{$/;"	s	file:
 for_each	include/list.h	/^static inline void for_each(struct list_head *head)$/;"	f
+free	include/memory.h	/^	uint8_t free;       \/\/\/< 页是否分配出去$/;"	m	struct:page_desc
+free_area	include/buddy.h	/^	struct free_area free_area[MAX_ORDER + 1];$/;"	m	struct:buddy_sys	typeref:struct:buddy_sys::free_area
+free_area	include/buddy.h	/^struct free_area{$/;"	s
 free_blocks_count	include/group.h	/^	uint16_t free_blocks_count;    \/\/\/< 空闲数据块个数$/;"	m	struct:group
 free_blocks_count	include/group.h	/^	uint16_t free_blocks_count;    \/\/\/< 空闲数据块个数$/;"	m	struct:group_info
 free_blocks_count	include/super_block.h	/^	uint32_t free_blocks_count; \/\/\/< 空闲块数$/;"	m	struct:super_block
 free_inodes_count	include/group.h	/^	uint16_t free_inodes_count;    \/\/\/< 空闲索引节点个数$/;"	m	struct:group
 free_inodes_count	include/group.h	/^	uint16_t free_inodes_count;    \/\/\/< 空闲索引节点个数$/;"	m	struct:group_info
 free_inodes_count	include/super_block.h	/^	uint32_t free_inodes_count; \/\/\/< 空闲索引节点数$/;"	m	struct:super_block
+free_kernel_pages	kernel/memory.c	/^void free_kernel_pages(void *vaddr){$/;"	f
+free_list	include/buddy.h	/^	struct list_head free_list;$/;"	m	struct:free_area	typeref:struct:free_area::list_head
 free_list	include/memory.h	/^	struct list_head free_list;$/;"	m	struct:mem_block_desc	typeref:struct:mem_block_desc::list_head
-free_page	kernel/memory.c	/^void free_page(enum pool_flags pf, void *_vaddr, uint32_t pg_cnt){$/;"	f
+free_pages	include/memory.h	/^	uint32_t free_pages;$/;"	m	struct:umem_manager
 frequency_set	device/timer.c	/^static void frequency_set(uint8_t counter_port, \\$/;"	f	file:
 fs	include/thread.h	/^	uint32_t fs;$/;"	m	struct:intr_stack
 fs	kernel/tss.c	/^	uint32_t  fs;$/;"	m	struct:tss	file:
@@ -554,15 +633,15 @@ gdt	boot/loader.S	/^gdt:$/;"	l
 gdt_desc	kernel/tss.c	/^struct gdt_desc {$/;"	s	file:
 gdt_ptr	boot/grub/header.s	/^gdt_ptr:$/;"	l
 gdt_ptr	boot/loader.S	/^gdt_ptr:$/;"	l
-general_intr_handler	kernel/interrupt.c	/^static void general_intr_handler(uint8_t vec_nr){$/;"	f	file:
+general_intr_handler	kernel/interrupt.c	/^static void general_intr_handler(uint8_t vec_nr, uint8_t err_code){$/;"	f	file:
 get_a_page	kernel/memory.c	/^void *get_a_page(enum pool_flags pf, uint32_t vaddr){$/;"	f
 get_block_num	fs/block.c	/^uint32_t get_block_num(struct partition *part, struct inode_info *inode,\\$/;"	f
 get_boot_sector	device/ide.c	/^static void get_boot_sector(struct disk *hd, uint32_t lba, \\$/;"	f	file:
+get_buddy	kernel/buddy.c	/^struct page_desc *get_buddy(struct buddy_sys *buddy, struct page_desc *pg_desc){$/;"	f
 get_ext_partition	device/ide.c	/^static void get_ext_partition(struct disk *hd, uint32_t l_no, uint32_t s_lba){$/;"	f	file:
 get_fd	fs/file.c	/^int32_t get_fd(){$/;"	f
 get_kernel_pages	kernel/memory.c	/^void *get_kernel_pages(uint32_t pg_cnt){$/;"	f
 get_last_dir	fs/dir.c	/^struct dir *get_last_dir(const char *path){$/;"	f
-get_user_pages	kernel/memory.c	/^void *get_user_pages(uint32_t pg_cnt){$/;"	f
 global	kernel/kernel.S	/^global intr_entry_table$/;"	l
 global	kernel/kernel.S	/^global intr_exit$/;"	l
 global	kernel/kernel.S	/^global syscall_handler$/;"	l
@@ -576,22 +655,32 @@ group_info	include/group.h	/^struct group_info{$/;"	s
 group_info_init	fs/group.c	/^void group_info_init(struct partition *part, struct group_info *gp){$/;"	f
 group_nr	include/group.h	/^	uint32_t group_nr;             \/\/\/< 组号$/;"	m	struct:group_info
 group_switch	fs/group.c	/^struct group_info *group_switch(struct partition *part){$/;"	f
+groups	include/fs.h	/^	struct group_info *groups;  \/\/\/< 块组指针$/;"	m	struct:ext2_fs	typeref:struct:ext2_fs::group_info
 groups	include/ide.h	/^	struct group_info *groups;  \/\/\/< 块组指针$/;"	m	struct:partition	typeref:struct:partition::group_info
+groups_blks	include/fs.h	/^	uint32_t groups_blks;      \/\/\/< 块组struct group所占块数$/;"	m	struct:ext2_fs
 groups_blks	include/ide.h	/^	uint32_t groups_blks;      \/\/\/< 块组struct group所占块数$/;"	m	struct:partition
+groups_cnt	include/fs.h	/^	uint32_t groups_cnt;       \/\/\/< 块组数$/;"	m	struct:ext2_fs
 groups_cnt	include/ide.h	/^	uint32_t groups_cnt;       \/\/\/< 块组数$/;"	m	struct:partition
 groups_table	include/super_block.h	/^	uint32_t groups_table;  \/\/\/< 组所在块号$/;"	m	struct:super_block
 gs	include/thread.h	/^	uint32_t gs;$/;"	m	struct:intr_stack
 gs	kernel/tss.c	/^	uint32_t  gs;$/;"	m	struct:tss	file:
-hash_func	include/hash_table.h	/^typedef bool (*hash_func) (struct list_head *, uint32_t);$/;"	t
+hash_func	include/hash_table.h	/^typedef bool (*hash_func) (struct list_head *, void *);$/;"	t
 hash_table	include/hash_table.h	/^struct hash_table{$/;"	s
 hash_table_clear	lib/kernel/hash_table.c	/^inline void hash_table_clear(struct hash_table *ht){$/;"	f
-hash_table_find	lib/kernel/hash_table.c	/^inline struct list_head *hash_table_find(struct hash_table *ht, uint32_t key){$/;"	f
-hash_table_init	lib/kernel/hash_table.c	/^inline void hash_table_init(struct hash_table *ht, hash_func comp){$/;"	f
-hash_table_insert	lib/kernel/hash_table.c	/^inline void hash_table_insert(struct hash_table *ht, struct list_head *elem, uint32_t key){$/;"	f
+hash_table_del	lib/kernel/hash_table.c	/^inline void hash_table_del(struct hash_table *ht){$/;"	f
+hash_table_find	lib/kernel/hash_table.c	/^inline struct list_head *hash_table_find(struct hash_table *ht, void *key){$/;"	f
+hash_table_init	lib/kernel/hash_table.c	/^inline void hash_table_init(struct hash_table *ht, hash_func comp, hashf_func hf){$/;"	f
+hash_table_insert	lib/kernel/hash_table.c	/^inline void hash_table_insert(struct hash_table *ht, struct list_head *elem, void *key){$/;"	f
 hash_table_remove	lib/kernel/hash_table.c	/^inline void hash_table_remove(struct hash_table *ht, \\$/;"	f
 hash_tag	include/buffer.h	/^	struct list_head hash_tag;   \/\/\/< 哈希表标签$/;"	m	struct:buffer_head	typeref:struct:buffer_head::list_head
+hash_tag	include/dir.h	/^	struct list_head hash_tag;   \/\/\/< 用于哈希表$/;"	m	struct:dir_e_info	typeref:struct:dir_e_info::list_head
 hash_tag	include/inode.h	/^	struct list_head hash_tag;   \/\/\/< 哈希表标签$/;"	m	struct:inode_info	typeref:struct:inode_info::list_head
-hashf	lib/kernel/hash_table.c	6;"	d	file:
+hash_tag	test/test_hashtable.c	/^	struct list_head hash_tag;$/;"	m	struct:foo	typeref:struct:foo::list_head	file:
+hash_tag	test/test_hashtable.c	/^	struct list_head hash_tag;$/;"	m	struct:strfoo	typeref:struct:strfoo::list_head	file:
+hashf	include/hash_table.h	/^	hashf_func hashf;   \/\/\/< 关键字映射函数$/;"	m	struct:hash_table
+hashf_func	include/hash_table.h	/^typedef uint32_t (*hashf_func) (void *, uint32_t);$/;"	t
+hashf_str	lib/kernel/hash_table.c	/^uint32_t hashf_str(void *key, uint32_t max_size){$/;"	f
+hashf_uint	lib/kernel/hash_table.c	/^uint32_t hashf_uint(void *key, uint32_t max_size){$/;"	f
 holder	include/sync.h	/^	struct task_struct *holder;$/;"	m	struct:mutex_lock	typeref:struct:mutex_lock::task_struct
 holder_repeat_nr	include/sync.h	/^	uint32_t holder_repeat_nr;$/;"	m	struct:mutex_lock
 i_atime	include/inode.h	/^	time_t   i_atime;    \/\/\/< 访问时间$/;"	m	struct:inode
@@ -617,6 +706,7 @@ i_mode	include/inode.h	/^	uint16_t i_mode;     \/\/\/< 访问模式位$/;"	m	str
 i_mode	include/inode.h	/^	uint16_t i_mode;     \/\/\/< 访问模式位$/;"	m	struct:inode_info
 i_mtime	include/inode.h	/^	time_t   i_mtime;    \/\/\/< 修改时间$/;"	m	struct:inode
 i_mtime	include/inode.h	/^	time_t   i_mtime;    \/\/\/< 修改时间$/;"	m	struct:inode_info
+i_no	include/dir.h	/^	uint32_t i_no;      \/\/\/< i节点号$/;"	m	struct:dir_e_info
 i_no	include/dir.h	/^	uint32_t i_no;      \/\/\/< i节点号$/;"	m	struct:dir_entry
 i_no	include/inode.h	/^	uint32_t i_no;       \/\/\/< 索引节点号$/;"	m	struct:inode_info
 i_open_cnts	include/inode.h	/^	uint32_t i_open_cnts;\/\/\/< 打开次数 $/;"	m	struct:inode_info
@@ -645,6 +735,7 @@ inc	boot/loader.S	/^	inc di$/;"	d
 inc	boot/loader.S	/^	inc dx$/;"	d
 inc	boot/mbr.S	/^	inc di$/;"	d
 inc	boot/mbr.S	/^	inc dx$/;"	d
+init	kernel/main.c	/^void init(void){$/;"	f
 init_all	kernel/init.c	/^void init_all(){$/;"	f
 init_block	fs/block.c	/^void init_block(struct partition *part, uint32_t blk_nr){$/;"	f
 init_dir_entry	fs/dir.c	/^void init_dir_entry(char *filename, uint32_t i_no, enum file_types f_type,\\$/;"	f
@@ -690,23 +781,29 @@ intr_stack	include/thread.h	/^struct intr_stack{$/;"	s
 intr_status	include/interrupt.h	/^enum intr_status{$/;"	g
 intr_timer_handler	device/timer.c	/^static void intr_timer_handler(void){$/;"	f	file:
 io_base	kernel/tss.c	/^	uint32_t  io_base; \/* 高16位有效 *\/$/;"	m	struct:tss	file:
+io_buffer	include/fs.h	/^	struct disk_buffer io_buffer;     \/\/\/< 磁盘缓冲区，换成指针或许更好$/;"	m	struct:ext2_fs	typeref:struct:ext2_fs::disk_buffer
 io_buffer	include/ide.h	/^	struct disk_buffer io_buffer;     \/\/\/< 磁盘缓冲区，换成指针或许更好$/;"	m	struct:partition	typeref:struct:partition::disk_buffer
 ioqueue	include/ioqueue.h	/^struct ioqueue{$/;"	s
 irq_no	include/ide.h	/^	uint8_t irq_no;     \/\/\/< 中断号$/;"	m	struct:ide_channel
 is_buffered	include/buffer.h	/^	bool is_buffered;            \/\/\/< 是否在缓存中$/;"	m	struct:buffer_head
+is_in_vm_area	userprog/process.c	/^bool is_in_vm_area(uint32_t vaddr){$/;"	f
 jiffies	device/timer.c	/^uint32_t jiffies;$/;"	v
-k_block_desc	kernel/memory.c	/^struct mem_block_desc k_block_desc[DESC_CNT];$/;"	v	typeref:struct:mem_block_desc
-k_thread_a	kernel/main.c	/^void k_thread_a(void){$/;"	f
-k_thread_b	kernel/main.c	/^void k_thread_b(void){$/;"	f
-k_thread_c	kernel/main.c	/^void k_thread_c(void){$/;"	f
+k_thread_a	test/test_thread.c	/^void k_thread_a(void){$/;"	f
+k_thread_b	test/test_thread.c	/^void k_thread_b(void){$/;"	f
+k_thread_c	test/test_thread.c	/^void k_thread_c(void){$/;"	f
 kernel_init	boot/loader.S	/^kernel_init:$/;"	l
-kernel_pool	kernel/memory.c	/^struct pool kernel_pool, user_pool;$/;"	v	typeref:struct:pool
 kernel_thread	thread/thread.c	/^static void kernel_thread(thread_func *function, void *func_arg){$/;"	f	file:
-kernel_vaddr	kernel/memory.c	/^struct virtual_addr kernel_vaddr;$/;"	v	typeref:struct:virtual_addr
+key	test/test_hashtable.c	/^	char key[KEY_LEN];$/;"	m	struct:strfoo	file:
+key	test/test_hashtable.c	/^	uint32_t key;$/;"	m	struct:foo	file:
 keyboard_init	device/keyboard.c	/^void keyboard_init(){$/;"	f
 keymap	device/keyboard.c	/^static char keymap[0x3a][2] =$/;"	v	file:
 kfree	kernel/memory.c	/^void kfree(void *ptr){$/;"	f
+kfree_page	kernel/memory.c	/^static void kfree_page(void *_vaddr){$/;"	f	file:
+km_manager_init	kernel/memory.c	/^static void km_manager_init(uint32_t k_pgs, uint32_t all_pgs, uint32_t paddr_start){$/;"	f	file:
 kmalloc	kernel/memory.c	/^void *kmalloc(uint32_t size){$/;"	f
+kmalloc_page	kernel/memory.c	/^static void *kmalloc_page(uint32_t pg_cnt){$/;"	f	file:
+kmem_manager	include/memory.h	/^struct kmem_manager{$/;"	s
+kmm	kernel/memory.c	/^struct kmem_manager kmm;$/;"	v	typeref:struct:kmem_manager
 last_check	include/super_block.h	/^	uint32_t last_check;    \/\/\/< 最后一次检验时间$/;"	m	struct:super_block
 ldt	kernel/tss.c	/^	uint32_t  ldt;$/;"	m	struct:tss	file:
 limit_high_attr_high	kernel/tss.c	/^	uint8_t limit_high_attr_high;$/;"	m	struct:gdt_desc	file:
@@ -718,20 +815,21 @@ list_empty	include/list.h	/^static inline bool list_empty(struct list_head *head
 list_entry	include/list.h	8;"	d
 list_head	include/list.h	/^struct list_head{$/;"	s
 list_len	include/list.h	/^static inline uint32_t list_len(struct list_head *head)$/;"	f
+list_tag	include/memory.h	/^	struct list_head list_tag; \/\/\/< 链表节点$/;"	m	struct:v_area	typeref:struct:v_area::list_head
 loader_start	boot/loader.S	/^loader_start:$/;"	l
 lock	include/buffer.h	/^	bool lock;                   \/\/\/< 锁标志$/;"	m	struct:buffer_head
 lock	include/ide.h	/^	struct mutex_lock lock;   \/\/\/< 锁$/;"	m	struct:ide_channel	typeref:struct:ide_channel::mutex_lock
-lock	include/memory.h	/^	struct mutex_lock lock;$/;"	m	struct:pool	typeref:struct:pool::mutex_lock
+lock	include/memory.h	/^	struct mutex_lock lock;     \/\/\/< 锁$/;"	m	struct:kmem_manager	typeref:struct:kmem_manager::mutex_lock
+lock	include/memory.h	/^	struct mutex_lock lock;$/;"	m	struct:umem_manager	typeref:struct:umem_manager::mutex_lock
+lock	include/thread.h	/^	struct mutex_lock lock;$/;"	m	struct:pid_pool	typeref:struct:pid_pool::mutex_lock
 logic_parts	include/ide.h	/^	struct partition logic_parts[8]; \/\/\/< 8个逻辑分区，这里设了上限$/;"	m	struct:disk	typeref:struct:disk::partition
 magic	include/super_block.h	/^	uint32_t magic; \/\/\/< 魔数签名$/;"	m	struct:super_block
 main	kernel/main.c	/^int main() {$/;"	f
-main	test/test.c	/^int main(){$/;"	f
 main_thread	thread/thread.c	/^struct task_struct *main_thread;$/;"	v	typeref:struct:task_struct
 major_rev	include/super_block.h	/^	uint16_t major_rev;  \/\/\/< 主版本号$/;"	m	struct:super_block
 make_gdt_desc	kernel/tss.c	/^static struct gdt_desc make_gdt_desc(uint32_t base, uint32_t limit, \\$/;"	f	file:
 make_idt_desc	kernel/interrupt.c	/^static void make_idt_desc(struct gate_desc *p_gdesc, uint8_t attr, intr_handler function){$/;"	f	file:
 make_main_thread	thread/thread.c	/^static void make_main_thread(void){$/;"	f	file:
-malloc_page	kernel/memory.c	/^void *malloc_page(enum pool_flags pf, uint32_t pg_cnt){$/;"	f
 map	lib/vsprintf.c	/^static const char map[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8',\\$/;"	v	file:
 mem_block	include/memory.h	/^typedef struct list_head mem_block;$/;"	t	typeref:struct:list_head
 mem_block_desc	include/memory.h	/^struct mem_block_desc{$/;"	s
@@ -741,15 +839,17 @@ mem_pool_init	kernel/memory.c	/^static void mem_pool_init(uint32_t all_mem){$/;"
 memcmp	lib/string.c	/^int memcmp(const void *a, const void *b, uint32_t size){$/;"	f
 memcpy	lib/string.c	/^void memcpy(void *dest, void *src, uint32_t size){$/;"	f
 memset	lib/string.c	/^void memset(void *dest, uint8_t value, uint32_t size){$/;"	f
+merge_page	kernel/buddy.c	/^struct page_desc *merge_page(struct page_desc *pg_desc, struct page_desc *buddy_pg){$/;"	f
 message	boot/loader.S	/^	message db "hello loader"$/;"	d
 message	boot/mbr.S	/^	message db "hello MBR"$/;"	d
-meta	kernel/memory.c	/^struct meta{$/;"	s	file:
+meta	include/memory.h	/^struct meta{$/;"	s
 meta2block	kernel/memory.c	/^static mem_block *meta2block(struct meta *a, uint32_t idx){$/;"	f	file:
 mil_sec_per_intr	device/timer.c	15;"	d	file:
 minor_rev	include/super_block.h	/^	uint16_t minor_rev;  \/\/\/< 次版本号$/;"	m	struct:super_block
 mount_count	include/super_block.h	/^	uint16_t mount_count;    \/\/\/< 挂载次数$/;"	m	struct:super_block
 mount_partition	fs/fs.c	/^static void mount_partition(struct partition *part){$/;"	f	file:
 mount_time	include/super_block.h	/^	uint32_t mount_time;    \/\/\/< 挂载时间$/;"	m	struct:super_block
+mounted_point	include/ide.h	/^	char mounted_point[32];$/;"	m	struct:partition
 mtime_sleep	device/timer.c	/^void mtime_sleep(uint32_t m_secs){$/;"	f
 mul	boot/mbr.S	/^	mul dx$/;"	d
 mutex_lock	include/sync.h	/^struct mutex_lock{$/;"	s
@@ -761,22 +861,47 @@ name	include/ide.h	/^	char name[8];     \/\/\/< 分区名字$/;"	m	struct:partit
 name	include/ide.h	/^	char name[8];   \/\/\/< 通道名字$/;"	m	struct:ide_channel
 name	include/thread.h	/^	char name[16];                    \/\/\/<  任务名称$/;"	m	struct:task_struct
 next	include/list.h	/^	struct list_head *next;$/;"	m	struct:list_head	typeref:struct:list_head::list_head
+nr_free	include/buddy.h	/^	uint32_t nr_free;$/;"	m	struct:free_area
 off_size	include/inode.h	/^	uint32_t off_size;  \/\/\/< 块内偏移$/;"	m	struct:inode_pos
 offsetof	include/list.h	7;"	d
 oflags	include/fs.h	/^enum oflags{$/;"	g
 open_root_dir	fs/dir.c	/^void open_root_dir(struct partition *part){$/;"	f
+order	include/memory.h	/^	uint8_t order;      \/\/\/< 用于伙伴系统，当前页框的阶$/;"	m	struct:page_desc
 outb	include/io.h	/^static inline void outb(uint16_t port, uint8_t data){$/;"	f
 outsw	include/io.h	/^static inline void outsw(uint16_t port, const void *addr, uint32_t word_cnt){$/;"	f
+p_align	include/exec.h	/^	Elf32_Word p_align;$/;"	m	struct:Elf32_Phdr
+p_filesz	include/exec.h	/^	Elf32_Word p_filesz;$/;"	m	struct:Elf32_Phdr
+p_flags	include/exec.h	/^	Elf32_Word p_flags;$/;"	m	struct:Elf32_Phdr
+p_memsz	include/exec.h	/^	Elf32_Word p_memsz;$/;"	m	struct:Elf32_Phdr
 p_mode_start	boot/loader.S	/^p_mode_start:$/;"	l
+p_offset	include/exec.h	/^	Elf32_Off  p_offset;$/;"	m	struct:Elf32_Phdr
+p_paddr	include/exec.h	/^	Elf32_Addr p_paddr;$/;"	m	struct:Elf32_Phdr
+p_type	include/exec.h	/^	Elf32_Word p_type;$/;"	m	struct:Elf32_Phdr
+p_vaddr	include/exec.h	/^	Elf32_Addr p_vaddr;$/;"	m	struct:Elf32_Phdr
 pad	include/group.h	/^	uint16_t pad;                  \/\/\/< 对齐用$/;"	m	struct:group
 pad	include/group.h	/^	uint16_t pad;                  \/\/\/< 对齐用$/;"	m	struct:group_info
 pad	include/super_block.h	/^	uint8_t  pad[964];     \/\/\/< 凑齐1024(BLOCK_SIZE)字节$/;"	m	struct:super_block
+pad	include/thread.h	/^	uint32_t pad;  \/\/\/< 对齐用$/;"	m	struct:intr_stack
+paddr_start	include/memory.h	/^	uint32_t paddr_start;       \/\/\/< 起始物理地址$/;"	m	struct:kmem_manager
+paddr_start	include/memory.h	/^	uint32_t paddr_start;$/;"	m	struct:umem_manager
+paddr_to_pgdesc	kernel/memory.c	/^inline struct page_desc *paddr_to_pgdesc(uint32_t paddr){$/;"	f
+page_caches	include/memory.h	/^	struct list_head page_caches;   \/\/\/< 缓冲页，零散物理页会被加入这里，可能为空$/;"	m	struct:kmem_manager	typeref:struct:kmem_manager::list_head
+page_caches	include/memory.h	/^	struct list_head page_caches;$/;"	m	struct:umem_manager	typeref:struct:umem_manager::list_head
+page_desc	include/memory.h	/^struct page_desc{$/;"	s
 page_dir_activate	userprog/process.c	/^void page_dir_activate(struct task_struct *p_thread){$/;"	f
-page_table_add	kernel/memory.c	/^static void page_table_add(void *_vaddr, void *_paddr){$/;"	f	file:
+page_fault_handler	kernel/interrupt.c	/^static void page_fault_handler(uint8_t vec_nr, uint8_t err_code){$/;"	f	file:
+page_table	include/memory.h	/^	struct page_desc *page_table; \/\/\/< 内核页框描述符表$/;"	m	struct:kmem_manager	typeref:struct:kmem_manager::page_desc
+page_table	include/memory.h	/^	struct page_desc *page_table;$/;"	m	struct:umem_manager	typeref:struct:umem_manager::page_desc
+page_table_add	kernel/memory.c	/^static void page_table_add(uint32_t vaddr, uint32_t paddr){$/;"	f	file:
 page_table_pte_remove	kernel/memory.c	/^static void page_table_pte_remove(uint32_t vaddr){$/;"	f	file:
-palloc	kernel/memory.c	/^static void* palloc(struct pool *m_pool){$/;"	f	file:
+page_table_remap	kernel/memory.c	/^static void page_table_remap(uint32_t vaddr, uint32_t paddr){$/;"	f	file:
+pages	include/memory.h	/^	uint32_t pages;             \/\/\/< 内核物理页数$/;"	m	struct:kmem_manager
+pages	include/memory.h	/^	uint32_t pages;$/;"	m	struct:umem_manager
+palloc	kernel/memory.c	/^uint32_t palloc(enum pool_flags pf, uint32_t pg_cnt){$/;"	f
 panic_spin	kernel/debug.c	/^void panic_spin(char *filename, int line, const char *func, const char *condition){$/;"	f
+par_pid	include/thread.h	/^	pid_t par_pid;                      \/\/\/< 父进程号$/;"	m	struct:task_struct
 part	include/buffer.h	/^	struct partition *part;          \/\/\/< 分区指针$/;"	m	struct:disk_buffer	typeref:struct:disk_buffer::partition
+part	include/fs.h	/^	struct partition *part;    \/\/\/< 挂载分区$/;"	m	struct:ext2_fs	typeref:struct:ext2_fs::partition
 partition	include/ide.h	/^struct partition{$/;"	s
 partition_format	fs/fs.c	/^static void partition_format(struct partition *part){$/;"	f	file:
 partition_info	device/ide.c	/^static void partition_info(struct partition *part){$/;"	f	file:
@@ -784,19 +909,22 @@ partition_scan	device/ide.c	/^static void partition_scan(struct disk *hd, uint32
 partition_table	device/ide.c	/^	struct partition_table_entry partition_table[4];   \/\/\/< 四个分区表项$/;"	m	struct:boot_sector	typeref:struct:boot_sector::partition_table_entry	file:
 partition_table_entry	device/ide.c	/^struct partition_table_entry{$/;"	s	file:
 path_parse	fs/pathparse.c	/^char *path_parse(const char *path, char *res){$/;"	f
-pde_ptr	kernel/memory.c	/^inline uint32_t *pde_ptr(uint32_t vaddr){$/;"	f
 pfree	kernel/memory.c	/^void pfree(uint32_t paddr){$/;"	f
+pg_cahces_cnt	include/memory.h	/^	uint32_t pg_cahces_cnt;      \/\/\/< 对应page_caches 物理页数$/;"	m	struct:kmem_manager
+pg_cnt	include/memory.h	/^	uint32_t pg_cnt;   \/\/\/< 页数$/;"	m	struct:v_area
 pg_dir	include/thread.h	/^	uint32_t *pg_dir;                 \/\/\/<  页目录指针$/;"	m	struct:task_struct
-phy_addr_start	include/memory.h	/^	uint32_t phy_addr_start;$/;"	m	struct:pool
+pgdesc_to_paddr	kernel/memory.c	/^inline uint32_t pgdesc_to_paddr(struct page_desc *pg_desc){$/;"	f
 pic_init	kernel/interrupt.c	/^static void pic_init(void){$/;"	f	file:
 pid	include/thread.h	/^	pid_t pid;                          \/\/\/<  任务号$/;"	m	struct:task_struct
-pid_t	include/thread.h	/^typedef uint32_t pid_t;$/;"	t
-pool	include/memory.h	/^struct pool{$/;"	s
-pool_bitmap	include/memory.h	/^	struct bitmap pool_bitmap;$/;"	m	struct:pool	typeref:struct:pool::bitmap
+pid_pool	include/thread.h	/^struct pid_pool{$/;"	s
+pid_pool	thread/thread.c	/^struct pid_pool pid_pool;$/;"	v	typeref:struct:pid_pool
+pid_pool_init	thread/thread.c	/^void pid_pool_init(void){$/;"	f
+pid_start	include/thread.h	/^	uint32_t pid_start;$/;"	m	struct:pid_pool
+pid_t	include/thread.h	/^typedef int32_t pid_t;$/;"	t
 pool_flags	include/memory.h	/^enum pool_flags{$/;"	g
-pool_size	include/memory.h	/^	uint32_t pool_size;$/;"	m	struct:pool
 pop	kernel/kernel.S	/^	pop ds$/;"	d
 port_base	include/ide.h	/^	uint16_t port_base;  \/\/\/< 通道io端口$/;"	m	struct:ide_channel
+pos	include/memory.h	/^	uint32_t pos;     \/\/\/< debug用，当前页框编号$/;"	m	struct:page_desc
 prev	include/list.h	/^	struct list_head *prev;$/;"	m	struct:list_head	typeref:struct:list_head::list_head
 prim_parts	include/ide.h	/^	struct partition prim_parts[4];  \/\/\/< 4个主分区$/;"	m	struct:disk	typeref:struct:disk::partition
 print_group	fs/fs.c	/^void print_group(struct group *gp, int cnt){$/;"	f
@@ -807,16 +935,16 @@ print_super_block	fs/fs.c	/^void print_super_block(struct super_block *sb){$/;"	
 print_thread	thread/thread.c	/^void print_thread(struct task_struct *task){$/;"	f
 printf	lib/stdio.c	/^uint32_t printf(const char *fmt, ...){$/;"	f
 printk	kernel/printk.c	/^void printk(const char *fmt, ...){$/;"	f
-priority	include/thread.h	/^	uint8_t priority;               \/\/\/<  优先级$/;"	m	struct:task_struct
+priority	include/thread.h	/^	uint8_t priority;                \/\/\/<  优先级$/;"	m	struct:task_struct
 process_activate	userprog/process.c	/^void process_activate(struct task_struct *p_thread){$/;"	f
 process_execute	userprog/process.c	/^void process_execute(void *filename, char *name){$/;"	f
-pte_ptr	kernel/memory.c	/^inline uint32_t *pte_ptr(uint32_t vaddr){$/;"	f
 push	kernel/kernel.S	/^	push ds$/;"	d
 put_char	lib/kernel/print.S	/^put_char:$/;"	l
 put_int	lib/kernel/print.S	/^put_int:$/;"	l
 put_int_buffer	lib/kernel/print.S	/^put_int_buffer dq 0$/;"	d
 put_str	lib/kernel/print.S	/^put_str:$/;"	l
 queue_tag	include/buffer.h	/^	struct list_head queue_tag;  \/\/\/< 队列标签$/;"	m	struct:buffer_head	typeref:struct:buffer_head::list_head
+queue_tag	include/dir.h	/^	struct list_head queue_tag;  \/\/\/< 用于队列$/;"	m	struct:dir_e_info	typeref:struct:dir_e_info::list_head
 queue_tag	include/inode.h	/^	struct list_head queue_tag;  \/\/\/< 队列标签$/;"	m	struct:inode_info	typeref:struct:inode_info::list_head
 rd_disk_16	boot/mbr.S	/^rd_disk_16:$/;"	l
 rd_disk_32	boot/loader.S	/^rd_disk_32:$/;"	l
@@ -837,10 +965,13 @@ reg_sect_cnt	device/ide.c	12;"	d	file:
 reg_status	device/ide.c	17;"	d	file:
 register_handler	kernel/interrupt.c	/^void register_handler(uint8_t vec_nr, intr_handler function){$/;"	f
 release_block	fs/block.c	/^void release_block(struct buffer_head *bh){$/;"	f
+release_pid	thread/thread.c	/^void release_pid(pid_t pid){$/;"	f
 remove_last	fs/block.c	/^void remove_last(struct partition *part, struct inode_info *m_inode){$/;"	f
 res_blocks	include/super_block.h	/^	uint32_t res_blocks;         \/\/\/< 剩余块数$/;"	m	struct:super_block
 root_dir	fs/dir.c	/^struct dir root_dir;$/;"	v	typeref:struct:dir
 s	boot/mbr.S	/^s:  mov dh, [si]$/;"	l
+s_addr	include/memory.h	/^	uint32_t s_addr;   \/\/\/< 起始地址$/;"	m	struct:v_area
+sb	include/fs.h	/^	struct super_block *sb;    \/\/\/< 分区超级块$/;"	m	struct:ext2_fs	typeref:struct:ext2_fs::super_block
 sb	include/ide.h	/^	struct super_block *sb;    \/\/\/< 分区超级块$/;"	m	struct:partition	typeref:struct:partition::super_block
 scan_root	fs/fs.c	/^static bool scan_root(struct partition *part){$/;"	f	file:
 schedule	thread/thread.c	/^void schedule(){$/;"	f
@@ -854,6 +985,7 @@ section	kernel/kernel.S	/^section .text$/;"	l
 section	lib/kernel/print.S	/^section .data$/;"	l
 section	lib/kernel/print.S	/^section .text$/;"	l
 section	thread/switch.S	/^section .text$/;"	l
+segment_type	include/exec.h	/^enum segment_type{$/;"	g
 select_disk	device/ide.c	/^static void select_disk(struct disk *hd){$/;"	f	file:
 select_sector	device/ide.c	/^static void select_sector(struct disk *hd, uint32_t lba, uint8_t cnt){$/;"	f	file:
 selector	kernel/interrupt.c	/^	uint16_t selector;$/;"	m	struct:gate_desc	file:
@@ -868,6 +1000,7 @@ setup_page	boot/loader.S	/^setup_page:$/;"	l
 shift_status	device/keyboard.c	/^static bool ctrl_status, shift_status, alt_status, caps_lock_status;$/;"	v	file:
 signature	device/ide.c	/^	uint16_t signature;   \/\/\/< 魔数$/;"	m	struct:boot_sector	file:
 size	include/hash_table.h	/^	uint32_t size;   \/\/\/< 哈希表槽个数$/;"	m	struct:hash_table
+size	include/vm_area.h	/^	uint32_t size;$/;"	m	struct:vm_area
 spin_lock	include/sync.h	/^struct spin_lock{$/;"	s
 spin_lock_acquire	thread/sync.c	/^void spin_lock_acquire(struct spin_lock *lock){$/;"	f
 spin_lock_init	thread/sync.c	/^void spin_lock_init(struct spin_lock *lock){$/;"	f
@@ -879,13 +1012,19 @@ ss	kernel/tss.c	/^	uint32_t  ss;$/;"	m	struct:tss	file:
 ss0	kernel/tss.c	/^	uint32_t  ss0;$/;"	m	struct:tss	file:
 ss1	kernel/tss.c	/^	uint32_t  ss1;$/;"	m	struct:tss	file:
 ss2	kernel/tss.c	/^	uint32_t  ss2;$/;"	m	struct:tss	file:
-stack_magic	include/thread.h	/^	uint32_t stack_magic;                        \/\/\/< 魔数，标记是否越界$/;"	m	struct:task_struct
+st_ftype	include/fs.h	/^	enum file_types st_ftype;  \/\/\/< 文件类型$/;"	m	struct:stat	typeref:enum:stat::file_types
+st_ino	include/fs.h	/^	uint32_t st_ino;    \/\/\/< inode号$/;"	m	struct:stat
+st_size	include/fs.h	/^	uint32_t st_size;   \/\/\/< 文件大小$/;"	m	struct:stat
+stack_magic	include/thread.h	/^	uint32_t stack_magic;                         \/\/\/< 魔数，标记是否越界$/;"	m	struct:task_struct
+start_addr	include/buddy.h	/^	uint32_t start_addr;$/;"	m	struct:buddy_sys
+start_addr	include/vm_area.h	/^	uint32_t start_addr;$/;"	m	struct:vm_area
 start_chs	device/ide.c	/^	uint8_t start_chs;      \/\/\/<  起始柱面号$/;"	m	struct:partition_table_entry	file:
 start_head	device/ide.c	/^	uint8_t start_head;     \/\/\/<  起始磁头号$/;"	m	struct:partition_table_entry	file:
 start_lba	device/ide.c	/^	uint32_t start_lba;     \/\/\/<  起始扇区lba地址$/;"	m	struct:partition_table_entry	file:
 start_lba	include/ide.h	/^	uint32_t start_lba;   \/\/\/< 分区起始地址$/;"	m	struct:partition
 start_process	userprog/process.c	/^void start_process(void *filename_){$/;"	f
 start_sec	device/ide.c	/^	uint8_t start_sec;      \/\/\/<  起始扇区号$/;"	m	struct:partition_table_entry	file:
+stat	include/fs.h	/^struct stat{$/;"	s
 status	include/thread.h	/^	enum task_status status;     	 \/\/\/<  当前任务状态$/;"	m	struct:task_struct	typeref:enum:task_struct::task_status
 std_fd	include/file.h	/^enum std_fd{$/;"	g
 stderr_no	include/file.h	/^	stderr_no    \/\/\/< 2标准错误$/;"	e	enum:std_fd
@@ -896,6 +1035,7 @@ strchr	lib/string.c	/^char *strchr(const char *str, const uint8_t ch){$/;"	f
 strchrs	lib/string.c	/^uint32_t strchrs(const char *str, uint8_t ch){$/;"	f
 strcmp	lib/string.c	/^int8_t strcmp(const char *str1, const char *str2){$/;"	f
 strcpy	lib/string.c	/^char *strcpy(char *dest, const char *src){$/;"	f
+strfoo	test/test_hashtable.c	/^struct strfoo{$/;"	s	file:
 strlen	lib/string.c	/^uint32_t strlen(const char *str){$/;"	f
 strrchr	lib/string.c	/^char *strrchr(const char *str, const uint8_t ch){$/;"	f
 super_block	include/super_block.h	/^struct super_block{$/;"	s
@@ -905,6 +1045,7 @@ sync	fs/fs.c	/^void sync(){$/;"	f
 sys_call_init	lib/user/syscall.c	/^void sys_call_init(void){$/;"	f
 sys_close	fs/file.c	/^int32_t sys_close(int32_t fd){$/;"	f
 sys_closedir	fs/dir.c	/^int32_t sys_closedir(struct dir *dir){$/;"	f
+sys_fork	userprog/fork.c	/^pid_t sys_fork(void){$/;"	f
 sys_free	kernel/memory.c	/^void sys_free(void *ptr){$/;"	f
 sys_lseek	fs/file.c	/^int32_t sys_lseek(int32_t fd, int32_t offset, uint8_t whence){$/;"	f
 sys_malloc	kernel/memory.c	/^void *sys_malloc(uint32_t size){$/;"	f
@@ -912,18 +1053,28 @@ sys_mkdir	fs/dir.c	/^int32_t sys_mkdir(char *path){$/;"	f
 sys_open	fs/file.c	/^int32_t sys_open(const char *path, uint8_t flags){$/;"	f
 sys_opendir	fs/dir.c	/^struct dir *sys_opendir(char *path){$/;"	f
 sys_read	fs/file.c	/^int32_t sys_read(int32_t fd, void *buf, uint32_t count){$/;"	f
-sys_readdir	fs/dir.c	/^struct dir_entry *sys_readdir(struct dir *dir){$/;"	f
+sys_readdir	fs/dir.c	/^int32_t sys_readdir(struct dir *dir, struct dir_entry *dir_e){$/;"	f
 sys_rewinddir	fs/dir.c	/^void sys_rewinddir(struct dir *dir){$/;"	f
 sys_rmdir	fs/dir.c	/^int32_t sys_rmdir(char *path){$/;"	f
+sys_stat	fs/fs.c	/^int32_t sys_stat(const char *path, struct stat *st){$/;"	f
 sys_unlink	fs/file.c	/^int32_t sys_unlink(const char *path){$/;"	f
 sys_write	fs/file.c	/^int32_t sys_write(int32_t fd, const void *buf, uint32_t count){$/;"	f
 syscall	lib/user/syscall.c	/^typedef void* syscall;$/;"	t	file:
 syscall_handler	kernel/kernel.S	/^syscall_handler:$/;"	l
-syscall_nr	lib/user/syscall.c	57;"	d	file:
+syscall_nr	lib/user/syscall.c	59;"	d	file:
 syscall_table	lib/user/syscall.c	/^syscall syscall_table[syscall_nr];$/;"	v
 task_status	include/thread.h	/^enum task_status{$/;"	g
 task_struct	include/thread.h	/^struct task_struct{$/;"	s
 test	device/ide.c	/^void test(struct partition *part){$/;"	f
+test_bitmap	test/test_bitmap.c	/^void test_bitmap(){$/;"	f
+test_fs	test/test_fs.c	/^void test_fs(){$/;"	f
+test_hashtable	test/test_hashtable.c	/^void test_hashtable(){$/;"	f
+test_int	test/test_hashtable.c	/^void test_int(){$/;"	f
+test_k_pages	test/test_memory.c	/^void test_k_pages(){$/;"	f
+test_memory	test/test_memory.c	/^void test_memory(){$/;"	f
+test_str	test/test_hashtable.c	/^void test_str(){$/;"	f
+test_thread	test/test_thread.c	/^void test_thread(){$/;"	f
+test_v_pages	test/test_memory.c	/^void test_v_pages(){$/;"	f
 thread_all_list	thread/thread.c	/^LIST_HEAD(thread_all_list);$/;"	v
 thread_block	thread/thread.c	/^void thread_block(enum task_status stat){$/;"	f
 thread_create	thread/thread.c	/^void thread_create(struct task_struct *pthread, thread_func function, void *func_arg){$/;"	f
@@ -943,32 +1094,55 @@ to_num	lib/vsprintf.c	/^void to_num(int num, char *dest, char mode){$/;"	f
 total_mem_bytes	boot/grub/header.s	/^total_mem_bytes:$/;"	l
 total_mem_bytes	boot/loader.S	/^total_mem_bytes dd 0$/;"	d
 true	include/global.h	30;"	d
+try_expend_heap	userprog/process.c	/^bool try_expend_heap(){$/;"	f
+try_expend_stack	userprog/process.c	/^bool try_expend_stack(){$/;"	f
 tss	kernel/tss.c	/^static struct tss tss;$/;"	v	typeref:struct:tss	file:
 tss	kernel/tss.c	/^struct tss{$/;"	s	file:
 tss_init	kernel/tss.c	/^void tss_init(){$/;"	f
-u_block_desc	include/thread.h	/^	struct mem_block_desc u_block_desc[DESC_CNT]; \/\/\/< 内存块描述符表$/;"	m	struct:task_struct	typeref:struct:task_struct::mem_block_desc
-u_prog_a	kernel/main.c	/^void u_prog_a(void){$/;"	f
-u_prog_b	kernel/main.c	/^void u_prog_b(void){$/;"	f
+u_prog_a	test/test_thread.c	/^void u_prog_a(void){$/;"	f
+u_prog_b	test/test_thread.c	/^void u_prog_b(void){$/;"	f
 uint16_t	include/stdint.h	/^typedef unsigned short int uint16_t;$/;"	t
 uint32_t	include/stdint.h	/^typedef unsigned int uint32_t;$/;"	t
 uint64_t	include/stdint.h	/^typedef unsigned long long uint64_t;$/;"	t
 uint8_t	include/stdint.h	/^typedef unsigned char uint8_t;$/;"	t
+um_manager_init	kernel/memory.c	/^static void um_manager_init(uint32_t u_pgs, uint32_t paddr_start){$/;"	f	file:
+umem_manager	include/memory.h	/^struct umem_manager{$/;"	s
+umm	kernel/memory.c	/^struct umem_manager umm;$/;"	v	typeref:struct:umem_manager
 unused_retaddr	include/thread.h	/^	void (*unused_retaddr);$/;"	m	struct:thread_stack
+up_inode	userprog/fork.c	/^static void up_inode(struct task_struct *thread){$/;"	f	file:
 update_tss_esp	kernel/tss.c	/^void update_tss_esp(struct task_struct *thread){$/;"	f
 used_dirs_count	include/group.h	/^	uint16_t used_dirs_count;      \/\/\/< 目录个数$/;"	m	struct:group
 used_dirs_count	include/group.h	/^	uint16_t used_dirs_count;      \/\/\/< 目录个数$/;"	m	struct:group_info
-user_pool	kernel/memory.c	/^struct pool kernel_pool, user_pool;$/;"	v	typeref:struct:
 userprog_vaddr	include/thread.h	/^	struct virtual_addr userprog_vaddr; \/\/\/<  虚拟地址 $/;"	m	struct:task_struct	typeref:struct:task_struct::virtual_addr
+v_area	include/memory.h	/^struct v_area{$/;"	s
+v_area_del	kernel/memory.c	/^uint32_t v_area_del(uint32_t *vaddr){$/;"	f
+v_area_get	kernel/memory.c	/^struct v_area *v_area_get(uint32_t pg_cnt){$/;"	f
+v_area_head	include/memory.h	/^	struct list_head v_area_head;   \/\/\/< 动态内存区链表$/;"	m	struct:kmem_manager	typeref:struct:kmem_manager::list_head
+v_area_saddr	include/memory.h	/^	uint32_t v_area_saddr;      \/\/\/< 动态内存区起始地址$/;"	m	struct:kmem_manager
 va_arg	include/stdarg.h	16;"	d
 va_end	include/stdarg.h	14;"	d
 va_list	include/stdarg.h	/^typedef char *va_list;$/;"	t
 va_start	include/stdarg.h	10;"	d
-vaddr_get	kernel/memory.c	/^static void *vaddr_get(enum pool_flags pf, uint32_t pg_cnt){$/;"	f	file:
+vaddr_get	kernel/memory.c	/^static void *vaddr_get(uint32_t pg_cnt){$/;"	f	file:
+vaddr_start	include/memory.h	/^	uint32_t vaddr_start;       \/\/\/< 内核起始虚拟地址$/;"	m	struct:kmem_manager
 vaddr_start	include/memory.h	/^	uint32_t vaddr_start;$/;"	m	struct:virtual_addr
 value	include/sync.h	/^	uint8_t value;$/;"	m	struct:semaphore
 value	include/sync.h	/^	uint8_t value;$/;"	m	struct:spin_lock
 vec_no	include/thread.h	/^	uint32_t vec_no;$/;"	m	struct:intr_stack
+vfree	kernel/memory.c	/^void vfree(void *_vaddr){$/;"	f
 virtual_addr	include/memory.h	/^struct virtual_addr{$/;"	s
+vm_area	include/vm_area.h	/^struct vm_area{$/;"	s
+vm_area_alloc	userprog/process.c	/^struct vm_area *vm_area_alloc(uint32_t saddr, uint32_t size){$/;"	f
+vm_area_type	include/vm_area.h	/^enum vm_area_type{$/;"	g
+vm_heap	include/vm_area.h	/^	struct vm_area vm_heap;$/;"	m	struct:vm_struct	typeref:struct:vm_struct::vm_area
+vm_list	include/vm_area.h	/^	struct list_head vm_list;$/;"	m	struct:vm_struct	typeref:struct:vm_struct::list_head
+vm_stack	include/vm_area.h	/^	struct vm_area vm_stack;$/;"	m	struct:vm_struct	typeref:struct:vm_struct::vm_area
+vm_struct	include/thread.h	/^	struct vm_struct vm_struct;   		      \/\/\/< 内存区管理$/;"	m	struct:task_struct	typeref:struct:task_struct::vm_struct
+vm_struct	include/vm_area.h	/^struct vm_struct{$/;"	s
+vm_struct_init	userprog/process.c	/^void vm_struct_init(){$/;"	f
+vm_tag	include/vm_area.h	/^	struct list_head vm_tag;$/;"	m	struct:vm_area	typeref:struct:vm_area::list_head
+vm_type	include/vm_area.h	/^	enum vm_area_type vm_type;$/;"	m	struct:vm_area	typeref:enum:vm_area::vm_area_type
+vmalloc	kernel/memory.c	/^void *vmalloc(uint32_t pg_cnt){$/;"	f
 vsprintf	lib/vsprintf.c	/^void vsprintf(char *buf, const char *fmt, va_list args){$/;"	f
 waiters	include/sync.h	/^	struct list_head waiters;$/;"	m	struct:semaphore	typeref:struct:semaphore::list_head
 whence	include/fs.h	/^enum whence{$/;"	g

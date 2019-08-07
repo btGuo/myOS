@@ -21,12 +21,12 @@ intr%1entry:
 	push fs
 	push gs
 	pushad
-	mov eax, [esp + 4 * 12]
 ;向8259发送信号
 	mov al, 0x20
 	out 0xa0, al
 	out 0x20, al
 
+	mov eax, [esp + 4 * 12]
 	push eax
 	push %1
 	call [idt_table + %1 * 4]
@@ -40,13 +40,13 @@ section .data
 section .text
 global intr_exit
 intr_exit:
-	add esp, 8
+	add esp, 8 ;跳过pad 和vec_no两个参数
 	popad
 	pop gs
 	pop fs
 	pop es
 	pop ds
-	add esp, 4
+	add esp, 4 ;跳过err_code
 	iretd
 ;================================================================
 ;前32个中断向量，5个一组; intel 保留
@@ -145,6 +145,6 @@ syscall_handler:
 	push 0 ;对齐用的
 
 	;写入返回值
-	mov [esp + 8 * 4], eax
+	mov [esp + 9 * 4], eax
 	jmp intr_exit
 

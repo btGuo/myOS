@@ -11,6 +11,7 @@ struct task_struct *idle_thread;
 LIST_HEAD(thread_all_list);
 LIST_HEAD(thread_ready_list);
 struct pid_pool pid_pool;
+extern void init(void);
 
 void print_thread(struct task_struct *task){
 	put_str("vaddr :");put_int((uint32_t)task);put_char('\n');
@@ -28,7 +29,7 @@ static void kernel_thread(thread_func *function, void *func_arg){
 /**
  * 初始化pid池
  */
-void pid_pool_init(void){
+static void pid_pool_init(void){
 
 	pid_pool.pid_start = 1;
 	mutex_lock_init(&pid_pool.lock);
@@ -48,6 +49,10 @@ pid_t allocate_pid(void){
 	return idx + pid_pool.pid_start;
 }
 
+pid_t fork_pid(void){
+	return allocate_pid();
+}
+
 /**
  * 释放pid
  */
@@ -59,12 +64,18 @@ void release_pid(pid_t pid){
 }
 
 static void idle(void UNUSED){
+#ifdef DEBUG
+	printf("idle\n");
+#endif
 	while(1){
 		thread_block(TASK_BLOCKED);
 		asm volatile ("sti;hlt" : : : "memory");
 	}
 }
 
+/**
+ * 初始化线程栈
+ */
 void thread_create(struct task_struct *pthread, thread_func function, void *func_arg){
 	pthread->self_kstack -= sizeof(struct intr_stack);
 	pthread->self_kstack -= sizeof(struct thread_stack);
@@ -76,6 +87,9 @@ void thread_create(struct task_struct *pthread, thread_func function, void *func
 	kthread_stack->esi = kthread_stack->edi = 0;
 }
 
+/**
+ * 初始化任务控制块
+ */
 void init_thread(struct task_struct *pthread, char *name, int prio){
 	memset(pthread, 0, sizeof(struct task_struct));
 	strcpy(pthread->name, name);
@@ -102,6 +116,9 @@ void init_thread(struct task_struct *pthread, char *name, int prio){
 	pthread->stack_magic = STACK_MAGIC;
 }
 
+/**
+ * 创建新线程
+ */
 struct tack_struct* thread_start(char *name, int prio, \
 		thread_func function, void *func_arg){
 	struct task_struct *thread = (struct task_struct*)get_kernel_pages(1);
@@ -111,7 +128,10 @@ struct tack_struct* thread_start(char *name, int prio, \
 	list_add_tail(&thread->ready_tag, &thread_ready_list);
 	return thread; 
 }
-//当前任务被阻塞, 需要重新调度
+
+/**
+ * 阻塞当前任务, 需要重新调度
+ */
 void thread_block(enum task_status stat){
 	ASSERT(stat == TASK_BLOCKED || stat == TASK_WATTING ||
 			stat == TASK_HANGING);
@@ -121,6 +141,9 @@ void thread_block(enum task_status stat){
 	intr_set_status(old_stat);
 }
 
+/**
+ * 唤醒任务
+ */
 void thread_unblock(struct task_struct *nthread){
 	enum intr_status old_stat = intr_disable();
 	list_add(&nthread->ready_tag, &thread_ready_list);
