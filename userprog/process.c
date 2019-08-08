@@ -16,8 +16,8 @@ extern struct list_head thread_all_list;
  * 增加用户堆
  */
 bool try_expend_heap(){
-	struct vm_area *heap = &curr->vm_struct.vm_heap;
-	struct vm_area *stack = &curr->vm_struct.vm_stack;
+	struct vm_area *heap = curr->vm_struct.vm_heap;
+	struct vm_area *stack = curr->vm_struct.vm_stack;
 	//这里比较暴力，直接扩大1M
 	heap->size += (1 << 20);
 	if(heap->start_addr + heap->size > stack->start_addr)
@@ -29,8 +29,8 @@ bool try_expend_heap(){
  * 增加用户栈
  */
 bool try_expend_stack(){
-	struct vm_area *heap = &curr->vm_struct.vm_heap;
-	struct vm_area *stack = &curr->vm_struct.vm_stack;
+	struct vm_area *heap = curr->vm_struct.vm_heap;
+	struct vm_area *stack = curr->vm_struct.vm_stack;
 	//这里比较暴力，直接扩大1M
 	stack->start_addr -= (1 << 20);
 	stack->size += (1 << 20);
@@ -61,7 +61,6 @@ struct vm_area *vm_area_alloc(uint32_t saddr, uint32_t size){
 	if(!vm){
 		return NULL;
 	}
-
 	//saddr &= 0xfffff000;
 	//默认fix
 	vm->vm_type = VM_FIX;
@@ -73,6 +72,17 @@ struct vm_area *vm_area_alloc(uint32_t saddr, uint32_t size){
 void vm_area_add(struct vm_area *vm){
 	list_add_tail(&vm->vm_tag, &curr->vm_struct.vm_list);
 }
+
+void vm_release(struct vm_struct *vm_s){
+	struct vm_area *vm = NULL;
+	struct list_head *head = &vm_s->vm_list;
+	struct list_head *walk = head->next;
+	while(walk != head){
+		vm = list_entry(struct vm_area, vm_tag, walk);
+		kfree(vm);
+		walk = walk->next;
+	}
+}
 	
 /**
  * 初始化进程内存区
@@ -83,14 +93,14 @@ void vm_struct_init(){
 	struct vm_area *area = NULL;
 
 	//堆线性区
-	area = &curr->vm_struct.vm_heap;
+	area = curr->vm_struct.vm_heap = kmalloc(sizeof(struct vm_area));
 	area->start_addr = USER_HEAP_VADDR;
 	area->size = (1 << 20);
 	area->vm_type = VM_DOWNWARD;
 	list_add(&area->vm_tag, &curr->vm_struct.vm_list);
 
 	//栈线性区
-	area = &curr->vm_struct.vm_stack;
+	area = curr->vm_struct.vm_stack = kmalloc(sizeof(struct vm_area));
 	area->start_addr = USER_STAKC_VADDR;
 	area->size = (1 << 20);
 	area->vm_type = VM_UPWARD;
@@ -173,8 +183,9 @@ void process_execute(void *filename, char *name){
 	thread_create(thread, start_process, filename);
 	thread->pg_dir= create_page_dir();
 	//初始化虚拟地址
-	thread->userprog_vaddr.vaddr_start = USER_VADDR_START;
+	//thread->userprog_vaddr.vaddr_start = USER_VADDR_START;
 	
+	LIST_HEAD_INIT(thread->par_tag);
 	enum intr_status old_stat = intr_disable();
 	list_add_tail(&thread->ready_tag, &thread_ready_list);
 	list_add_tail(&thread->all_tag, &thread_all_list);

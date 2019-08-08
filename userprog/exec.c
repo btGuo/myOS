@@ -96,10 +96,6 @@ static int32_t load(const char *path){
 		goto done;
 	}
 
-	
-#ifdef DEBUG
-	printk("%s\n", elf_header.e_ident);
-#endif
 	//验证elf头
 	
 	if(memcmp(elf_header.e_ident, "\x7f\x45\x4c\x46\x1\x1\x1", 7) || \

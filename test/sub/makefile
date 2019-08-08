@@ -6,9 +6,9 @@ LDFLAGS = -e main -m elf_i386
 
 OBJS = ./main.o ../../build/_lib_user.o ../../build/assert.o ../../build/print.o\
 
-OUT = main.bin
+OUT = main.bin 
 
-all:$(OUT)
+all:$(OUT) writehd dump
 
 main.o : main.c
 	$(CC) $(CFLAGS) $< -o $@
@@ -17,6 +17,9 @@ $(OUT):$(OBJS)
 	$(LD) $(LDFLAGS) $(OBJS) -o $@
 
 writehd:
-	dd if=$(OUT) of=../../hd60.img bs=512 count=10 seek=300 conv=notrunc
+	dd if=$(OUT) of=../../hd60.img bs=512 count=100 seek=300 conv=notrunc
+
+dump:
+	objdump -d $(OUT) >tmp
 
 

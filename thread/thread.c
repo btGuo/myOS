@@ -8,6 +8,8 @@
 struct task_struct *main_thread;
 struct task_struct *curr;
 struct task_struct *idle_thread;
+struct task_struct *init_prog;
+
 LIST_HEAD(thread_all_list);
 LIST_HEAD(thread_ready_list);
 struct pid_pool pid_pool;
@@ -167,6 +169,27 @@ void thread_yield(void){
 	intr_set_status(old_stat);
 }
 
+void thread_exit(struct task_struct *over, bool sched){
+
+	intr_disable();
+	list_del(&over->ready_tag);
+	list_del(&over->all_tag);
+	list_del(&over->par_tag);
+
+	release_pid(over->pid);
+	if(over != main_thread){
+		pfree(addr_v2p(over));
+	}
+
+	if(sched){
+		schedule();
+		PANIC("should not be here\n");
+	}
+}
+
+/**
+ * 调度
+ */
 void schedule(){
 	if(curr->status == TASK_RUNNING ){
 		curr->ticks = curr->priority;

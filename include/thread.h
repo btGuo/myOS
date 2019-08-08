@@ -80,14 +80,17 @@ struct task_struct{
 	uint32_t elapsed_ticks;          ///<   总共占用的cpu时间
 	struct list_head ready_tag;       ///<  用于任务队列的链表节点
 	struct list_head all_tag;         ///<  用于所有任务队列的链表节点
+	struct list_head children;        ///< 子进程队列
+	struct list_head par_tag;         ///< 用于父进程队列
 	char name[TASK_NAME_LEN];                    ///<  任务名称
 	uint32_t *pg_dir;                 ///<  页目录指针
-	struct virtual_addr userprog_vaddr; ///<  虚拟地址 
 	pid_t pid;                          ///<  任务号
 	pid_t par_pid;                      ///< 父进程号
+	struct task_struct *par;        ///< 父进程
 	int32_t fd_table[MAX_FILES_OPEN_PER_PROC];    ///< 文件号表
-	uint32_t stack_magic;                         ///< 魔数，标记是否越界
 	struct vm_struct vm_struct;   		      ///< 内存区管理
+	int8_t exit_status;        
+	uint32_t stack_magic;                         ///< 魔数，标记是否越界
 };
 
 /**
@@ -100,6 +103,7 @@ struct pid_pool{
 };
 
 extern struct task_struct *curr;
+extern struct task_struct *init_prog;
 extern struct list_head thread_all_list;
 extern struct list_head thread_ready_list;
 

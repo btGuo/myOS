@@ -19,9 +19,10 @@ struct vm_area{
 };
 
 struct vm_struct{
+	uint32_t vaddr_start;  //TODO 初始化
 	struct list_head vm_list;
-	struct vm_area vm_stack;
-	struct vm_area vm_heap;
+	struct vm_area *vm_stack;
+	struct vm_area *vm_heap;
 };	
 
 #endif
