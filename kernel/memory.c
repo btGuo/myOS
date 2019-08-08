@@ -6,8 +6,8 @@
 #include "interrupt.h"
 #include "buddy.h"
 #include "sync.h"
+#include "process.h"
 
-extern struct task_struct *curr;
 /**
  * 内核物理内存固定映射，由伙伴系统统一管理，用户物理内存动态映射，自由链表管理
  */

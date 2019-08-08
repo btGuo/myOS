@@ -1,11 +1,11 @@
 #include "ide.h"
 #include "global.h"
 #include "print.h"
-#include "debug.h"
 #include "io.h"
 #include "interrupt.h"
 #include "syscall.h"
 #include "string.h"
+#include "assert.h"
 
 #define reg_data(channel)	 (channel->port_base + 0)
 #define reg_error(channel)	 (channel->port_base + 1)

@@ -2,7 +2,6 @@
 #include"io.h"
 #include"print.h"
 #include"thread.h"
-#include"debug.h"
 #include"interrupt.h"
 #include"global.h"
 

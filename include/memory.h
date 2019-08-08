@@ -2,11 +2,11 @@
 #define __KERNEL_MEMORY_H
 #include "stdint.h"
 #include "bitmap.h"
-#include "debug.h"
 #include "sync.h"
 #include "list.h"
 #include "buddy.h"
 #include "vm_area.h"
+#include "assert.h"
 
 #define PG_SIZE 4096
 #define MEM_BITMAP_BASE 0xc009a000

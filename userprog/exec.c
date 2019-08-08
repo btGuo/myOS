@@ -1,4 +1,3 @@
-#include "exec.h"
 #include "stdint.h"
 #include "fs.h"
 #include "string.h"
@@ -7,6 +6,19 @@
 #include "fs_sys.h"
 #include "vm_area.h"
 #include "process.h"
+#include "elf32.h"
+#include "print.h"
+#include "interrupt.h"
+
+static void print_Elf32_phdr(struct Elf32_Phdr *prog_h){
+	printk("elf program header info :\n");
+	printk("offset      %d\n", prog_h->p_offset);
+	printk("vaddr       %h\n", prog_h->p_vaddr);
+	printk("file size   %d\n", prog_h->p_filesz);
+	printk("memory size %d\n", prog_h->p_memsz);
+	printk("\n");
+}
+
 
 extern void intr_exit(void);
 
@@ -18,6 +30,9 @@ extern void intr_exit(void);
  * @return 是否成功
  */
 static int32_t segmemt_load(int32_t fd, struct Elf32_Phdr *prog_header){
+#ifdef DEBUG
+	print_Elf32_phdr(prog_header);
+#endif
 
 	uint32_t vaddr = prog_header->p_vaddr & 0xfffff000;
 	uint32_t off   = prog_header->p_vaddr & 0x00000fff;
@@ -31,8 +46,6 @@ static int32_t segmemt_load(int32_t fd, struct Elf32_Phdr *prog_header){
 	}
 	vm_area_add(vm);
 
-
-	printf("offset %d\n", off);
 	while(sz < size){
 
 		uint32_t *pde = PDE_PTR(vaddr);
@@ -44,7 +57,7 @@ static int32_t segmemt_load(int32_t fd, struct Elf32_Phdr *prog_header){
 		}
 
 		vaddr += PG_SIZE;
-		if(!sz)
+		if(!sz && off)
 			sz += off;
 		else sz += PG_SIZE;
 	}
@@ -62,6 +75,7 @@ static int32_t segmemt_load(int32_t fd, struct Elf32_Phdr *prog_header){
  */
 static int32_t load(const char *path){
 	
+	printk("exec load start\n");
 	const uint32_t EH_SIZE = sizeof(struct Elf32_Ehdr);
 	const uint32_t PH_SIZE = sizeof(struct Elf32_Phdr);
 
@@ -77,12 +91,18 @@ static int32_t load(const char *path){
 	}
 
 	if(sys_read(fd, &elf_header, EH_SIZE) != EH_SIZE){
+		printk("read failed\n");
 		ret = -1;
 		goto done;
 	}
 
+	
+#ifdef DEBUG
+	printk("%s\n", elf_header.e_ident);
+#endif
 	//验证elf头
-	if(memcmp(elf_header.e_ident, "\x7f\x45\x4c\x46\x2\x1\x1", 7) || \
+	
+	if(memcmp(elf_header.e_ident, "\x7f\x45\x4c\x46\x1\x1\x1", 7) || \
 			elf_header.e_type    != 2 || \
 			elf_header.e_machine != 3 || \
 			elf_header.e_version != 1 || \
@@ -92,7 +112,7 @@ static int32_t load(const char *path){
 		ret = -1;
 		goto done;
 	}
-
+	
 	Elf32_Off  ph_off  = elf_header.e_phoff;
 
 	uint32_t i = 0;
@@ -121,21 +141,24 @@ static int32_t load(const char *path){
 	ret = elf_header.e_entry;
 done:
 	sys_close(fd);
+	printk("exec load done\n");
 	return ret;
 }
 			
-int32_t sys_execv(const char *path, const char *argv[]){
+int32_t sys_execv(const char *path, const char **argv){
 
+	printk("sys_execv start\n");
 	uint32_t argc = 0;
 	while(argv[argc])
 		++argc;
 
 	int32_t entry = load(path);
-	if(entry == -1)
+	if(entry == -1){
+		printk("entry wrong\n");
 		return -1;
+	}
 
-	memcpy(curr->name, (void *)path, TASK_NAME_LEN);
-	curr->name[TASK_NAME_LEN - 1] = '\0';
+	strcpy(curr->name, path);
 
 	struct intr_stack *stack0 = (struct intr_stack *)\
 			((uint32_t)curr + PG_SIZE - sizeof(struct intr_stack));
@@ -146,6 +169,4 @@ int32_t sys_execv(const char *path, const char *argv[]){
 			"g"(stack0): "memory");
 	return 0;
 }
-	
-
 	

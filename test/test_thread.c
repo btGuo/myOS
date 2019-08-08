@@ -2,6 +2,7 @@
 #include "print.h"
 #include "interrupt.h"
 #include "string.h"
+#include "process.h"
 
 void k_thread_a(void){
 	while(1){

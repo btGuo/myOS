@@ -1,35 +1,4 @@
-BUILD_DIR = ../build
-LIB = -I ../include
-OUT = $(BUILD_DIR)/_lib.o  
-
-AS = nasm
-ASFLAGS = -f elf
-CC = gcc
-CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall
-LD = ld
-LDFLAGS = -m elf_i386 -r 
-
 SUBDIRS = kernel user
 
-SRCS = $(wildcard *.c)
-OBJS = $(SRCS:%.c=$(BUILD_DIR)/%.o)
-DEPS = $(SRCS:%.c=$(BUILD_DIR)/%.d)
-
-OBJS += $(BUILD_DIR)/_lib_kernel.o $(BUILD_DIR)/_lib_user.o
--include $(DEPS)
-
-all:subdir $(OUT) 
-
-$(OUT):$(OBJS)
-	$(LD) $(LDFLAGS) $^ -o $@
-
-$(BUILD_DIR)/%.o:%.c
-	$(CC) $(CFLAGS) $< -o $@ -MMD -MP
-
-.PHONY: clean all subdir
-
-clean:
-	rm $(OBJS) $(DEPS)
-
-subdir:
-	@for dir in $(SUBDIRS); do $(MAKE) -C $$dir all;done
+all:
+	@for dir in $(SUBDIRS); do  $(MAKE) -C $$dir all;done

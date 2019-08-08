@@ -11,8 +11,9 @@ LDFALGS = -Ttext $(ENTRY_POINT) -e main -Map $(BUILD_DIR)/kernel.map \
 		  -m elf_i386
 
 SUBDIRS = device kernel lib thread userprog fs test
-OBJS = $(BUILD_DIR)/main.o $(BUILD_DIR)/_kernel.o $(BUILD_DIR)/_thread.o $(BUILD_DIR)/_lib.o  \
-	   $(BUILD_DIR)/_device.o  $(BUILD_DIR)/_userprog.o $(BUILD_DIR)/_fs.o $(BUILD_DIR)/_test.o
+OBJS = $(BUILD_DIR)/main.o $(BUILD_DIR)/_kernel.o $(BUILD_DIR)/_thread.o $(BUILD_DIR)/_lib_user.o  \
+	   $(BUILD_DIR)/_device.o  $(BUILD_DIR)/_userprog.o $(BUILD_DIR)/_fs.o \
+	   $(BUILD_DIR)/_test.o $(BUILD_DIR)/_lib_kernel.o
 
 OUT = $(BUILD_DIR)/kernel.bin
 

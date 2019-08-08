@@ -18,4 +18,5 @@ struct vm_area *vm_area_alloc(uint32_t saddr, uint32_t size);
 void vm_area_add(struct vm_area *vm);
 pid_t sys_fork(void);
 
+int32_t sys_execv(const char *path, const char **argv);
 #endif

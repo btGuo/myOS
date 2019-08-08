@@ -1,6 +1,7 @@
-#include"bitmap.h"
-#include"debug.h"
-#include"string.h"
+#include "bitmap.h"
+#include "string.h"
+#include "assert.h"
+#include "print.h"
 
 /**
  * 初始化

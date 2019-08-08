@@ -52,6 +52,7 @@ struct ide_channel{
 //	struct semaphore disk_done;
 };
 
+extern struct ide_channel channels[2];
 void ide_read(struct disk *hd, uint32_t lba, void *buf, uint32_t cnt);
 void ide_write(struct disk *hd, uint32_t lba, void *buf, uint32_t cnt);
 void ide_init();

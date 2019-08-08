@@ -1,6 +1,8 @@
 #ifndef __KERNEL_GLOBAL_H
 #define __KERNEL_GLOBAL_H
 
+#include "assert.h"
+
 #define SELECTOR_K_CODE  0x08  /*  00001_0_00 */
 #define SELECTOR_K_DATA  0x10  /*  00010_0_00 */
 #define SELECTOR_K_STACK 0x10  /*  00010_0_00 */
@@ -29,8 +31,6 @@
 #define bool char
 #define true 1
 #define false 0
-
-#include "debug.h"
 
 #define MEMORY_OK(ptr) ({\
 if(!(ptr))\

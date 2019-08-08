@@ -8,6 +8,8 @@
 #include "process.h"
 #include "sys_macro.h"
 
+extern int32_t sys_execv(const char *path, const char **argv);
+
 typedef void* syscall;
 syscall syscall_table[syscall_nr];
 

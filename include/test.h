@@ -5,5 +5,6 @@ void test_bitmap();
 void test_memory();
 void test_thread();
 void test_fs();
+void test_exec();
 
 #endif

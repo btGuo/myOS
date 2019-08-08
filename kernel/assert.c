@@ -1,9 +1,9 @@
-#include"debug.h"
-#include"print.h"
-#include"interrupt.h"
+#include "print.h"
+#include "interrupt.h"
+#include "assert.h"
 
 void panic_spin(char *filename, int line, const char *func, const char *condition){
-	intr_disable();
+	STI();
 
 	put_str("\n========= error ========== \n");
 	put_str("filename :");
