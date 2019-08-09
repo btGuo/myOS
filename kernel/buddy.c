@@ -40,7 +40,7 @@ void buddy_add(struct buddy_sys *buddy, uint32_t s_addr, uint32_t pg_cnt){
  */
 void buddy_sys_init(struct buddy_sys *buddy, uint32_t s_paddr, uint32_t pgs){
 
-	put_str("buddy_sys_init start\n");
+	printk("buddy_sys_init start\n");
 	//4M对齐
 	ASSERT((s_paddr & 0x3fffff) == 0);
 	ASSERT((pgs & 0x3ff) == 0);
@@ -66,7 +66,7 @@ void buddy_sys_init(struct buddy_sys *buddy, uint32_t s_paddr, uint32_t pgs){
 		paddr += (1 << 22);
 		++f_area->nr_free;
 	}
-	put_str("buddy_sys_init done\n");
+	printk("buddy_sys_init done\n");
 }
 
 /**

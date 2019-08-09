@@ -16,10 +16,9 @@ struct pid_pool pid_pool;
 extern void init(void);
 
 void print_thread(struct task_struct *task){
-	put_str("vaddr :");put_int((uint32_t)task);put_char('\n');
-	put_str("self_kstack :");put_int((uint32_t)task->self_kstack);put_char('\n');
-	put_str("priority :");put_int(task->priority);put_char('\n');
-	put_str("name :");put_str(task->name);put_char('\n');
+	printk("vaddr : %h\n", (uint32_t)task);
+	printk("priority : %d\n", task->priority);
+	printk("name : %s\n", task->name);
 }
 
 static void kernel_thread(thread_func *function, void *func_arg){
@@ -210,12 +209,12 @@ void schedule(){
 }
 				
 void thread_init(){
-	put_str("init_thread start\n");
+	printk("init_thread start\n");
 	pid_pool_init();
 	
 	process_execute(init, "init");
 	make_main_thread();
 	idle_thread = thread_start("idle", 10, idle, NULL);
 
-	put_str("init_thread done\n");
+	printk("init_thread done\n");
 }

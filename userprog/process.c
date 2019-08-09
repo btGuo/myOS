@@ -161,7 +161,7 @@ void process_activate(struct task_struct *p_thread){
 uint32_t *create_page_dir(void){
 	uint32_t *vaddr = get_kernel_pages(1);
 	if(vaddr == NULL){
-		console_write("create page dir failed, no more space!\n");
+		printk("create page dir failed, no more space!\n");
 	}
 
 	//复制高端内存页目录

@@ -1,5 +1,5 @@
 #include "stdarg.h"
-#include "console.h"
+#include "tty.h"
 
 //debug
 void printk(const char *fmt, ...){
@@ -9,6 +9,6 @@ void printk(const char *fmt, ...){
 	va_start(args, fmt);
 	vsprintf(buf, fmt, args);
 	va_end(args);
-	console_write(buf);
+	terminal_writestr(buf);
 }
 

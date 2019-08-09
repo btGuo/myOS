@@ -26,10 +26,10 @@ static void frequency_set(uint8_t counter_port, \
 }
 
 void timer_init(){
-	put_str("timer_init start\n");
+	printk("timer_init start\n");
 	frequency_set(COUNTER0_PORT, 0x34, COUNTER0_VALUE);
 	register_handler(0x20, intr_timer_handler);
-	put_str("timer_init done\n");
+	printk("timer_init done\n");
 }
 
 static void intr_timer_handler(void){

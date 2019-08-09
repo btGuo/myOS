@@ -8,6 +8,7 @@
 #include "string.h"
 #include "block.h"
 #include "pathparse.h"
+#include "tty.h"
 
 
 struct file file_table[MAX_FILE_OPEN];   ///< 文件表
@@ -218,6 +219,7 @@ int32_t file_read(struct file *file, void *buf, uint32_t count){
 		memcpy(dest, (bh->data + off_byte), to_read);
 		release_block(bh);
 		dest += to_read;
+		blk_idx++;
 
 		off_byte = 0;
 	}
@@ -331,8 +333,7 @@ int32_t sys_write(int32_t fd, const void *buf, uint32_t count){
 
 	FD_LEGAL(fd);
 	if(fd == stdout_no){
-		//TODO
-		console_write(buf);
+		terminal_writestr(buf);
 		return count;
 	}
 	uint32_t g_fd = to_global_fd(fd);

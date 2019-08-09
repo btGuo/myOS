@@ -73,15 +73,15 @@ static void intr_keyboard_handler(void){
 	char ch = keymap[scancode][shift];
 	//ascii 为0不处理
 	if(ch){
-		put_char(ch);
+		//put_char(ch);
 	}
 }
 
 
 
 void keyboard_init(){
-	put_str("keyboard init start\n");
+	printk("keyboard init start\n");
 	register_handler(0x21, intr_keyboard_handler);
-	put_str("keyboard init done\n");
+	printk("keyboard init done\n");
 }
 

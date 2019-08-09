@@ -47,6 +47,18 @@ void test_v_pages(){
 	p2 = vmalloc(21);
 }
 
+void test_kmalloc(){
+	uint32_t *p1, *p2;
+	int size = 6433;
+	p1 = kmalloc(size);
+	int i = size;
+	while(i--){
+		p1[i] = 248;
+	}
+	kfree(p1);
+}
+	
 void test_memory(){
-	test_v_pages();
+	//test_v_pages();
+	test_kmalloc();
 }

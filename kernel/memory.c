@@ -57,7 +57,6 @@ static void build_k_pgtable(uint32_t pg_cnt){
  * 只被调用一次，初始化时将剩余页加入链表
  */
 static void add_km_pg_cache(uint32_t s_paddr, uint32_t pgs){
-//	put_str("km_pg_cache cnt "); put_int(pgs); put_char(' ');
 	kmm.pg_cahces_cnt = pgs;
 	struct page_desc *pg = paddr_to_pgdesc(s_paddr);
 	while(pgs--){
@@ -152,7 +151,7 @@ static void um_manager_init(uint32_t u_pgs, uint32_t paddr_start){
 
 static void mem_pool_init(uint32_t all_mem){
 	
-	put_str("memory pool init start\n");
+	printk("memory pool init start\n");
 	uint32_t all_pgs = all_mem >> 12;
 	//内核物理页，占总内存1/4
 	uint32_t k_pgs = all_pgs >> 2;
@@ -164,7 +163,7 @@ static void mem_pool_init(uint32_t all_mem){
 
 	km_manager_init(k_pgs, all_pgs, 0);
 	um_manager_init(u_pgs, 0 + k_pgs * PG_SIZE);
-	put_str("memory pool init done\n");
+	printk("memory pool init done\n");
 }
 
 
@@ -652,10 +651,10 @@ void copy_page_table(uint32_t *pde){
 
 void mem_init(){
 
-	put_str("mem_init start\n");
+	printk("mem_init start\n");
 	uint32_t all_mem = *((uint32_t*)0xb00);
 	mem_pool_init(all_mem);
-	put_str("mem_init done\n");
+	printk("mem_init done\n");
 }
 
 /**

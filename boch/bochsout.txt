@@ -18,7 +18,7 @@
 00000000000i[      ]   Sound support: no
 00000000000i[      ]   USB support: no
 00000000000i[      ]   VGA extension support: vbe
-00000000000i[MEM0  ] allocated memory at 0x7f68ff906010. after alignment, vector=0x7f68ff907000
+00000000000i[MEM0  ] allocated memory at 0x7fc05a5c3010. after alignment, vector=0x7fc05a5c4000
 00000000000i[MEM0  ] 512.00MB
 00000000000i[MEM0  ] mem block size = 0x00020000, blocks=4096
 00000000000i[MEM0  ] rom at 0xfffe0000/131072 ('/usr/local/share/bochs/BIOS-bochs-latest')
@@ -28,7 +28,7 @@
 00000000000i[DEV   ] PIIX3 PCI-to-ISA bridge present at device 1, function 0
 00000000000i[PLUGIN] init_dev of 'cmos' plugin device by virtual method
 00000000000i[CMOS  ] Using local time for initial clock
-00000000000i[CMOS  ] Setting initial clock to: Thu Aug  8 21:00:35 2019 (time0=1565269235)
+00000000000i[CMOS  ] Setting initial clock to: Fri Aug  9 16:16:38 2019 (time0=1565338598)
 00000000000i[PLUGIN] init_dev of 'dma' plugin device by virtual method
 00000000000i[DMA   ] channel 4 used by cascade
 00000000000i[PLUGIN] init_dev of 'pic' plugin device by virtual method
@@ -170,4 +170,27 @@
 00002423467i[BIOS  ] ata0-0: PCHS=121/16/63 translation=none LCHS=121/16/63
 00002477478i[BIOS  ] ata0-1: PCHS=182/16/63 translation=none LCHS=182/16/63
 00002802523i[BIOS  ] Booting from 0000:7c00
-00007520650i[XGUI  ] charmap update. Font is 9 x 16
+00015547050i[XGUI  ] charmap update. Font is 9 x 16
+00050171695i[      ] Ctrl-C detected in signal handler.
+00050171696i[      ] dbg: Quit
+00050171696i[CPU0  ] CPU is in protected mode (active)
+00050171696i[CPU0  ] CS.mode = 32 bit
+00050171696i[CPU0  ] SS.mode = 32 bit
+00050171696i[CPU0  ] EFER   = 0x00000000
+00050171696i[CPU0  ] | EAX=00000000  EBX=00070094  ECX=00000014  EDX=00000004
+00050171696i[CPU0  ] | ESP=c009efd0  EBP=c009effc  ESI=00070000  EDI=00000000
+00050171696i[CPU0  ] | IOPL=0 id vip vif ac vm rf nt of df if tf SF zf af PF cf
+00050171696i[CPU0  ] | SEG sltr(index|ti|rpl)     base    limit G D
+00050171696i[CPU0  ] |  CS:0008( 0001| 0|  0) 00000000 ffffffff 1 1
+00050171696i[CPU0  ] |  DS:0010( 0002| 0|  0) 00000000 ffffffff 1 1
+00050171696i[CPU0  ] |  SS:0010( 0002| 0|  0) 00000000 ffffffff 1 1
+00050171696i[CPU0  ] |  ES:0010( 0002| 0|  0) 00000000 ffffffff 1 1
+00050171696i[CPU0  ] |  FS:0010( 0002| 0|  0) 00000000 ffffffff 1 1
+00050171696i[CPU0  ] |  GS:0018( 0003| 0|  0) 000b8000 f0007fff 1 1
+00050171696i[CPU0  ] | EIP=c0001552 (c0001552)
+00050171696i[CPU0  ] | CR0=0xe0000011 CR2=0x00000000
+00050171696i[CPU0  ] | CR3=0x00100000 CR4=0x00000000
+00050171696d[PCI   ] Exit
+00050171696i[CMOS  ] Last time is 1565338599 (Fri Aug  9 16:16:39 2019)
+00050171696i[XGUI  ] Exit
+00050171696i[SIM   ] quit_sim called with exit code 0

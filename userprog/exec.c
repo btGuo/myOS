@@ -159,8 +159,13 @@ int32_t sys_execv(const char *path, const char **argv){
 	struct intr_stack *stack0 = (struct intr_stack *)\
 			((uint32_t)curr + PG_SIZE - sizeof(struct intr_stack));
 
+	//命令行参数
+	stack0->ebx = (int32_t)argv;
+	stack0->ecx = argc;
+
 	stack0->eip = (void *)entry;
 	stack0->esp = (void *)0xc0000000;
+
 	asm volatile("movl %0, %%esp; jmp intr_exit"::\
 			"g"(stack0): "memory");
 	return 0;

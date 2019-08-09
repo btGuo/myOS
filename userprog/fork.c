@@ -22,6 +22,9 @@ static int32_t copy_pcb(struct task_struct *child, struct task_struct *parent){
 	child->status = TASK_READY;
 	child->ticks = child->priority;
 	child->par_pid = parent->pid;
+	child->par = parent;
+	list_add_tail(&child->par_tag, &parent->children);
+	LIST_HEAD_INIT(child->children);
 
 	return 0;
 }

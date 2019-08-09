@@ -60,7 +60,7 @@ static struct gdt_desc make_gdt_desc(uint32_t base, uint32_t limit, \
 }
 
 void tss_init(){
-	put_str("tss init start\n");
+	printk("tss init start\n");
 	uint32_t tss_size = sizeof(tss);
 	memset(&tss, 0, tss_size);
 	tss.ss0 = SELECTOR_K_STACK;
@@ -77,11 +77,9 @@ void tss_init(){
 
 	uint64_t gdt_operand = ((8 * 7 -1) | \
 			((uint64_t)(uint32_t)0xc0000900 << 16));
-	put_str("debug\n");
 
 	asm volatile("lgdt %0"::"m"(gdt_operand));
-	put_str("debug\n");
 	asm volatile("ltr %w0"::"r"(SELECTOR_K_TSS));
-	put_str("tss init done\n");
+	printk("tss init done\n");
 }
 

@@ -51,7 +51,7 @@ static void pic_init(void){
 	outb(PIC_M_DATA, 0xf8);
 	outb(PIC_S_DATA, 0xbf);
 
-	put_str("   pic_init done\n");
+	printk("   pic_init done\n");
 }
 
 /**
@@ -76,19 +76,14 @@ static void idt_desc_init(void){
 		if(i == IDT_DESC_CNT - 1)
 			make_idt_desc(&idt[i], IDT_DESC_ATTR_DPL3, syscall_handler);
 	}
-	put_str("   idt_desc_init done\n");
+	printk("   idt_desc_init done\n");
 }
 
 static void general_intr_handler(uint8_t vec_nr, uint32_t err_code){
 	if(vec_nr == 0x27 || vec_nr == 0x2f){
 		return;
 	}
-	put_char('\n');
-	put_str("int vector : 0x");
-	put_int(vec_nr);
-	put_char('\n');
-	put_str(intr_name[vec_nr]);
-	put_char('\n');
+	printk("\nint vector : %d\n%s\n", vec_nr, intr_name[vec_nr]);
 	while(1);
 }
 
@@ -102,9 +97,9 @@ static void page_fault_handler(uint8_t vec_nr, uint32_t err_code){
 	asm("movl %%cr2, %0":"=r"(vaddr));
 
 #ifdef DEBUG
-	put_str("error code is ");put_int(err_code);put_char('\n');
-	put_str("curr->pid :"); put_int(curr->pid); put_char('\n');
-	put_str("page fault address is"); put_int(vaddr); put_char('\n');
+	printk("error code is %d\n", err_code);;
+	printk("curr->pid :%d\n", curr->pid); 
+	printk("page fault address is : %h\n", vaddr);
 #endif
 
 	if(err_code & 0x1){
@@ -177,7 +172,7 @@ void register_handler(uint8_t vec_nr, intr_handler function){
 }
 
 void idt_init(){
-	put_str("idt_init start\n");
+	printk("idt_init start\n");
 	idt_desc_init();
 	exception_init();
 	pic_init();
@@ -185,6 +180,6 @@ void idt_init(){
 	uint64_t idt_operand = ((sizeof(idt) - 1) | 
 			((uint64_t)(uint32_t)idt << 16));
 	asm volatile("lidt %0"::"m"(idt_operand));
-	put_str("idt_init done\n");
+	printk("idt_init done\n");
 }
 

@@ -2,6 +2,7 @@
 #include "fs_sys.h"
 #include "fs.h"
 #include "memory.h"
+#include "data.h"
 
 const uint32_t sz = 2384;
 const char *name = "/sdfii";
@@ -99,9 +100,50 @@ void w_vefiry(){
 	printk("done\n");
 }
 
+void test_writelong(){
+	int32_t fd = sys_open(name, O_RDWR);
+	if(fd == -1){
+		printk("error\n");
+		return;
+	}
+	if(sys_write(fd, data, len) == -1){
+		printk("error\n");
+		return;
+	}
+	sys_close(fd);
+	sync();
+	printk("done\n");
+}
+
+void wl_verify(){
+
+	int32_t fd = sys_open(name, O_RDWR);
+	if(fd == -1){
+		printk("error\n");
+		return;
+	}
+	char *buf = kmalloc(len);
+	if(sys_read(fd, buf, len) == -1){
+		printk("error\n");
+		return;
+	}
+	uint32_t i = 0;
+	while(i < len){
+		if(buf[i] != data[i]){
+			printk("index %d buf wrong\n", i);
+			break;
+		}
+		i++;
+	}
+	sys_close(fd);
+	printk("done\n");
+}
+
 void test_fs(){
 	//file_prepare();
 	//verify();
 	//test_write();
-	w_vefiry();
+	//w_vefiry();
+	//test_writelong();
+	wl_verify();
 }

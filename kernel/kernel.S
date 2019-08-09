@@ -3,7 +3,6 @@
 
 %define ZERO push 0
 
-extern put_str
 extern idt_table
 ;这里.data放前面，后面的会合并过来，形成表
 section .data

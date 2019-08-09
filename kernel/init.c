@@ -4,19 +4,20 @@
 #include "timer.h"
 #include "memory.h"
 #include "thread.h"
-#include "console.h"
 #include "keyboard.h"
 #include "tss.h"
 #include "ide.h"
 #include "fs.h"
+#include "tty.h"
 
 extern void sys_call_init(void);
 
 void init_all(){
-	put_str("init_all start\n");
+	terminal_init();
+	printk("init_all start\n");
+	/*
 	idt_init();
 	timer_init();
-	console_init();
 	mem_init();
 	thread_init();
 	keyboard_init();
@@ -24,5 +25,6 @@ void init_all(){
 	sys_call_init();
 	ide_init();
 	filesys_init();
-	put_str("init_all done\n");
+	*/
+	printk("init_all done\n");
 }

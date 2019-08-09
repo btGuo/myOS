@@ -2,7 +2,6 @@
 #include "print.h"
 #include "thread.h"
 #include "string.h"
-#include "console.h"
 #include "memory.h"
 #include "fs_sys.h"
 #include "process.h"
@@ -20,7 +19,7 @@ uint32_t sys_getpid(void){
 #define __SYS(name) syscall_table[__NR_##name] = sys_##name
 
 void sys_call_init(void){
-	put_str("sys_call init\n");
+	printk("sys_call init\n");
 	__SYS(getpid);
 	__SYS(malloc);
 	__SYS(free);
@@ -39,6 +38,6 @@ void sys_call_init(void){
 	__SYS(opendir);
 	__SYS(execv);
 	__SYS(stat);
-	put_str("sys_call init done\n");
+	printk("sys_call init done\n");
 }
 
