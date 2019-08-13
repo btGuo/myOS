@@ -6,6 +6,7 @@
 #include "fs_sys.h"
 #include "process.h"
 #include "sys_macro.h"
+#include "tty.h"
 
 extern int32_t sys_execv(const char *path, const char **argv);
 
@@ -14,6 +15,14 @@ syscall syscall_table[syscall_nr];
 
 uint32_t sys_getpid(void){
 	return curr->pid;
+}
+
+void clear(){
+	terminal_clear();
+}
+
+void putchar(char ch){
+	terminal_putchar(ch);
 }
 
 #define __SYS(name) syscall_table[__NR_##name] = sys_##name
@@ -38,6 +47,8 @@ void sys_call_init(void){
 	__SYS(opendir);
 	__SYS(execv);
 	__SYS(stat);
+	__SYS(clear);
+	__SYS(putchar);
 	printk("sys_call init done\n");
 }
 

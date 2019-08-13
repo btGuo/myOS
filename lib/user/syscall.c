@@ -65,6 +65,8 @@ _syscall1(int32_t, closedir, struct dir *, dir)
 _syscall1(struct dir *, opendir, char *, path)
 _syscall2(int32_t, stat, const char *, path, struct stat *, st)
 _syscall2(int32_t, execv, const char *, path, const char **, argv)
+_syscall0(void, clear)
+_syscall1(void, putchar, char, ch)
 
 
 

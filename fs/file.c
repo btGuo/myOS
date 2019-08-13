@@ -353,9 +353,17 @@ int32_t sys_write(int32_t fd, const void *buf, uint32_t count){
 int32_t sys_read(int32_t fd, void *buf, uint32_t count){
 
 	FD_LEGAL(fd);
-	uint32_t g_fd = to_global_fd(fd);
-	struct file *file = &file_table[g_fd];
+	if(fd == stdout_no || fd == stderr_no){
+		printk("sys_read fd error\n");
+		return -1;
+	}
+	if(fd == stdin_no){
+		//TODO
+	}else {
 
+		uint32_t g_fd = to_global_fd(fd);
+		struct file *file = &file_table[g_fd];
+	}
 	return file_read(file, buf, count);
 }
 
