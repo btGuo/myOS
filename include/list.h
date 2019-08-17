@@ -25,6 +25,11 @@ do{ (name).next=&(name);    \
 	(name).prev=&(name);   \
 }while(0)
 
+#define LIST_HEAD_INIT_PTR(ptr)\
+do{ (ptr)->next = (ptr);\
+	(ptr)->prev = (ptr);\
+}while(0)
+
 
 static inline void __list_add(struct list_head *new,
 			      struct list_head *prev,

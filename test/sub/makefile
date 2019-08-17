@@ -2,13 +2,13 @@ CC = gcc
 LD = ld
 
 CFLAGS = -I ../../include -c -fno-builtin -m32 -Wall -Wsystem-headers
-LDFLAGS = -e main -m elf_i386 
+LDFLAGS = -m elf_i386 
 
-OBJS = ./main.o ../../build/_lib_user.o ../../build/assert.o ../../build/print.o\
+OBJS = ./main.o ../../lib/user/build/lib_user.o
 
 OUT = main.bin 
 
-all:$(OUT) writehd dump
+all:$(OUT) writehd dump 
 
 main.o : main.c
 	$(CC) $(CFLAGS) $< -o $@
@@ -21,5 +21,4 @@ writehd:
 
 dump:
 	objdump -d $(OUT) >tmp
-
 

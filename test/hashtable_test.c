@@ -1,5 +1,5 @@
 #include "hash_table.h"
-#include "print.h"
+#include "debug.h"
 #include "string.h"
 #include "list.h"
 

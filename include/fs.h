@@ -40,7 +40,8 @@
 enum file_types{
 	FT_UNKNOWN,  ///< 未知文件
 	FT_REGULAR,  ///< 普通文件
-	FT_DIRECTORY  ///< 目录
+	FT_DIRECTORY,  ///< 目录
+	FT_PIPE,    ///< 管道文件
 };
 /**
  * 文件打开标志位

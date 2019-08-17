@@ -1,4 +1,4 @@
-#include "print.h"
+#include "debug.h"
 #include "fs_sys.h"
 #include "fs.h"
 #include "memory.h"

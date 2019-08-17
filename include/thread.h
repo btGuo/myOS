@@ -78,15 +78,18 @@ struct task_struct{
 	uint8_t priority;                ///<  优先级
 	uint8_t ticks;                   ///< 运行滴答数
 	uint32_t elapsed_ticks;          ///<   总共占用的cpu时间
+
 	struct list_head ready_tag;       ///<  用于任务队列的链表节点
 	struct list_head all_tag;         ///<  用于所有任务队列的链表节点
 	struct list_head children;        ///< 子进程队列
 	struct list_head par_tag;         ///< 用于父进程队列
+
 	char name[TASK_NAME_LEN];                    ///<  任务名称
 	uint32_t *pg_dir;                 ///<  页目录指针
 	pid_t pid;                          ///<  任务号
 	pid_t par_pid;                      ///< 父进程号
 	struct task_struct *par;        ///< 父进程
+	uint32_t cwd_inr;      		///< 当前inode节点
 	int32_t fd_table[MAX_FILES_OPEN_PER_PROC];    ///< 文件号表
 	struct vm_struct vm_struct;   		      ///< 内存区管理
 	int8_t exit_status;        
@@ -115,6 +118,7 @@ struct tack_struct* thread_start(char *name, int prio, thread_func function, voi
 void init_thread(struct task_struct *pthread, char *name, int prio);
 void thread_yield(void);
 void thread_create(struct task_struct *pthread, thread_func function, void *func_arg);
+void thread_exit(struct task_struct *over, bool sched);
 pid_t fork_pid(void);
 
 void thread_init();

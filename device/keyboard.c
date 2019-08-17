@@ -2,13 +2,18 @@
 #include "io.h"
 #include "global.h"
 #include "interrupt.h"
-#include "print.h"
+#include "debug.h"
+#include "ioqueue.h"
 
 #define KBD_BUF_PORT 0x60
 #define EXT_CODE 0xe0
 
+static struct ioqueue kb_que;
 static bool ctrl_status, shift_status, alt_status, caps_lock_status;
-//只支持主键盘
+
+/**
+ * 键盘扫描码，只支持主键盘
+ */
 static char keymap[0x3a][2] =
 {
     /*00*/{0x0, 0x0}, {0x0, 0x0}, {'1', '!'}, {'2', '@'}, 
@@ -29,6 +34,9 @@ static char keymap[0x3a][2] =
 };
 
 
+/**
+ * 键盘中断处理程序
+ */
 static void intr_keyboard_handler(void){
 	uint8_t scancode = inb(KBD_BUF_PORT);
 	if(scancode == EXT_CODE){
@@ -73,14 +81,27 @@ static void intr_keyboard_handler(void){
 	char ch = keymap[scancode][shift];
 	//ascii 为0不处理
 	if(ch){
-		//put_char(ch);
+		queue_putchar(&kb_que, ch);
 	}
 }
 
+/**
+ * 从键盘读取cnt个字节到buf中
+ */
+uint32_t kb_read(void *_buf, uint32_t cnt){
+
+	char *buf = _buf;
+	uint32_t ret = cnt;
+	while(cnt--){
+		*buf++ = queue_getchar(&kb_que);
+	}
+	return ret;
+}
 
 
 void keyboard_init(){
 	printk("keyboard init start\n");
+	ioqueue_init(&kb_que);
 	register_handler(0x21, intr_keyboard_handler);
 	printk("keyboard init done\n");
 }

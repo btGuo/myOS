@@ -24,6 +24,7 @@ enum std_fd{
 };
 
 extern struct file file_table[MAX_FILE_OPEN];
+uint32_t to_global_fd(uint32_t fd);
 int32_t get_fd();
 int32_t set_fd(int32_t fd);
 int32_t file_create(struct dir *par_dir, char *filename, uint8_t flag);

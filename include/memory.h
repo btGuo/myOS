@@ -6,7 +6,7 @@
 #include "list.h"
 #include "buddy.h"
 #include "vm_area.h"
-#include "assert.h"
+#include "debug.h"
 
 #define PG_SIZE 4096
 #define MEM_BITMAP_BASE 0xc009a000

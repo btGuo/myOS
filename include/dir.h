@@ -54,6 +54,7 @@ uint32_t get_block_num(struct partition *part, struct inode_info *inode, uint32_
 void init_dir_entry(char *filename, uint32_t i_no, enum file_types f_type, struct dir_entry *dir_e);
 
 bool _search_dir_entry(struct partition *part, struct dir *dir, const char *name, struct dir_entry *dir_e);
+bool search_dir_by_ino(struct partition *part, struct dir *dir, uint32_t   i_no , struct dir_entry *dir_e);
 struct dir *get_last_dir(const char *path);
 struct dir *search_dir_entry(struct partition *part, const char *path, struct dir_entry *dir_e);
 

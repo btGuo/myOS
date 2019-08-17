@@ -1,26 +1,26 @@
 #include "memory.h"
-#include "print.h"
+#include "debug.h"
 
 void test_k_pages(){
 
 	uint32_t *p, *p2;
 
 	p = get_kernel_pages(1);
-	printk("vaddr : %h\n", (uint32_t)p);
+	printk("vaddr : %x\n", (uint32_t)p);
 	p2 = get_kernel_pages(1);
-	printk("vaddr : %h\n", (uint32_t)p2);
+	printk("vaddr : %x\n", (uint32_t)p2);
 	free_kernel_pages(p);
 	free_kernel_pages(p2);
 
 	p = get_kernel_pages(10);
-	printk("vaddr : %h\n", (uint32_t)p);
+	printk("vaddr : %x\n", (uint32_t)p);
 	free_kernel_pages(p);
 	
 	p = get_kernel_pages(20);
-	printk("vaddr : %h\n", (uint32_t)p);
+	printk("vaddr : %x\n", (uint32_t)p);
 
 	p2 = get_kernel_pages(30);
-	printk("vaddr : %h\n", (uint32_t)p2);
+	printk("vaddr : %x\n", (uint32_t)p2);
 	
 	free_kernel_pages(p);
 	free_kernel_pages(p2);

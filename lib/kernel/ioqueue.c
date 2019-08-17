@@ -14,6 +14,7 @@ void ioqueue_init(struct ioqueue *que){
 	que->consumer = NULL;
 	que->head = que->tail = 0;
 	que->buf = kmalloc(BUF_SIZE);
+	que->size = BUF_SIZE;
 }
 
 /**
@@ -74,9 +75,21 @@ void queue_putchar(struct ioqueue *que, char ch){
 	}
 }
 
+/**
+ * 队列长度
+ */
+uint32_t queue_len(struct ioqueue *que){
 
+	return que->head >= que->tail ?
+		que->head - que->tail :
+		que->head + que->size - que->tail;
+}
 
-
-
-
+/**
+ * 释放队列缓冲区及本身
+ */
+void queue_release(struct ioqueue *que){
+	kfree(que->buf);
+	kfree(que);
+}
 

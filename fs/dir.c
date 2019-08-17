@@ -141,6 +141,41 @@ bool _search_dir_entry(struct partition *part, struct dir *dir, \
 }
 
 /**
+ * 根据inode号在目录中查找目录项
+ * @param dir 待搜索的目录
+ * @param i_no inode号
+ * @param dir_e 输出目录项
+ * @return 是否成功
+ * @note 这个函数和_search_dir_entry基本是一样的，但是从接口写成一个却有点麻烦
+ */
+bool search_dir_by_ino(struct partition *part, struct dir *dir, \
+		uint32_t i_no, struct dir_entry *dir_e){
+
+	uint32_t per_block = BLOCK_SIZE / sizeof(struct dir_entry);
+	uint32_t idx = 0;
+	struct buffer_head *bh = NULL;
+	uint32_t blk_nr;
+	
+	while((blk_nr = get_block_num(part, dir->inode, idx, M_SEARCH))){
+		bh = read_block(part, blk_nr);
+		uint32_t dir_entry_idx = 0;
+		struct dir_entry *p_de = (struct dir_entry *)bh->data;
+		while(dir_entry_idx < per_block){
+			if(p_de->i_no == i_no){
+				memcpy(dir_e, p_de, sizeof(struct dir_entry));
+				release_block(bh);
+				return true;
+			}
+			++dir_entry_idx;
+			++p_de;
+		}
+		++idx;
+		release_block(bh);
+	}
+	return false;
+}
+
+/**
  * 提取路径中最后一项目录
  *
  * @param path 目录路径，形式为 /a/b/c/ 最后一个字符是/
@@ -174,6 +209,7 @@ struct dir *get_last_dir(const char *path){
 	}
 	return par_dir;
 }
+
 
 /**
  * 根据文件路径搜索文件目录项，如果成功会打开父目录
@@ -324,6 +360,8 @@ bool delete_dir_entry(struct partition *part, struct dir *par_dir, uint32_t i_no
 		remove_last(part, inode);
 	return true;
 }
+
+
 
 //===============================================================
 //下面为相关系统调用执行函数

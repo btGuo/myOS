@@ -20,5 +20,6 @@ int32_t sys_mkdir(char *path);
 int32_t sys_closedir(struct dir *dir);
 struct dir *sys_opendir(char *path);
 int32_t sys_stat(const char *path, struct stat *st);
+char *sys_getcwd(char *buf, uint32_t size);
 
 #endif

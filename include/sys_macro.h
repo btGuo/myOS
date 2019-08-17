@@ -16,6 +16,10 @@
 #define __NR_opendir   16
 #define __NR_execv     17
 #define __NR_stat      18
+#define __NR_clear     19
+#define __NR_putchar   20
+#define __NR_exit      21
+#define __NR_wait      22
+#define __NR_getcwd    23
 
 #define syscall_nr 72
-

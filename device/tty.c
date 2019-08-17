@@ -14,6 +14,9 @@ static uint8_t terminal_color;   ///< 当前颜色
 static struct mutex_lock tty_lock;  ///< 锁
 static uint16_t* terminal_buffer;
 
+static const uint32_t tab4 = 4;
+static const uint32_t tab8 = 8;
+
 /**
  * 终端初始化
  */
@@ -66,6 +69,10 @@ void terminal_roll(){
 			terminal_buffer[pre] = terminal_buffer[cur];
 		}
 	}
+	//最后一行清空
+	for(x = 0; x < VGA_WIDTH; x++){
+		terminal_putentryat(' ', terminal_color, x, y);
+	}
 }
 
 /**
@@ -80,6 +87,14 @@ void terminal_putchar(char c) {
 			break;
 		case '\b':
 			--terminal_column;
+			break;
+		case '\t':
+			{
+				uint32_t i = tab4;
+				while(i--)
+					terminal_putchar(' ');
+				
+			}
 			break;
 		default:
 			terminal_putentryat(c, terminal_color, terminal_column, terminal_row);

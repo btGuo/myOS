@@ -1,6 +1,5 @@
-#include "print.h"
 #include "interrupt.h"
-#include "assert.h"
+#include "debug.h"
 
 void panic_spin(char *filename, int line, const char *func, const char *condition){
 	STI();

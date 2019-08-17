@@ -9,6 +9,7 @@
 #include "block.h"
 #include "pathparse.h"
 #include "tty.h"
+#include "pipe.h"
 
 
 struct file file_table[MAX_FILE_OPEN];   ///< 文件表
@@ -297,9 +298,9 @@ int32_t sys_open(const char *path, uint8_t flags){
 	return fd;
 }	
 
-static inline uint32_t to_global_fd(uint32_t fd){
+uint32_t to_global_fd(uint32_t fd){
 
-	ASSERT(fd >= 2 && fd < MAX_FILES_OPEN_PER_PROC);
+	ASSERT(fd >= 0 && fd < MAX_FILES_OPEN_PER_PROC);
 	int32_t g_fd = curr->fd_table[fd];
 	ASSERT(g_fd >= 0 && g_fd < MAX_FILE_OPEN);
 	return g_fd;
@@ -307,14 +308,23 @@ static inline uint32_t to_global_fd(uint32_t fd){
 
 /**
  * 关闭文件
+ * @return 成功返回0，失败返回-1
  */
 int32_t sys_close(int32_t fd){
 
-	uint32_t g_fd = to_global_fd(fd);
-	file_close(&file_table[g_fd]);
-	curr->fd_table[fd] = -1;
+	if(fd > 2){
 
-	return g_fd;
+		if(is_pipe(fd)){
+
+			pipe_close(fd);
+		}else {
+			uint32_t g_fd = to_global_fd(fd);
+			file_close(&file_table[g_fd]);
+		}
+		curr->fd_table[fd] = -1;
+		return 0;
+	}
+	return -1;
 }
 
 #define FD_LEGAL(fd)\
@@ -333,9 +343,17 @@ int32_t sys_write(int32_t fd, const void *buf, uint32_t count){
 
 	FD_LEGAL(fd);
 	if(fd == stdout_no){
+		//标准输入被重定向
+		if(is_pipe(fd)){
+			return pipe_write(fd, buf, count);
+		}
 		terminal_writestr(buf);
 		return count;
 	}
+	if(is_pipe(fd)){
+		return pipe_write(fd, buf, count);
+	}
+
 	uint32_t g_fd = to_global_fd(fd);
 	struct file *file = &file_table[g_fd];
 	if(file->fd_flag & O_WRONLY || file->fd_flag & O_RDWR){
@@ -358,12 +376,19 @@ int32_t sys_read(int32_t fd, void *buf, uint32_t count){
 		return -1;
 	}
 	if(fd == stdin_no){
-		//TODO
-	}else {
-
-		uint32_t g_fd = to_global_fd(fd);
-		struct file *file = &file_table[g_fd];
+		//同上
+		if(is_pipe(fd)){
+			return pipe_read(fd, buf, count);
+		}
+		return kb_read(buf, count);
 	}
+
+	if(is_pipe(fd)){
+		return pipe_read(fd, buf, count);
+	}
+
+	uint32_t g_fd = to_global_fd(fd);
+	struct file *file = &file_table[g_fd];
 	return file_read(file, buf, count);
 }
 

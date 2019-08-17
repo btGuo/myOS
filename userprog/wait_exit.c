@@ -1,5 +1,9 @@
 #include "stdint.h"
 #include "thread.h"
+#include "debug.h"
+#include "fs_sys.h"
+#include "process.h"
+#include "thread.h"
 
 
 /**
@@ -16,8 +20,9 @@ void pg_try_free(uint32_t vaddr){
  * 释放进程资源页
  */
 void release_prog_pages(struct task_struct *self){
+	printk("release prog pages start\n");
 
-	struct list_head *head = &self->vm_struct.vm_list;
+	struct list_head *head = self->vm_struct.vm_list;
 	struct list_head *walk = head;
 	struct vm_area *vm = NULL;
 	
@@ -44,6 +49,7 @@ void release_prog_pages(struct task_struct *self){
 	}
 	//释放页目录
 	pfree(self->pg_dir);
+	printk("release prog pages done\n");
 }
 
 /**
@@ -81,6 +87,7 @@ static void release_prog_resource(struct task_struct *self){
 }
 
 void sys_exit(int32_t status){
+	printk("sys_exit\n");
 
 	adopt_children(curr);
 	release_prog_resource(curr);
@@ -90,6 +97,7 @@ void sys_exit(int32_t status){
 
 	//挂起自己
 	thread_block(TASK_HANGING);
+	printk("sys_exit done\n");
 }	
 
 pid_t sys_wait(int32_t status){
@@ -102,6 +110,7 @@ pid_t sys_wait(int32_t status){
 		walk = head->next;
 		//空链表，异常
 		if(walk == head){
+			printk("err no children\n");
 			return -1;
 		}
 
@@ -109,14 +118,18 @@ pid_t sys_wait(int32_t status){
 			child = list_entry(struct task_struct, par_tag, walk);
 			if(child->status == TASK_HANGING)
 				break;
+			walk = walk->next;
 		}
 		
 		if(walk == head){
+			printk("no hanging children\n");
 			//找不到，阻塞自己
 			thread_block(TASK_WATTING);
+			printk("wake up\n");
 		}else {
+			printk("get child\n");
 			//找到了
-			thread_exit(child);
+			thread_exit(child, false);
 			break;
 		}
 	}

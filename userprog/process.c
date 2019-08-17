@@ -4,7 +4,7 @@
 #include "memory.h"
 #include "tss.h"
 #include "interrupt.h"
-#include "print.h"
+#include "debug.h"
 #include "vm_area.h"
 
 extern void intr_exit(void);
@@ -43,7 +43,7 @@ bool try_expend_stack(){
  * 判断给定虚拟地址是否在线性区中
  */
 bool is_in_vm_area(uint32_t vaddr){
-	struct list_head *head = &curr->vm_struct.vm_list;
+	struct list_head *head = curr->vm_struct.vm_list;
 	struct list_head *walk = head->next;
 	struct vm_area *vm = NULL;
 	while(walk != head){
@@ -55,6 +55,11 @@ bool is_in_vm_area(uint32_t vaddr){
 	return false;
 }
 
+/**
+ * 分配虚拟内存区
+ * @param saddr 起始地址
+ * @param size  线性区大小
+ */
 struct vm_area *vm_area_alloc(uint32_t saddr, uint32_t size){
 	struct vm_area *vm = (struct vm_area *)kmalloc(sizeof(struct vm_area));
 
@@ -66,20 +71,41 @@ struct vm_area *vm_area_alloc(uint32_t saddr, uint32_t size){
 	vm->vm_type = VM_FIX;
 	vm->size = size;
 	vm->start_addr = saddr;
+	vm->ref_cnt = 1;
 	return vm;
 }
 
-void vm_area_add(struct vm_area *vm){
-	list_add_tail(&vm->vm_tag, &curr->vm_struct.vm_list);
+/**
+ * 增加虚拟内存区引用计数，fork时用到
+ * @parma head 链表头
+ */
+void vm_area_incref(struct list_head *head){
+	
+	struct list_head *walk = head->next;
+	struct vm_area *vm = NULL;
+	while(walk != head){
+		vm = list_entry(struct vm_area, vm_tag, walk);
+		++vm->ref_cnt;
+		walk = walk->next;
+	}
 }
 
+void vm_area_add(struct vm_area *vm){
+	list_add_tail(&vm->vm_tag, curr->vm_struct.vm_list);
+}
+
+/**
+ * 释放虚拟内存区
+ */
 void vm_release(struct vm_struct *vm_s){
 	struct vm_area *vm = NULL;
-	struct list_head *head = &vm_s->vm_list;
+	struct list_head *head = vm_s->vm_list;
 	struct list_head *walk = head->next;
 	while(walk != head){
 		vm = list_entry(struct vm_area, vm_tag, walk);
-		kfree(vm);
+		//引用计数为0才释放
+		if(--vm->ref_cnt == 0)
+			kfree(vm);
 		walk = walk->next;
 	}
 }
@@ -89,7 +115,9 @@ void vm_release(struct vm_struct *vm_s){
  */
 void vm_struct_init(){
 
-	LIST_HEAD_INIT(curr->vm_struct.vm_list);
+	struct list_head **vm_list = &curr->vm_struct.vm_list;
+	*vm_list = (struct list_head *)kmalloc(sizeof(struct list_head));
+	LIST_HEAD_INIT_PTR(*vm_list);
 	struct vm_area *area = NULL;
 
 	//堆线性区
@@ -97,14 +125,16 @@ void vm_struct_init(){
 	area->start_addr = USER_HEAP_VADDR;
 	area->size = (1 << 20);
 	area->vm_type = VM_DOWNWARD;
-	list_add(&area->vm_tag, &curr->vm_struct.vm_list);
+	area->ref_cnt = 1;
+	list_add(&area->vm_tag, *vm_list);
 
 	//栈线性区
 	area = curr->vm_struct.vm_stack = kmalloc(sizeof(struct vm_area));
 	area->start_addr = USER_STAKC_VADDR;
 	area->size = (1 << 20);
 	area->vm_type = VM_UPWARD;
-	list_add(&area->vm_tag, &curr->vm_struct.vm_list);
+	area->ref_cnt = 1;
+	list_add(&area->vm_tag, *vm_list);
 
 }
 
@@ -185,6 +215,7 @@ void process_execute(void *filename, char *name){
 	//初始化虚拟地址
 	//thread->userprog_vaddr.vaddr_start = USER_VADDR_START;
 	
+	LIST_HEAD_INIT(thread->children);
 	LIST_HEAD_INIT(thread->par_tag);
 	enum intr_status old_stat = intr_disable();
 	list_add_tail(&thread->ready_tag, &thread_ready_list);

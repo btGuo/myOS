@@ -2,7 +2,7 @@
 #include "stdint.h"
 #include "global.h"
 #include "io.h"
-#include "print.h"
+#include "debug.h"
 #include "thread.h"
 
 #define IDT_DESC_CNT 0x81
@@ -97,9 +97,7 @@ static void page_fault_handler(uint8_t vec_nr, uint32_t err_code){
 	asm("movl %%cr2, %0":"=r"(vaddr));
 
 #ifdef DEBUG
-	printk("error code is %d\n", err_code);;
-	printk("curr->pid :%d\n", curr->pid); 
-	printk("page fault address is : %h\n", vaddr);
+	printk("err_code %d\tpid %d\tvaddr %x\n", err_code, curr->pid, vaddr);;
 #endif
 
 	if(err_code & 0x1){

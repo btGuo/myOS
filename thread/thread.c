@@ -16,7 +16,7 @@ struct pid_pool pid_pool;
 extern void init(void);
 
 void print_thread(struct task_struct *task){
-	printk("vaddr : %h\n", (uint32_t)task);
+	printk("vaddr : %x\n", (uint32_t)task);
 	printk("priority : %d\n", task->priority);
 	printk("name : %s\n", task->name);
 }
@@ -155,8 +155,8 @@ void thread_unblock(struct task_struct *nthread){
 static void make_main_thread(void){
 	main_thread = (struct task_struct *)MAIN_PCB;
 	init_thread(main_thread, "main", 31);
+	//不需要加入read队列
 	list_add_tail(&main_thread->all_tag, &thread_all_list);
-	list_add_tail(&main_thread->ready_tag, &thread_ready_list);
 	curr = main_thread;
 }
 
@@ -191,19 +191,23 @@ void thread_exit(struct task_struct *over, bool sched){
  */
 void schedule(){
 	if(curr->status == TASK_RUNNING ){
+		//重新设置优先级，加入队列
 		curr->ticks = curr->priority;
 		curr->status = TASK_READY;
-		list_del(&curr->ready_tag);
 		list_add_tail(&curr->ready_tag, &thread_ready_list);
 	}else{
 
 	}
 	struct task_struct *prev = curr;
+	//如果队列为空，唤醒idle
 	if(list_empty(&thread_ready_list)){
 		thread_unblock(idle_thread);
 	}
+	//从就绪队列中拿出第一个任务
 	curr = list_entry(struct task_struct, ready_tag, thread_ready_list.next);
+	list_del(&curr->ready_tag);
 	curr->status = TASK_RUNNING;
+	//激活页表
 	process_activate(curr);	
 	switch_to(prev, curr);
 }

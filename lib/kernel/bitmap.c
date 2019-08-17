@@ -1,7 +1,6 @@
 #include "bitmap.h"
 #include "string.h"
-#include "assert.h"
-#include "print.h"
+#include "debug.h"
 
 /**
  * 初始化
@@ -116,20 +115,20 @@ void bitmap_toString(struct bitmap *bmap){
 	int i = 0;
 	for(i = 0; i < size; ++i){
 		if(i % 8 == 0)
-			printf(" ");
+			printk(" ");
 		if(i % 80 == 0)
-			printf("\n");
+			printk("\n");
 
 		if((bmap->bits[i / 8] & mask))
-			printf("1");
+			printk("1");
 		else 
-			printf("0");
+			printk("0");
 
 		if(mask & 0x80)
 			mask = 0x01;
 		else	
 			mask <<= 1;
 	}
-	printf("\n");
+	printk("\n");
 }
 

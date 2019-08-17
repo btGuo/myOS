@@ -1,5 +1,5 @@
 #include "init.h"
-#include "print.h"
+#include "debug.h"
 #include "interrupt.h"
 #include "timer.h"
 #include "memory.h"
@@ -15,7 +15,7 @@ extern void sys_call_init(void);
 void init_all(){
 	terminal_init();
 	printk("init_all start\n");
-	/*
+	
 	idt_init();
 	timer_init();
 	mem_init();
@@ -25,6 +25,6 @@ void init_all(){
 	sys_call_init();
 	ide_init();
 	filesys_init();
-	*/
+	
 	printk("init_all done\n");
 }

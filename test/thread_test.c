@@ -1,5 +1,5 @@
 #include "thread.h"
-#include "print.h"
+#include "debug.h"
 #include "interrupt.h"
 #include "string.h"
 #include "process.h"

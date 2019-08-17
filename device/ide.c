@@ -1,11 +1,12 @@
 #include "ide.h"
 #include "global.h"
-#include "print.h"
+#include "debug.h"
 #include "io.h"
 #include "interrupt.h"
 #include "syscall.h"
 #include "string.h"
-#include "assert.h"
+#include "tty.h"
+#include "debug.h"
 
 #define reg_data(channel)	 (channel->port_base + 0)
 #define reg_error(channel)	 (channel->port_base + 1)
@@ -229,7 +230,7 @@ static void identify_disk(struct disk *hd){
 
 static void partition_info(struct partition *part){
 
-	printk("   %s start_lba:%h, sec_cnt:%h\n", part->name, part->start_lba,\
+	printk("   %s start_lba:%x, sec_cnt:%x\n", part->name, part->start_lba,\
 			part->sec_cnt);
 }
 			

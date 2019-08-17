@@ -7,7 +7,7 @@
 #include "syscall.h"
 #include "file.h"
 
-#define filesz 10932
+#define filesz 7208
 const char *filename = "/dsfogh";
 
 bool prepare(){
@@ -22,6 +22,7 @@ bool prepare(){
 		return false;
 	}
 
+	printk("open file fd %d\n", fd);
 	if(sys_write(fd, buf, filesz) == -1){
 		printk("sys write falied\n");
 		return false;

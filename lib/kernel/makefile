@@ -3,7 +3,7 @@ LIB = -I ../../include
 OUT = $(BUILD_DIR)/_lib_kernel.o
 
 CC = gcc
-CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall
+CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall -D__LIB_KERNEL
 LD = ld
 LDFLAGS = -m elf_i386 -r
 

@@ -1,7 +1,6 @@
 #ifndef LIB_STRING_H
 #define LIB_STRING_H
 #include"stdint.h"
-#include"global.h"
 
 void memset(void *dest, uint8_t value, uint32_t size);
 void memcpy(void *dest, void *src, uint32_t size);

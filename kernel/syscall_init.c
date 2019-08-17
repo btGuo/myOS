@@ -1,5 +1,5 @@
 #include "syscall.h"
-#include "print.h"
+#include "debug.h"
 #include "thread.h"
 #include "string.h"
 #include "memory.h"
@@ -8,6 +8,8 @@
 #include "sys_macro.h"
 #include "tty.h"
 
+extern void sys_exit(int32_t status);
+extern pid_t sys_wait(int32_t status);
 extern int32_t sys_execv(const char *path, const char **argv);
 
 typedef void* syscall;
@@ -17,11 +19,11 @@ uint32_t sys_getpid(void){
 	return curr->pid;
 }
 
-void clear(){
+void sys_clear(){
 	terminal_clear();
 }
 
-void putchar(char ch){
+void sys_putchar(char ch){
 	terminal_putchar(ch);
 }
 
@@ -49,6 +51,9 @@ void sys_call_init(void){
 	__SYS(stat);
 	__SYS(clear);
 	__SYS(putchar);
+	__SYS(wait);
+	__SYS(exit);
+	__SYS(getcwd);
 	printk("sys_call init done\n");
 }
 

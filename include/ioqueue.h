@@ -15,9 +15,12 @@ struct ioqueue{
 	char *buf;   ///< 数据区
 	int32_t head;
 	int32_t tail;
+	int32_t size;
 };
 
+void ioqueue_init(struct ioqueue *que);
 char queue_getchar(struct ioqueue *que);
 void queue_putchar(struct ioqueue *que, char ch);
-void ioqueue_init(struct ioqueue *que);
+uint32_t queue_len(struct ioqueue *que);
+void queue_release(struct ioqueue *que);
 #endif

@@ -1,6 +1,6 @@
 #include "memory.h"
 #include "stdint.h"
-#include "print.h"
+#include "debug.h"
 #include "string.h"
 #include "thread.h"
 #include "interrupt.h"
@@ -96,9 +96,9 @@ static void km_manager_init(uint32_t k_pgs, uint32_t all_pgs, uint32_t paddr_sta
 	uint32_t res_pgs = (buddy_paddr_start - free_paddr_s) / PG_SIZE;
 	uint32_t buddy_pgs = k_pgs - used_pgs - res_pgs;
 
-	printk("free_paddr_s : %h\n", free_paddr_s);
+	printk("free_paddr_s : %x\n", free_paddr_s);
 	printk("res pages : %d\n", res_pgs);
-	printk("buddy system paddr start : %h\n", buddy_paddr_start);
+	printk("buddy system paddr start : %x\n", buddy_paddr_start);
 	printk("buddy system pages : %d\n", buddy_pgs);
 	
 	kmm.vaddr_start = K_VADDR_START;
@@ -110,7 +110,7 @@ static void km_manager_init(uint32_t k_pgs, uint32_t all_pgs, uint32_t paddr_sta
 	LIST_HEAD_INIT(kmm.v_area_head);
 	LIST_HEAD_INIT(kmm.page_caches);
 
-	printk("v_area_saddr : %h\n", kmm.v_area_saddr);
+	printk("v_area_saddr : %x\n", kmm.v_area_saddr);
 
 	//建立内核页表
 	build_k_pgtable(k_pgs);
@@ -215,7 +215,7 @@ uint32_t palloc(enum pool_flags pf, uint32_t pg_cnt){
 void pfree(uint32_t paddr){
 
 #ifdef DEBUG
-	printk("pfree %h\n", paddr);
+	printk("pfree %x\n", paddr);
 #endif
 	struct page_desc *pg_desc = paddr_to_pgdesc(paddr);
 	if(paddr < umm.paddr_start){
@@ -314,7 +314,7 @@ static void page_table_add(uint32_t vaddr, uint32_t paddr){
 	uint32_t *pte = PTE_PTR(vaddr);
 //	enum pool_flags pf = (vaddr >= 0xc0000000) ? PF_KERNEL : PF_USER;
 #ifdef DEBUG
-	printk("pde %h\n", (uint32_t)pde);
+	printk("pde %x\n", (uint32_t)pde);
 #endif
 
 	if(*pde & 0x1){
@@ -340,6 +340,7 @@ static void page_table_remap(uint32_t vaddr, uint32_t paddr){
 	*pte = (paddr | 0x7);
 	//这里得刷新
 	FLUSH_TLB_PAGE(vaddr);
+	flush_tlb_all();
 }
 
 /**
@@ -396,7 +397,7 @@ void *vmalloc(uint32_t pg_cnt){
 	uint32_t paddr = 0;
 	uint32_t vaddr = va->s_addr;
 #ifdef DEBUG
-	printk("vaddr :%h\n", vaddr);
+	printk("vaddr :%x\n", vaddr);
 #endif
 	while(pg_cnt--){
 		paddr = palloc(PF_USER, 1);
@@ -602,9 +603,8 @@ void copy_page_table(uint32_t *pde){
 	while(cnt--){
 
 		if(*pde_src & 0x1){
-#ifdef DEBUG
-			printk("hit addr %h\n", addr);
-#endif
+
+			printk("hit addr %x\n", addr);
 			//TODO 确认页是否脏
 			paddr = palloc(PF_USER, 1);
 			paddr |= 0x7;
@@ -612,7 +612,7 @@ void copy_page_table(uint32_t *pde){
 			//临时映射
 			if(!vaddr){
 				vaddr = vaddr_get(1);
-				//printk("vaddr %h\n", vaddr);
+				//printk("vaddr %x\n", vaddr);
 				page_table_add((uint32_t)vaddr, paddr);
 			}else {
 				page_table_remap((uint32_t)vaddr, paddr);
@@ -682,8 +682,11 @@ void do_page_fault(uint32_t vaddr){
 	return;
 }
 
+#define DEBUG 1
+
 /**
  * 写时复制
+ * TODO debug
  */
 void do_wp_page(uint32_t _vaddr){
 
@@ -702,10 +705,6 @@ void do_wp_page(uint32_t _vaddr){
 		PANIC("error\n");
 		return;
 	}
-
-#ifdef DEBUG
-	printk("count : %d\n", pg_desc->count);
-#endif
 
 	if(pg_desc->count == 1){
 		*pte_ptr |= 2;
@@ -733,7 +732,6 @@ void do_wp_page(uint32_t _vaddr){
 	}
 	//删除临时映射
 	page_table_pte_remove((uint32_t)swap_vaddr);
-
 #ifdef DEBUG
 	printk("done write protect page\n");
 #endif

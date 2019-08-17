@@ -10,10 +10,16 @@
 #include "group.h"
 #include "buffer.h"
 #include "file.h"
-#include "print.h"
+#include "debug.h"
 #include "thread.h"
 #include "block.h"
 #include "inode.h"
+
+/**
+ * TODO
+ * fs 下的函数都带有partition分区指针，用来指出在那个分区上操作，应该改为
+ * 文件系统的指针，fs下相关的操作应该与分区无关。
+ */
 
 //TODO 检查内存块复用
 //添加目录项缓冲
@@ -409,5 +415,57 @@ int32_t sys_stat(const char *path, struct stat *st){
 	dir_close(par_dir);
 	inode_close(m_inode);
 	return 0;
+}
+
+//TODO debug
+/**
+ * 将当前目录绝对路径写入buf，size是buf大小
+ * @return 失败时为NULL
+ */
+char *sys_getcwd(char *buf, uint32_t size){
+
+	ASSERT(buf != NULL);
+	
+	uint32_t i_no = curr->cwd_inr;
+	struct dir *dir = dir_open(cur_par, i_no);
+	if(!dir){
+		printk("sys_getcwd open dir failed\n");
+		return NULL;
+	}
+	buf[0] = '/';
+	buf[1] = '\0';
+
+	uint32_t par_ino = 0;
+	struct dir_entry dir_e;
+	//根目录为0
+	while(i_no){
+
+		//找到父目录
+		ASSERT(_search_dir_entry(cur_par, dir, "..", &dir_e));
+		ASSERT(dir_e.f_type == FT_DIRECTORY);
+		//记录inode号
+		par_ino = dir_e.i_no;
+		dir_close(dir);
+		//打开父目录
+		dir = dir_open(cur_par, par_ino); 
+		ASSERT(search_dir_by_ino(cur_par, dir, i_no, &dir_e));
+		ASSERT(dir_e.f_type == FT_DIRECTORY);
+
+		strcat(buf, dir_e.filename);
+		strcat(buf, "/");
+		i_no = par_ino;
+	}
+
+	//倒过来
+	uint32_t len = strlen(buf);
+	char *head = buf;
+	char *tail = buf + len - 1;
+	uint32_t half = len / 2;
+	while(half--)
+		*head++ = *tail--;
+
+	//去掉最后的 '/'
+	buf[len - 1] = '\0';
+	return buf;
 }
 

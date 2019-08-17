@@ -1,7 +1,7 @@
 #ifndef __KERNEL_GLOBAL_H
 #define __KERNEL_GLOBAL_H
 
-#include "assert.h"
+#include "debug.h"
 
 #define SELECTOR_K_CODE  0x08  /*  00001_0_00 */
 #define SELECTOR_K_DATA  0x10  /*  00010_0_00 */
@@ -23,14 +23,11 @@
 #define EFLAGS_IOPL_0 0
 
 #define DIV_ROUND_UP(x, step) (((x) + (step) - 1) / (step))
-
-#define CEIL(x, step) (DIV_ROUND_UP(x, step) * (step))
-
-#define UNUSED __attribute__((unused))
 #define NULL (void*)0
 #define bool char
 #define true 1
 #define false 0
+#define UNUSED __attribute__((unused))
 
 #define MEMORY_OK(ptr) ({\
 if(!(ptr))\

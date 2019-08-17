@@ -7,8 +7,8 @@
 #include "vm_area.h"
 #include "process.h"
 #include "elf32.h"
-#include "print.h"
 #include "interrupt.h"
+#include "debug.h"
 
 static void print_Elf32_phdr(struct Elf32_Phdr *prog_h){
 	printk("elf program header info :\n");
@@ -153,6 +153,7 @@ int32_t sys_execv(const char *path, const char **argv){
 		printk("entry wrong\n");
 		return -1;
 	}
+	printk("entry point ; %x\n", entry);
 
 	strcpy(curr->name, path);
 

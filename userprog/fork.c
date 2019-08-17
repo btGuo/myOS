@@ -8,8 +8,10 @@
 #include "file.h"
 #include "process.h"
 #include "string.h"
+#include "pipe.h"
 
 extern void intr_exit(void);
+//TODO 目前fork时vm_struct 是共享的，更新时会一起更新。
 
 /**
  * 复制任务块
@@ -25,6 +27,8 @@ static int32_t copy_pcb(struct task_struct *child, struct task_struct *parent){
 	child->par = parent;
 	list_add_tail(&child->par_tag, &parent->children);
 	LIST_HEAD_INIT(child->children);
+	//增加引用计数
+	vm_area_incref(child->vm_struct.vm_list);
 
 	return 0;
 }
@@ -61,9 +65,15 @@ static void up_inode(struct task_struct *thread){
 
 	int32_t l_fd = 3, g_fd = 0;
 	while(l_fd < MAX_FILES_OPEN_PER_PROC){
+
 		g_fd = thread->fd_table[l_fd];
 		if(g_fd != -1){
-			file_table[g_fd].fd_inode->i_open_cnts++;
+			if(is_pipe(l_fd)){
+				
+				file_table[g_fd].fd_pos++;
+			}else {
+				file_table[g_fd].fd_inode->i_open_cnts++;
+			}
 		}
 		++l_fd;
 	}
