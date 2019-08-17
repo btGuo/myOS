@@ -9,4 +9,6 @@ hex
 hex.old
 hdump.sh
 tmp
+*.o
+*.bin
 
