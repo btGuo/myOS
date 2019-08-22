@@ -3,7 +3,7 @@ LIB = -I ../include
 OUT = $(BUILD_DIR)/_device.o
 
 CC = gcc
-CFLAGS = $(LIB) -c -fno-builtin -m32  -Wall
+CFLAGS = $(LIB) -c -fno-builtin -m32  -Wall -fno-stack-protector
 LD = ld
 LDFLAGS = -m elf_i386 -r
 

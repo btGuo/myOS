@@ -5,7 +5,7 @@ BUILD_DIR = $(PWD)/build
 AS = nasm
 ASFLAGS = -f elf
 CC = gcc
-CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall
+CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall -fno-stack-protector
 LD = ld
 LDFALGS = -Ttext $(ENTRY_POINT) -e main -Map $(BUILD_DIR)/kernel.map \
 		  -m elf_i386

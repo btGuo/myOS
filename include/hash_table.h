@@ -21,9 +21,9 @@ struct hash_table{
 uint32_t hashf_uint(void *key, uint32_t max_size);
 uint32_t hashf_str(void *key, uint32_t max_size);
 
-inline void hash_table_init(struct hash_table *ht, hash_func comp, hashf_func hf);
-inline void hash_table_insert(struct hash_table *ht, struct list_head *elem, void *key);
-inline struct list_head *hash_table_find(struct hash_table *ht, void *key);
-inline void hash_table_clear(struct hash_table *ht);
-inline void hash_table_del(struct hash_table *ht);
+void hash_table_init(struct hash_table *ht, hash_func comp, hashf_func hf);
+void hash_table_insert(struct hash_table *ht, struct list_head *elem, void *key);
+struct list_head *hash_table_find(struct hash_table *ht, void *key);
+void hash_table_clear(struct hash_table *ht);
+void hash_table_del(struct hash_table *ht);
 #endif

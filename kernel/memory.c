@@ -15,20 +15,20 @@
 struct kmem_manager kmm;
 struct umem_manager umm;
 
-inline uint32_t pgdesc_to_paddr(struct page_desc *pg_desc){
+uint32_t pgdesc_to_paddr(struct page_desc *pg_desc){
 	return (pg_desc - kmm.page_table) * PG_SIZE;
 }
 
-inline struct page_desc *paddr_to_pgdesc(uint32_t paddr){
+struct page_desc *paddr_to_pgdesc(uint32_t paddr){
 	return &kmm.page_table[(paddr >> 12)];
 }
 
-inline uint32_t *PTE_PTR(uint32_t vaddr){
+uint32_t *PTE_PTR(uint32_t vaddr){
 	return (uint32_t*)(0xffc00000 + ((vaddr & 0xffc00000) >> 10) + \
 			((vaddr & 0x003ff000) >> 10));
 }
 
-inline uint32_t *PDE_PTR(uint32_t vaddr){
+uint32_t *PDE_PTR(uint32_t vaddr){
 	return (uint32_t*)(0xfffff000 + ((vaddr & 0xffc00000) >> 20));
 }
 
