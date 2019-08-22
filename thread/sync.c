@@ -27,7 +27,7 @@ void sema_up(struct semaphore *sema){
 	if(!list_empty(&sema->waiters)){
 		struct task_struct *nxt = list_entry(struct task_struct, ready_tag, sema->waiters.next);
 		list_del(sema->waiters.next);
-    	thread_unblock(nxt);
+    		thread_unblock(nxt);
 	}
 	++sema->value;
 	intr_set_status(old_stat);
