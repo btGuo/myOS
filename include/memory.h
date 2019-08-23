@@ -41,14 +41,12 @@ struct page_desc{
 #endif
 };
 
-struct virtual_addr{
-//	struct bitmap vaddr_bitmap;
-	uint32_t vaddr_start;
-};
-
+/**
+ * 内存池flag
+ */
 enum pool_flags{
-	PF_KERNEL,
-	PF_USER
+	PF_KERNEL, ///< 内核
+	PF_USER    ///< 用户
 };
 
 struct mem_block_desc{
@@ -95,16 +93,47 @@ struct kmem_manager{
  * 用户内存管理描述符
  */
 struct umem_manager{
-	struct list_head page_caches;
-	struct mutex_lock lock;
-	struct page_desc *page_table;
-	uint32_t paddr_start;
-	uint32_t pages;
-	uint32_t free_pages;
+	struct list_head page_caches;  ///< 页缓存
+	struct mutex_lock lock;       ///< 锁
+	struct page_desc *page_table; ///< 页描述符首地址
+	uint32_t paddr_start;   ///< 起始物理地址
+	uint32_t pages;         ///< 总物理页数
+	uint32_t free_pages;    ///< 未分配物理页数
 };
+
 
 extern struct kmem_manager kmm;
 extern struct umem_manager umm;
+
+/**
+ * 页描述符找到页物理地址
+ */
+static inline uint32_t pgdesc_to_paddr(struct page_desc *pg_desc){
+	return (pg_desc - kmm.page_table) * PG_SIZE;
+}
+
+/**
+ * 页物理地址找到页描述符
+ */
+static inline struct page_desc *paddr_to_pgdesc(uint32_t paddr){
+	return &kmm.page_table[(paddr >> 12)];
+}
+
+/**
+ * 虚拟地址找到页表项指针
+ */
+static inline uint32_t *PTE_PTR(uint32_t vaddr){
+	return (uint32_t*)(0xffc00000 + ((vaddr & 0xffc00000) >> 10) + \
+			((vaddr & 0x003ff000) >> 10));
+}
+
+/**
+ * 虚拟地址找到页目录项指针
+ */
+static inline uint32_t *PDE_PTR(uint32_t vaddr){
+	return (uint32_t*)(0xfffff000 + ((vaddr & 0xffc00000) >> 20));
+}
+
 
 void mem_init(void);
 void *get_a_page(enum pool_flags pf, uint32_t vaddr);
@@ -122,11 +151,6 @@ void *kmalloc(uint32_t size);
 void kfree(void *ptr);
 void *vmalloc(uint32_t pg_cnt);
 void vfree(void *vaddr);
-
-uint32_t *PTE_PTR(uint32_t vaddr);
-uint32_t *PDE_PTR(uint32_t vaddr);
-struct page_desc *paddr_to_pgdesc(uint32_t paddr);
-uint32_t pgdesc_to_paddr(struct page_desc *pg_desc);
 
 void do_wp_page(uint32_t _vaddr);
 void do_page_fault(uint32_t vaddr);

@@ -16,8 +16,8 @@ int main() {
 	//test_hashtable();
 	///test_thread();
 	//test_fs();
-	test_exec();
-	intr_enable();
+	//test_exec();
+	//intr_enable();
 
 	while(1);
 	return 0;

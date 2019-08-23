@@ -177,8 +177,8 @@ static void partition_format(struct partition *part){
 	       	++gp;
 	}
 
-	sys_free(sb);
-	sys_free(gp_head);
+	kfree(sb);
+	kfree(gp_head);
 	printk("partition format done\n");
 }
 
@@ -212,7 +212,7 @@ static void create_root(struct partition *part){
 //	print_root(m_inode);
 	inode_sync(part, m_inode);
 	//确认没有指针指向，释放
-	sys_free(m_inode);
+	kfree(m_inode);
 	printk("create root done\n");
 }
 

@@ -15,23 +15,6 @@
 struct kmem_manager kmm;
 struct umem_manager umm;
 
-uint32_t pgdesc_to_paddr(struct page_desc *pg_desc){
-	return (pg_desc - kmm.page_table) * PG_SIZE;
-}
-
-struct page_desc *paddr_to_pgdesc(uint32_t paddr){
-	return &kmm.page_table[(paddr >> 12)];
-}
-
-uint32_t *PTE_PTR(uint32_t vaddr){
-	return (uint32_t*)(0xffc00000 + ((vaddr & 0xffc00000) >> 10) + \
-			((vaddr & 0x003ff000) >> 10));
-}
-
-uint32_t *PDE_PTR(uint32_t vaddr){
-	return (uint32_t*)(0xfffff000 + ((vaddr & 0xffc00000) >> 20));
-}
-
 /**
  * 初始化内核页表
  * @param pg_cnt 内核物理页数
@@ -288,6 +271,9 @@ void flush_tlb_all(){
 
 /**
  * 刷新指定tlb项
+ *
+ * @note 这个目前好像有问题，在bochs上测试时并没有更新
+ * 下面都暂且用了flush_tlb_all全部刷新
  */
 #define FLUSH_TLB_PAGE(vaddr) asm volatile("invlpg %0" : : "m"(vaddr) : "memory")
 
@@ -299,7 +285,8 @@ static void page_table_pte_remove(uint32_t vaddr){
 	//p位置0
 	*pte &= (~ 1);
 	//刷新TLB
-	FLUSH_TLB_PAGE(vaddr);
+	//FLUSH_TLB_PAGE(vaddr);
+	flush_tlb_all();
 }
 
 /**
@@ -333,13 +320,16 @@ static void page_table_add(uint32_t vaddr, uint32_t paddr){
 	}
 }
 
+/**
+ * 重新映射虚拟地址
+ */
 static void page_table_remap(uint32_t vaddr, uint32_t paddr){
 	uint32_t *pte = PTE_PTR(vaddr);
 
 	ASSERT(*pte & 0x1);
 	*pte = (paddr | 0x7);
 	//这里得刷新
-	FLUSH_TLB_PAGE(vaddr);
+	//FLUSH_TLB_PAGE(vaddr);
 	flush_tlb_all();
 }
 
@@ -681,8 +671,6 @@ void do_page_fault(uint32_t vaddr){
 
 	return;
 }
-
-#define DEBUG 1
 
 /**
  * 写时复制
