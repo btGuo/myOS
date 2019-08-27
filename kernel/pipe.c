@@ -69,7 +69,7 @@ uint32_t pipe_read(int32_t fd, void *_buf, uint32_t cnt){
  * @param cnt 读取字节数
  * @return 成功读取字节数
  */
-uint32_t pipe_write(int32_t fd, void *_buf, uint32_t cnt){
+uint32_t pipe_write(int32_t fd, const void *_buf, uint32_t cnt){
 
 
 	char *buf = _buf;

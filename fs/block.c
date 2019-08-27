@@ -254,7 +254,7 @@ uint32_t get_block_num(struct partition *part, struct inode_info *inode,\
 		while(i <= cnt){
 
 			bh = read_block(part, blk_nr);
-			pos = (uint8_t *)&bh->data[BLK_IDX_I(idx, i)];
+			pos = (uint32_t *)&bh->data[BLK_IDX_I(idx, i)];
 			blk_nr = *pos;
 
 			//块不存在

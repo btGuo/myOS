@@ -10,6 +10,7 @@
 #include "pathparse.h"
 #include "tty.h"
 #include "pipe.h"
+#include "keyboard.h"
 
 
 struct file file_table[MAX_FILE_OPEN];   ///< 文件表

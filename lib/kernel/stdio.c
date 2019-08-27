@@ -83,8 +83,9 @@ void itoa(int num, char *dest, char mode){
  * @param dest 处理结果
  * @param width 宽度
  * @param left 是否左对齐
+ * #parma ch 填充的字符
  */
-void str_align(char *str, char *dest, uint32_t width, bool left){
+void str_align(char *str, char *dest, uint32_t width, bool left, char ch){
 	uint32_t len = strlen(str);
 	if(len >= width){
 		strcpy(dest, str);
@@ -96,11 +97,11 @@ void str_align(char *str, char *dest, uint32_t width, bool left){
 		while(len--)
 			*dest++ = *str++;
 		while(width--)
-			*dest++ = ' ';
+			*dest++ = ch;
 	}else {
 		width -= len;
 		while(width--)
-			*dest++ = ' ';
+			*dest++ = ch;
 		while(len--)
 			*dest++ = *str++;
 	}
@@ -111,12 +112,13 @@ void str_align(char *str, char *dest, uint32_t width, bool left){
  * 简单到不能再简单的格式化字符串 @_@
  * @note 支持%s, %d, %x, %c. 宽度对齐，左右对齐
  */
-void vsprintf(char *buf, const char *fmt, va_list args){
+int32_t vsprintf(char *buf, const char *fmt, va_list args){
 	char *dest = buf;
 	char width[MAX_ALIGN];
 	bool left = false;
 	//!!!注意这里的大小可能会溢出
 	char content[128];
+	char ch = ' ';
 	while(*fmt){
 		if(*fmt != '%'){
 			*dest++ = *fmt++;
@@ -130,6 +132,17 @@ void vsprintf(char *buf, const char *fmt, va_list args){
 				++fmt;
 			}
 			else left = false;
+
+			//填充0，数字用，默认左对齐
+			if(*fmt == '0'){
+				if(left){
+					return -1;
+				}
+				++fmt;
+				ch = '0';
+			}else {
+				ch = ' ';
+			}
 
 			// 提取对齐宽度
 			char *_width = width;
@@ -154,28 +167,30 @@ void vsprintf(char *buf, const char *fmt, va_list args){
 				content[1] = '\0';
 			}
 
-			str_align(content, dest, atoi(width), left);
+			str_align(content, dest, atoi(width), left, ch);
 			while(*dest)
 				dest++;
 			++fmt;
 		}
 	}
+	return 0;
 }
 
 /**
  * 格式化字符串
  */
-void sprintf(char *buf, const char *fmt, ...){
+int32_t sprintf(char *buf, const char *fmt, ...){
 	va_list args;
 	va_start(args, fmt);
 	vsprintf(buf, fmt, args);
 	va_end(args);
+	return 0;
 }
 
 /**
  * 格式化输出
  */
-uint32_t printf(const char *fmt, ...){
+int32_t printf(const char *fmt, ...){
 	va_list args;
 	
 	char buf[1024] = {0};

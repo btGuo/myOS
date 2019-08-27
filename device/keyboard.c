@@ -78,7 +78,7 @@ static void intr_keyboard_handler(void){
 		shift = true;
 	}
 
-	char ch = keymap[scancode][shift];
+	char ch = keymap[(uint32_t)scancode][(uint32_t)shift];
 	//ascii 为0不处理
 	if(ch){
 		queue_putchar(&kb_que, ch);

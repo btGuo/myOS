@@ -9,12 +9,15 @@
 #define M_SEARCH 0
 #define M_CREATE 1
 
-#define ORDER 8
-#define LBA_PER_BLK  (BLOCK_SIZE / 4)
-#define BLOCK_LEVEL_0 5
-#define BLOCK_LEVEL_1 (BLOCK_LEVEL_0 + LBA_PER_BLK) 
-#define BLOCK_LEVEL_2 (BLOCK_LEVEL_1 + LBA_PER_BLK * LBA_PER_BLK)
-#define BLOCK_LEVEL_3 (BLOCK_LEVEL_2 + LBA_PER_BLK * LBA_PER_BLK * LBA_PER_BLK)
+//下面这组宏名称有点混乱，个人页不知道要起什么名字
+
+#define ORDER 8    ///< 对应LBA_PER_BLK 位数为8
+#define LBA_PER_BLK  (BLOCK_SIZE / 4) ///< 一块可以存放多少lba地址，每个lba地址32位，4字节
+#define BLOCK_LEVEL_0 5         ///< 直接块5
+#define BLOCK_LEVEL_1 (BLOCK_LEVEL_0 + LBA_PER_BLK)  ///< 一次间接
+#define BLOCK_LEVEL_2 (BLOCK_LEVEL_1 + LBA_PER_BLK * LBA_PER_BLK)   ///< 二次间接
+#define BLOCK_LEVEL_3 (BLOCK_LEVEL_2 + LBA_PER_BLK * LBA_PER_BLK * LBA_PER_BLK)  ///< 三次间接
+
 //对应block_size 大小
 #define BLOCK_MASK_1 ((1 << ORDER) - 1)
 #define BLOCK_MASK_2 (BLOCK_MASK_1 << ORDER)
@@ -24,18 +27,24 @@
 #define BLK_IDX_2(x) (((x) & BLOCK_MASK_2) >> ORDER)
 #define BLK_IDX_3(x) (((x) & BLOCK_MASK_3) >> (ORDER << 1))
 
-#define BLK_IDX_I(x, i)(\
-	((i) == 1 ? BLK_IDX_1(x):\
-	(i) == 2 ? BLK_IDX_2(x):\
-		 BLK_IDX_3(x)) * 4)
 
-#define BLK_LEVEL(idx)(\
-	(idx) < BLOCK_LEVEL_1 ? 1 :\
-	(idx) < BLOCK_LEVEL_2 ? 2 : 3)
+static inline uint32_t BLK_IDX_I(uint32_t x, uint32_t i){
+	return (i == 1 ? BLK_IDX_1(x):
+		i == 2 ? BLK_IDX_2(x):
+		BLK_IDX_3(x)) * 4;
+}
 
-#define BLK_IDX(idx)(\
-	(idx) -= ((idx) < BLOCK_LEVEL_1 ? BLOCK_LEVEL_0 :\
-		  (idx) < BLOCK_LEVEL_2 ? BLOCK_LEVEL_1 : BLOCK_LEVEL_2))
+static inline uint32_t BLK_LEVEL(uint32_t idx){
+	return idx < BLOCK_LEVEL_1 ? 1 :
+		idx < BLOCK_LEVEL_2 ? 2 : 3;
+}
+
+static inline uint32_t BLK_IDX(uint32_t idx){
+	return idx - (idx < BLOCK_LEVEL_1 ? BLOCK_LEVEL_0 :
+			idx < BLOCK_LEVEL_2 ? BLOCK_LEVEL_1 :
+			BLOCK_LEVEL_2);
+}
+
 
 void write_direct(struct partition *part, uint32_t sta_blk_nr, void *data, uint32_t cnt);
 void read_direct(struct partition *part, uint32_t sta_blk_nr, void *data, uint32_t cnt);
