@@ -89,7 +89,8 @@ struct task_struct{
 	pid_t pid;                          ///<  任务号
 	pid_t par_pid;                      ///< 父进程号
 	struct task_struct *par;        ///< 父进程
-	uint32_t cwd_inr;      		///< 当前inode节点
+	struct inode_info *root_i;      ///< 所在根inode
+	struct inode_info *cwd_i;      ///< 当前目录inode
 	int32_t fd_table[MAX_FILES_OPEN_PER_PROC];    ///< 文件号表
 	struct vm_struct vm_struct;   		      ///< 内存区管理
 	int8_t exit_status;        

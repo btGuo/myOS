@@ -8,23 +8,21 @@
 #include "hash_table.h"
 #include "buffer.h"
 
+typedef unsigned int dev_t;
+
+#define IDE_MAJOR 6
+#define MAJOR_SHIFT 16
+#define MINOR_SHIFT 4
+
 /**
  * @brief 分区描述符，对应硬盘上的分区，一个硬盘可以有多个分区
  */
-//TODO 把文件系统拿出来
 struct partition{
 	uint32_t start_lba;   ///< 分区起始地址
 	uint32_t sec_cnt;     ///< 分区总扇区数
 	struct disk *disk;    ///< 该分区所在磁盘
 	char name[8];     ///< 分区名字
-//	struct list_head part_tag;  
-	struct super_block *sb;    ///< 分区超级块
-	struct group_info *groups;  ///< 块组指针
-	struct group_info *cur_gp;  ///< 当前使用块组
-	uint32_t groups_cnt;       ///< 块组数
-	uint32_t groups_blks;      ///< 块组struct group所占块数
-	struct disk_buffer io_buffer;     ///< 磁盘缓冲区，换成指针或许更好
-	char mounted_point[32];
+	dev_t dev_nr;     ///< 设备号
 };
 
 /**
@@ -48,14 +46,17 @@ struct ide_channel{
 	struct mutex_lock lock;   ///< 锁
 	struct disk devices[2];  ///< 两个磁盘
 
-//	bool expecting_intr;   
-//	struct semaphore disk_done;
 };
 
-extern struct ide_channel channels[2];
+#define MAX_PARTS 64  ///< 最大分区数
+extern struct partition *parts[MAX_PARTS];  ///< 所有分区
+extern struct ide_channel channels[2];  ///< 两条ide通道
+
+struct partition *name2part(const char *device);
+void write_direct(struct partition *part, uint32_t sta_blk_nr, void *data, uint32_t cnt);
+void read_direct(struct partition *part, uint32_t sta_blk_nr, void *data, uint32_t cnt);
+
 void ide_read(struct disk *hd, uint32_t lba, void *buf, uint32_t cnt);
 void ide_write(struct disk *hd, uint32_t lba, void *buf, uint32_t cnt);
 void ide_init();
-//这个暂时放在这里
-void disk_buffer_init(struct disk_buffer *d_buf, struct partition *part);
 #endif

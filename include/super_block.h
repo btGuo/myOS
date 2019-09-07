@@ -1,7 +1,7 @@
 #ifndef __FS_SUPERBLOCK_H
 #define __FS_SUPERBLOCK_H
 
-#define SUPER_MAGIC 0x89896666
+#define EXT2_SUPER_MAGIC 0x89896666
 #define MAJOR 1
 #define MINOR 0
 
@@ -48,5 +48,4 @@ struct super_block{
 	uint8_t  pad[964];     ///< 凑齐1024(BLOCK_SIZE)字节
 };
 
-
-#endif
+#endif        

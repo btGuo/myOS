@@ -1,12 +1,12 @@
-#include "init.h"
-#include "test.h"
-#include "stdint.h"
-#include "debug.h"
-#include "syscall.h"
-#include "interrupt.h"
-#include "tty.h"
-#include "stdio.h"
-#include "clock.h"
+#include <init.h>
+#include <test.h>
+#include <stdint.h>
+#include <debug.h>
+#include <syscall.h>
+#include <interrupt.h>
+#include <tty.h>
+#include <stdio.h>
+#include <clock.h>
 
 void init(void);
 
@@ -16,17 +16,10 @@ int main() {
 	//test_memory();
 	//test_hashtable();
 	///test_thread();
-	//test_fs();
+	test_fs();
 	//test_exec();
 	//intr_enable();
 
-	/*
-	struct time tm;
-	char buf[30] = {'\0'};
-	get_clock(&tm);
-	fmt_time(&tm, buf, 30);
-	printf("%s\n", buf);
-	*/
 	while(1);
 	return 0;
 }

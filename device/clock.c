@@ -1,6 +1,7 @@
 #include "clock.h"
 #include "io.h"
 #include "stdio.h"
+#include "debug.h"
 
 #define TM_SIZE 20  ///< 默认格式串长度
 static const char *tm_fmt_str = "%d/%02d/%02d %02d:%02d:%02d"; ///< 默认格式字符串
@@ -60,7 +61,7 @@ static const char *tm_fmt_str = "%d/%02d/%02d %02d:%02d:%02d"; ///< 默认格式
  */
 static inline unsigned char bcd2bin(unsigned char val){
 
-	return (val & 0xf) + (val << 4) * 10;
+	return (val & 0xf) + (val >> 4) * 10;
 }
 
 /**
@@ -113,7 +114,9 @@ void get_clock(struct time *tm){
 	tm->year  = read_cmos(RTC_YEAR);
 
 	/** 确认是否是bcd码形式 */
-	if( (read_cmos(RTC_STATUS_B) & RTC_BCD) )
+
+//	if( (read_cmos(RTC_STATUS_B) & RTC_BCD) )
+//	bochs好像不支持这个
 	{
 		tm->sec =  bcd2bin(tm->sec);
 		tm->min =  bcd2bin(tm->min);

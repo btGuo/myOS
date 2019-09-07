@@ -1,9 +1,9 @@
-#include "interrupt.h"
-#include "stdint.h"
-#include "global.h"
-#include "io.h"
-#include "debug.h"
-#include "thread.h"
+#include <interrupt.h>
+#include <stdint.h>
+#include <global.h>
+#include <io.h>
+#include <debug.h>
+#include <thread.h>
 
 #define IDT_DESC_CNT 0x81
 #define PIC_M_CTRL 0x20

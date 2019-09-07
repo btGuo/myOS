@@ -1,11 +1,11 @@
-#include "process.h"
-#include "string.h"
-#include "global.h"
-#include "memory.h"
-#include "tss.h"
-#include "interrupt.h"
-#include "debug.h"
-#include "vm_area.h"
+#include <process.h>
+#include <string.h>
+#include <global.h>
+#include <memory.h>
+#include <tss.h>
+#include <interrupt.h>
+#include <debug.h>
+#include <vm_area.h>
 
 extern void intr_exit(void);
 extern struct task_struct *curr;

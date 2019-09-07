@@ -14,12 +14,13 @@ int32_t sys_unlink(const char *path);
 
 
 int32_t sys_rmdir(char *path);
-int32_t sys_readdir(struct dir *dir, struct dir_entry *dir_e);
-void sys_rewinddir(struct dir *dir);
+struct dirent *sys_readdir(struct Dir *dir);
+void sys_rewinddir(struct Dir *dir);
 int32_t sys_mkdir(char *path);
-int32_t sys_closedir(struct dir *dir);
-struct dir *sys_opendir(char *path);
+int32_t sys_closedir(struct Dir *dir);
+struct Dir *sys_opendir(char *path);
 int32_t sys_stat(const char *path, struct stat *st);
 char *sys_getcwd(char *buf, uint32_t size);
+int32_t sys_chdir(const char *path);
 
 #endif

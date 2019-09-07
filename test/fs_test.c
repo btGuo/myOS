@@ -3,6 +3,7 @@
 #include "fs.h"
 #include "memory.h"
 #include "data.h"
+#include "dir.h"
 
 const uint32_t sz = 2384;
 const char *name = "/sdfii";
@@ -29,7 +30,7 @@ void file_prepare(){
 	}
 	kfree(buf);
 	sys_close(fd);
-	sync();
+	sync_fext();
 	printk("done\n");
 }
 
@@ -71,7 +72,7 @@ void test_write(){
 		return;
 	}
 	sys_close(fd);
-	sync();
+	sync_fext();
 	printk("done\n");
 }
 
@@ -111,7 +112,7 @@ void test_writelong(){
 		return;
 	}
 	sys_close(fd);
-	sync();
+	sync_fext();
 	printk("done\n");
 }
 
@@ -139,11 +140,78 @@ void wl_verify(){
 	printk("done\n");
 }
 
+void test_dir(){
+	struct Dir *root = sys_opendir("/");
+	struct dirent *de = NULL;
+	while((de = sys_readdir(root))){
+		printk("%s\t", de->filename);
+	}
+	sys_closedir(root);
+	printk("\n");
+
+	if(sys_mkdir("/test_dir") == -1){
+		printk("mkdir error\n");
+		return;
+	}else {
+		printk("mkdir success\n");
+	}
+	int buf_size = 64;
+	char buf[buf_size];
+	if(sys_getcwd(buf, buf_size) == NULL){
+		printk("getcwd error\n");
+		return;
+	}else {
+		printk("getcwd success\n");
+	}
+	printk("%s\n", buf);
+
+
+
+	if(sys_chdir("/test_dir") == -1){
+		printk("chdir error\n");
+		return;
+	}else {
+		printk("chdir success\n");
+	}
+
+	if(sys_getcwd(buf, buf_size) == NULL){
+		printk("getcwd error\n");
+		return;
+	}
+	printk("%s\n", buf);
+
+
+
+	if(sys_mkdir("/test_dir/sub_dir") == -1){
+		printk("mkdir error\n");
+		return;
+	}else {
+		printk("mkdir success\n");
+	}
+
+	if(sys_chdir("/test_dir/sub_dir") == -1){
+		printk("chdir error\n");
+		return;
+	}else {
+		printk("chdir success\n");
+	}
+
+	
+	if(sys_getcwd(buf, buf_size) == NULL){
+		printk("getcwd error\n");
+		return;
+	}
+	
+	printk("%s\n", buf);
+	
+}
+
 void test_fs(){
 	//file_prepare();
 	//verify();
 	//test_write();
 	//w_vefiry();
 	//test_writelong();
-	wl_verify();
+	//wl_verify();
+	test_dir();
 }

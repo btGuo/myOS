@@ -1,12 +1,12 @@
-#include "syscall.h"
-#include "debug.h"
-#include "thread.h"
-#include "string.h"
-#include "memory.h"
-#include "fs_sys.h"
-#include "process.h"
-#include "sys_macro.h"
-#include "tty.h"
+#include <syscall.h>
+#include <debug.h>
+#include <thread.h>
+#include <string.h>
+#include <memory.h>
+#include <fs_sys.h>
+#include <process.h>
+#include <sys_macro.h>
+#include <tty.h>
 
 extern void sys_exit(int32_t status);
 extern pid_t sys_wait(int32_t status);

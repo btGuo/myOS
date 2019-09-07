@@ -3,7 +3,7 @@
 
 #include "stdint.h"
 #include "bitmap.h"
-#include "ide.h"
+#include "fs.h"
 
 #define GROUP_PTR(gp, i_no)\
 	((gp) + ((i_no) / INODES_PER_GROUP))
@@ -41,9 +41,9 @@ struct group_info{
 	uint32_t group_nr;             ///< 组号
 };
 
+void group_info_init(struct fext_fs *fs, struct group_info *gp);
+struct group_info *group_switch(struct fext_fs *fs);
+void group_bmp_sync(struct fext_fs *fs);
 
-void group_info_init(struct partition *part, struct group_info *gp);
-struct group_info *group_switch(struct partition *part);
-void group_bmp_sync(struct partition *part);
 
 #endif

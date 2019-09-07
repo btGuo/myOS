@@ -1,60 +1,67 @@
-#include "ide.h"
-#include "fs.h"
-#include "inode.h"
-#include "super_block.h"
-#include "dir.h"
-#include "global.h"
-#include "bitmap.h"
-#include "string.h"
-#include "memory.h"
-#include "group.h"
-#include "buffer.h"
-#include "file.h"
-#include "debug.h"
-#include "thread.h"
-#include "block.h"
-#include "inode.h"
+#include <ide.h>
+#include <fs.h>
+#include <inode.h>
+#include <super_block.h>
+#include <dir.h>
+#include <global.h>
+#include <bitmap.h>
+#include <string.h>
+#include <memory.h>
+#include <group.h>
+#include <buffer.h>
+#include <file.h>
+#include <debug.h>
+#include <thread.h>
+#include <block.h>
+#include <inode.h>
 
-/**
- * TODO
- * fs 下的函数都带有partition分区指针，用来指出在那个分区上操作，应该改为
- * 文件系统的指针，fs下相关的操作应该与分区无关。
- */
+#define DEBUG 1
 
-//TODO 检查内存块复用
-//添加目录项缓冲
-
-const char *default_part = "sdb1";
-struct partition *cur_par = NULL; ///< 当前活跃分区
-extern uint8_t channel_cnt;
-extern struct ide_channel channels[2];
-extern struct dir root_dir;
-extern struct file file_table[MAX_FILE_OPEN];
-extern struct task_struct *curr;
+#define MAX_FS 64
+static const char *root_device = "/dev/sdb1";     ///< 根分区
+struct fext_fs *root_fs = NULL;                   ///< 根分区文件系统
+static struct fext_fs *fs_table[MAX_FS] = {NULL};   ///< 挂载文件系统表
 
 
 //==========================================================================
-//这四个debug用
+#ifdef DEBUG
 
 void print_super_block(struct super_block *sb){
 	printk("start print super_block\n");
-	printk("block_size %d  blocks_per_group %d  inodes_per_group %d  res_blocks %d 	blocks_count %d  inodes_count %d free_blocks_count %d  free_inodes_count %d",
-		        sb->block_size, sb->blocks_per_group, \
-		        sb->inodes_per_group, sb->res_blocks, \
-			sb->blocks_count, sb->inodes_count,\
-			sb->free_blocks_count, sb->free_inodes_count);
+	printk("block_size %d\t"
+	        "blocks_per_group %d\t"  
+		"inodes_per_group %d\t"  
+		"res_blocks %d\t"
+		"blocks_count %d\t"
+	      	"inodes_count %d\t"
+	       	"free_blocks_count %d\t"
+	      	"free_inodes_count %d\n",
+	        sb->block_size, 
+		sb->blocks_per_group, 
+	        sb->inodes_per_group, 
+		sb->res_blocks,
+		sb->blocks_count, 
+		sb->inodes_count,
+		sb->free_blocks_count, 
+		sb->free_inodes_count
+	);
 
 	printk("end printk super_block\n");
 }
+
 ///注意这里打印的是group不是group_info
 void print_group(struct group *gp, int cnt){
 	int i = 0;
 	printk("start print group\n");
-	printk("b_bmp  i_bmp  i_tab  f_blk  f_ino\n");
+	printk("b_bmp\ti_bmp\ti_tab\tf_blk\tf_ino\n");
 	while(i < cnt){
-		printk("%d  %d  %d  %d  %d\n", 
-			gp->block_bitmap, gp->inode_bitmap, gp->inode_table,\
-			gp->free_blocks_count, gp->free_inodes_count);
+		printk("%d\t%d\t%d\t%d\t%d\n", 
+			gp->block_bitmap, 
+			gp->inode_bitmap, 
+			gp->inode_table,
+			gp->free_blocks_count, 
+			gp->free_inodes_count
+		);
 		++i;
 		++gp;
 	}
@@ -64,18 +71,26 @@ void print_group(struct group *gp, int cnt){
 void print_group_info(struct group_info *gp, int cnt){
 	int i = 0;
 	printk("start print group\n");
-	printk("b_bmp  i_bmp  i_tab  f_blk  f_ino  i_bit  b_bit  gp_nr\n");
+	printk("b_bmp\ti_bmp\ti_tab\tf_blk\tf_ino\ti_bit\tb_bit\tgp_nr\n");
 	while(i < cnt){
-		printk("%d  %d  %d  %d  %d  %d  %d  %d\n", 
-			gp->block_bitmap, gp->inode_bitmap, gp->inode_table,\
-			gp->free_blocks_count, gp->free_inodes_count,\
-			gp->inode_bmp.bits, gp->block_bmp.bits, gp->group_nr);
+		printk("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", 
+			gp->block_bitmap, 
+			gp->inode_bitmap, 
+			gp->inode_table,
+			gp->free_blocks_count, 
+			gp->free_inodes_count,
+			gp->inode_bmp.bits, 
+			gp->block_bmp.bits, 
+			gp->group_nr
+		);
 		++i;
 		++gp;
 	}
 	printk("end printk group\n");
 
 }
+
+#endif
 
 /**
  * 打印元信息
@@ -90,203 +105,67 @@ void print_meta_info(){
 
 //===================================================================================
 
-
-
 /**
- * 分区格式化
- *
- * @attention 这里并没有创建根目录，第一次挂载时才创建根目录
+ * 新建文件系统
+ * @return 
+ * 	@retval NULL 失败
  */
-static void partition_format(struct partition *part){
-	printk("partition %s start format...\n", part->name);
-
-	//总块数
-	uint32_t blocks = part->sec_cnt / BLK_PER_SEC;
-	//组数
-	uint32_t groups_cnt = blocks / GROUP_BLKS;
-	//剩余块数
-	uint32_t res_blks = blocks % GROUP_BLKS; 
-	//组描述符所占块数
-	uint32_t gp_blks = DIV_ROUND_UP(groups_cnt * sizeof(struct group), BLOCK_SIZE);
-
-	//每组已使用的块: 超级块，块组描述符，块位图，inode位图，inode表
-	uint32_t gp_used_blks = SUPER_BLKS + gp_blks + BLOCKS_BMP_BLKS \
-			     + INODES_BMP_BLKS + INODES_BLKS;
-
-//初始化超级块
-	struct super_block *sb = (struct super_block *)kmalloc(SUPER_BLKS * BLOCK_SIZE);
-	MEMORY_OK(sb);
-	memset(sb, 0, SUPER_BLKS * BLOCK_SIZE);
- 	
-	sb->magic = SUPER_MAGIC;
-	sb->major_rev = MAJOR;
-	sb->minor_rev = MINOR;
-
-	sb->block_size = BLOCK_SIZE;
-	sb->blocks_per_group = GROUP_BLKS;
-	sb->inodes_per_group = INODES_PER_GROUP;
-	sb->res_blocks = res_blks;
-
-	sb->blocks_count = blocks;
-	sb->inodes_count = INODES_PER_GROUP * groups_cnt;
-	//1块引导块及1块根目录块
-	sb->free_blocks_count = sb->blocks_count - LEADER_BLKS - gp_used_blks * groups_cnt;
-	//0号inode 给根节点
-	sb->free_inodes_count = sb->inodes_count;
-
-	//从2开始
-	sb->groups_table = 2;
-
-//初始化块组
-	struct group *gp_head = (struct group *)kmalloc(gp_blks * BLOCK_SIZE);
-	MEMORY_OK(gp_head);
-	memset(gp_head, 0, gp_blks * BLOCK_SIZE);
-	struct group *gp = gp_head;
-	uint32_t cnt = 0;
-	while(cnt < groups_cnt){
-		gp->free_blocks_count = sb->blocks_per_group - gp_blks - SUPER_BLKS;
-		gp->free_inodes_count = sb->inodes_per_group;
-		gp->block_bitmap = GROUP_INNER(gp, BLOCKS_BMP_BLKS, cnt);
-		gp->inode_bitmap = GROUP_INNER(gp, INODES_BMP_BLKS, cnt);
-		gp->inode_table  = GROUP_INNER(gp, INODES_BLKS, cnt);
-		++gp;
-		++cnt;
+static struct fext_fs *new_fext(){
+	uint32_t i = 0;
+	for(; i < MAX_FS; i++){
+		if(fs_table[i] == NULL){
+			struct fext_fs *p = kmalloc(sizeof(struct fext_fs));
+			memset(p, 0, sizeof(struct fext_fs));
+			fs_table[i] = p;
+			return p;
+		}
 	}
-	print_group(gp_head, groups_cnt);
-
-//块组和超级块同步磁盘
-	gp = gp_head;
-	cnt = groups_cnt;
-	while(cnt--){
-		write_direct(part, SUPER_BLK(sb, cnt), sb, SUPER_BLKS);
-		write_direct(part, GROUP_BLK(sb, cnt), gp_head, gp_blks); 
-	}
-
-//创建位图
-	struct bitmap bitmap;
-	bitmap.byte_len = GROUP_BLKS / 8;
-	bitmap.bits = (uint8_t *)kmalloc(bitmap.byte_len);
-	bitmap_set_range(&bitmap, 0, 1, gp_used_blks);
-
-//同步位图
-	gp = gp_head;
-	cnt = groups_cnt;
-	while(cnt--){
-		//写入各个组对应位图
-	       	write_direct(part, gp->block_bitmap, bitmap.bits, 1);
-	       	++gp;
-	}
-
-	kfree(sb);
-	kfree(gp_head);
-	printk("partition format done\n");
+	return NULL;
 }
 
 /**
- * 查看根目录是否存在，这里假设cur_gp 已经初始化
+ * 删除文件系统，卸载时用
  */
-static bool scan_root(struct partition *part){
-	return bitmap_verify(&part->cur_gp->inode_bmp, ROOT_INODE);
-}
-
-/**
- * 创建根目录并写入磁盘
- */
-static void create_root(struct partition *part){
-	
-	printk("create root\n");
-	
-	uint32_t i_no = inode_bmp_alloc(part);
-	ASSERT(i_no == ROOT_INODE);
-
-	struct inode_info *m_inode = (struct inode_info *)kmalloc(sizeof(struct inode_info));
-	inode_init(part, m_inode, i_no);
-	struct dir_entry dir_e;
-	root_dir.inode = m_inode;
-
-	init_dir_entry(".", ROOT_INODE, FT_DIRECTORY, &dir_e);
-	add_dir_entry(&root_dir, &dir_e);
-	init_dir_entry("..", ROOT_INODE, FT_DIRECTORY, &dir_e);
-	add_dir_entry(&root_dir, &dir_e);
-	
-//	print_root(m_inode);
-	inode_sync(part, m_inode);
-	//确认没有指针指向，释放
-	kfree(m_inode);
-	printk("create root done\n");
-}
-
-/**
- * 挂载分区，即将分区加载到内存
- *
- * @attention 这里初始化了part中的后五个成员
- */
-static void mount_partition(struct partition *part){
-
-	printk("mount_partition in %s\n", part->name);
-	//设置当前分区
-	cur_par = part;
-
-//先处理超级块
-	part->sb = kmalloc(sizeof(struct super_block));
-	MEMORY_OK(part->sb);
-//	memset(part->sb, 0, sizeof(struct super_block));
-	//直接读取超级块
-	read_direct(part, 1, part->sb, SUPER_BLKS);
-
-	//初始化part中的两个字段
-	part->groups_cnt = part->sb->blocks_count / part->sb->blocks_per_group;
-	part->groups_blks = DIV_ROUND_UP(part->groups_cnt * sizeof(struct group), \
-			BLOCK_SIZE);
-
-//处理块组，由于块组磁盘上和内存上存储形式不同，处理方法和超级块不同
-
-	part->cur_gp = part->groups = kmalloc(part->groups_cnt * sizeof(struct group_info));
-	MEMORY_OK(part->groups);
-	memset(part->groups, 0, part->groups_cnt * sizeof(struct group_info));
-
-	//读取磁盘上块组
-	uint8_t *buf = kmalloc(part->groups_blks * BLOCK_SIZE);
-	struct group *gp = (struct group *)buf;
-	struct group_info *gp_info = part->groups;
-	read_direct(part, part->sb->groups_table, gp, part->groups_blks);
-
-	//复制内存
-	int cnt = 0;
-	while(cnt < part->groups_cnt){
-
-		memcpy(gp_info, gp, sizeof(struct group));
-		gp_info->group_nr = cnt;
-		++gp_info; ++gp; ++cnt;
+static void delete_fext(struct fext_fs *fs){
+	uint32_t i = 0;
+	for(; i < MAX_FS; i++){
+		if(fs_table[i] == fs){
+			fs_table[i] = NULL;
+			kfree(fs);
+			return;
+		}
 	}
-//end
-	
-//	print_group_info(part->groups, part->groups_cnt);
+	/** do nothing */
+}
 
-	//初始化分区缓冲
-	disk_buffer_init(&part->io_buffer, part);
+/**
+ * 根据分区获取该分区上的文件系统，目前只支持fext
+ */
+struct fext_fs *get_fext_fs(struct partition *part){
+	int i = 0;
+	for(;i < MAX_FS; i++){
+		if(fs_table[i] && 
+			fs_table[i]->sb->magic == EXT2_SUPER_MAGIC&&
+			fs_table[i]->part == part){
 
-	//初始化第一个组
-	group_info_init(part, part->cur_gp);
-
-	//释放缓冲
-	sys_free(buf);
-	printk("mount partition done\n");
+			return fs_table[i];
+		}
+	}
+	return NULL;
 }
 
 /**
  * 同步磁盘
  */
-void sync(){
-	struct partition *part = cur_par;
+void sync_fext(struct fext_fs *fs){
 
-	uint8_t *buf = kmalloc(part->groups_blks * BLOCK_SIZE);
+	uint8_t *buf = kmalloc(fs->groups_blks * BLOCK_SIZE);
 	MEMORY_OK(buf);
 	struct group *gp = (struct group *)buf;
-	struct group_info *gp_info = part->groups;
-	struct super_block *sb = part->sb;
+	struct group_info *gp_info = fs->groups;
+	struct super_block *sb = fs->sb;
 
-	uint32_t cnt = part->groups_cnt;
+	uint32_t cnt = fs->groups_cnt;
 //复制块组
 	while(cnt--){
 		memcpy(gp, gp_info, sizeof(struct group));
@@ -294,23 +173,176 @@ void sync(){
 	}
 
 //每个分区都要写入
-	cnt = part->groups_cnt;
+	cnt = fs->groups_cnt;
 	while(cnt--){
 		//超级块直接写入就行
-		write_direct(part, SUPER_BLK(sb, cnt), sb, SUPER_BLKS);
-		write_direct(part, GROUP_BLK(sb, cnt), buf, part->groups_blks);
+		write_direct(fs->part, SUPER_BLK(sb, cnt), sb, SUPER_BLKS);
+		write_direct(fs->part, GROUP_BLK(sb, cnt), buf, fs->groups_blks);
 	}
 
 //同步块组位图
-	group_bmp_sync(part);
+	group_bmp_sync(fs);
 
 	//根目录不在缓冲中
-	inode_sync(part, root_dir.inode);
-	sys_free(buf);
+	inode_sync(root_fs->root_i);
+	kfree(buf);
 
 //同步缓冲区，这个应该放在最后
-	buffer_sync(&part->io_buffer);
+	buffer_sync(&fs->io_buffer);
 }
+
+/**
+ * 新建fext文件系统
+ * @param part 所在分区
+ */
+static struct fext_fs *create_fextfs(struct partition *part){
+
+	printk("mount_partition in %s\n", part->name);
+
+	struct fext_fs *fs = new_fext();
+	if(fs == NULL){
+		return NULL;
+	}
+
+	fs->part = part;
+//先处理超级块
+	fs->sb = kmalloc(sizeof(struct super_block));
+	MEMORY_OK(fs->sb);
+	//直接读取超级块
+	read_direct(part, 1, fs->sb, SUPER_BLKS);
+
+	fs->groups_cnt = fs->sb->blocks_count / fs->sb->blocks_per_group;
+	fs->groups_blks = DIV_ROUND_UP(fs->groups_cnt * sizeof(struct group), \
+			BLOCK_SIZE);
+
+//处理块组，由于块组磁盘上和内存上存储形式不同，处理方法和超级块不同
+	fs->cur_gp = fs->groups = kmalloc(fs->groups_cnt * sizeof(struct group_info));
+	MEMORY_OK(fs->groups);
+	memset(fs->groups, 0, fs->groups_cnt * sizeof(struct group_info));
+
+	//读取磁盘上块组
+	uint8_t *buf = kmalloc(fs->groups_blks * BLOCK_SIZE);
+	struct group *gp = (struct group *)buf;
+	struct group_info *gp_info = fs->groups;
+	read_direct(part, fs->sb->groups_table, gp, fs->groups_blks);
+
+	//复制内存
+	int cnt = 0;
+	while(cnt < fs->groups_cnt){
+
+		memcpy(gp_info, gp, sizeof(struct group));
+		gp_info->group_nr = cnt;
+		++gp_info; ++gp; ++cnt;
+	}
+	
+	//初始化分区缓冲
+	disk_buffer_init(&fs->io_buffer, fs);
+
+	//初始化第一个组
+	group_info_init(fs, fs->cur_gp);
+
+	//释放缓冲
+	kfree(buf);
+
+	printk("mount fsition done\n");
+	return fs;
+}
+
+/**
+ * 卸载文件系统
+ */
+int32_t sys_unmount(const char *device){
+
+	struct inode_info *m_inode = path2inode(device);
+	if(m_inode == NULL){
+		printk("sys_mount: error device name %s\n", device);
+		return -1;
+	}
+	if(!S_ISBLK(m_inode->i_mode)){
+		printk("sys_mount: error device type\n");
+		return -1;
+	}
+	inode_close(m_inode);
+
+	struct fext_fs *fs = get_fext_fs(name2part(device));
+	if(fs == root_fs){
+		return -1;
+	}
+
+	if(!fs->mounted){
+		return -1;
+	}
+	struct inode_info *mounted_i = path2inode(fs->mount_path);
+	if(mounted_i == NULL){
+		return -1;
+	}
+	mounted_i->i_mounted = false;
+	//TODO 这里不太确定
+	mounted_i->fs = root_fs;
+
+	if(buffer_check_inode(&fs->io_buffer)){
+		printk("sys_mount: there are some inodes being used\n");
+		return -1;
+	}
+	//同步后释放fs
+	sync_fext(fs);
+	delete_fext(fs);
+
+	return 0;
+}
+
+/**
+ * 挂载目录
+ * @param device 设备文件名
+ * @param dir_path 挂载点目录名
+ */
+int32_t sys_mount(const char *device, const char *dir_path){
+
+	//只读方式打开设备文件
+	struct inode_info *m_inode = path2inode(device);
+	if(m_inode == NULL){
+		printk("sys_mount: error device name %s\n", device);
+		return -1;
+	}
+	if(!S_ISBLK(m_inode->i_mode)){
+		printk("sys_mount: error device type\n");
+		return -1;
+	}
+	inode_close(m_inode);
+
+	struct partition *part = name2part(device);
+	if(part == NULL){
+		printk("sys_mount: no such device\n");
+		return -1;
+	}
+	struct inode_info *inode = path2inode(dir_path);
+	if(inode == NULL){
+		printk("sys_mount: open dir %s failed\n", dir_path);
+		return -1;
+	}
+	if(inode->i_mounted){
+		printk("sys_mount: directory %s has been used\n", dir_path);
+		return -1;
+	}
+	struct fext_fs *fs = get_fext_fs(part);
+	if(fs){
+		printk("sys_mount: partition %s has been mounted\n", device);
+		return -1;
+	}
+	fs = create_fextfs(part);
+
+	//设置已经挂载
+	fs->mounted = true;
+	strcpy(fs->mount_path, dir_path);
+	fs->root_i = inode_open(fs, ROOT_INODE);
+	//重新设置inode号，fs
+	inode->i_mounted = true;
+	inode->fs = fs;
+	
+	//加载根目录
+	return 0;
+}
+
 
 /**
  * @brief初始化文件系统
@@ -319,65 +351,21 @@ void sync(){
  */
 void filesys_init(){
 
+#ifdef DEBUG
 	printk("filesys_init start\n");
-	int cno = 0;
-	int dno = 0;
-	int pno = 0;
-	struct partition *part = NULL;
-	struct disk *hd = NULL;
-	struct super_block sb;
-
-//格式化所有分区
-	//遍历通道
-	while(cno < channel_cnt){
-		dno = 0;
-		//遍历磁盘
-		while(dno < 2){
-		//1号盘不处理	
-			if(dno == 0){
-				++dno; continue;
-			}
-
-			hd = &channels[cno].devices[dno];
-			part = hd->prim_parts;
-			pno = 0;
-			//遍历分区
-			while(pno < 12){
-				if(pno == 4){
-					part = hd->logic_parts;
-				}
-
-				//分区存在
-				if(part->sec_cnt){
-					read_direct(part, 1, &sb, SUPER_BLKS);
-					//验证魔数
-					if(sb.magic == SUPER_MAGIC){
-						/** nothing */
-						printk("super_block has already exist\n");
-						//debug 用
-						//partition_format(part);
-					}else {
-						partition_format(part);
-					}
-					//如果是默认分区，则挂载
-					if(!strcmp(part->name, default_part)){
-
-					        mount_partition(part);
-						//挂载分区后检测根目录
-						if(!scan_root(part)){
-							create_root(part);
-						}
-					}	       
-				}
-				++pno;
-				++part;
-			}
-			++dno;
-		}
-		++cno;
+#endif
+//加载根文件系统
+	root_fs = create_fextfs(name2part(root_device));
+	if(root_fs == NULL){
+		PANIC("build root_fs failed\n");
 	}
-//打开根目录
-	open_root_dir(cur_par);
+	
+	struct inode_info *inode = inode_open(root_fs, ROOT_INODE);
+	inode->i_mounted = true;
+
+	root_fs->root_i = inode;
+	strcpy(root_fs->mount_path, "/");
+	root_fs->mounted = true;
 
 //初始化文件表
 	uint32_t fd_idx = 0;
@@ -385,8 +373,12 @@ void filesys_init(){
 		file_table[fd_idx++].fd_inode = NULL;
 	}
 
+#ifdef DEBUG
 	printk("filesys_init done\n");
+#endif
 }
+
+//============================================================================
 
 /**
  * 获取文件状态
@@ -395,14 +387,14 @@ void filesys_init(){
  */
 int32_t sys_stat(const char *path, struct stat *st){
 
-	struct dir_entry dir_e;
-	struct dir *par_dir = search_dir_entry(cur_par, path, &dir_e);
-	if(!par_dir){
+	struct fext_dirent dir_e;
+	struct inode_info *par_i = search_dir_entry(path, &dir_e);
+	if(!par_i){
 		printk("sys_stat %s not found\n", path);
 		return -1;
 	}
 
-	struct inode_info *m_inode = inode_open(cur_par, dir_e.i_no);
+	struct inode_info *m_inode = inode_open(par_i->fs, dir_e.i_no);
 	if(!m_inode){
 		printk("sys_stat open inode failed\n");
 		return -1;
@@ -410,9 +402,9 @@ int32_t sys_stat(const char *path, struct stat *st){
 
 	st->st_ino = m_inode->i_no;
 	st->st_size = m_inode->i_size;
-	st->st_ftype = dir_e.f_type;
+	st->st_mode = dir_e.f_type;
 
-	dir_close(par_dir);
+	inode_close(par_i);
 	inode_close(m_inode);
 	return 0;
 }
@@ -422,50 +414,97 @@ int32_t sys_stat(const char *path, struct stat *st){
  * 将当前目录绝对路径写入buf，size是buf大小
  * @return 失败时为NULL
  */
+
 char *sys_getcwd(char *buf, uint32_t size){
 
+	char *bufhead = buf;
 	ASSERT(buf != NULL);
 	
-	uint32_t i_no = curr->cwd_inr;
-	struct dir *dir = dir_open(cur_par, i_no);
-	if(!dir){
-		printk("sys_getcwd open dir failed\n");
-		return NULL;
-	}
-	buf[0] = '/';
-	buf[1] = '\0';
+	ASSERT(curr->cwd_i);
+	struct inode_info *inode = curr->cwd_i;
+	uint32_t i_no = inode->i_no;
+	struct fext_fs *fs = inode->fs;
 
+	ASSERT(inode->fs);
+
+	//补上挂载路径
+	strcpy(buf, fs->mount_path);
+
+	//挂载点，直接复制挂载路径后返回
+	if(i_no == 0){
+		return buf;
+	}
+
+	//如果不是 "/" 在后面加上 "/"
+	if(strlen(buf) != 1){
+		strcat(buf, "/");
+		buf += strlen(buf) - 1;
+	}
+
+	struct inode_info *dir_i = NULL;
 	uint32_t par_ino = 0;
-	struct dir_entry dir_e;
+	struct fext_dirent dir_e;
+	uint32_t cnt = 4;
 	//根目录为0
 	while(i_no){
 
 		//找到父目录
-		ASSERT(_search_dir_entry(cur_par, dir, "..", &dir_e));
-		ASSERT(dir_e.f_type == FT_DIRECTORY);
+		ASSERT(_search_dir_entry(inode, "..", &dir_e));
+		ASSERT(S_ISDIR(dir_e.f_type));
 		//记录inode号
 		par_ino = dir_e.i_no;
-		dir_close(dir);
+
+		// 这里注意，如果是cwd则不能关闭该目录
+		if(inode != curr->cwd_i){
+			inode_close(inode);
+		}
 		//打开父目录
-		dir = dir_open(cur_par, par_ino); 
-		ASSERT(search_dir_by_ino(cur_par, dir, i_no, &dir_e));
-		ASSERT(dir_e.f_type == FT_DIRECTORY);
+		dir_i = inode_open(fs, dir_e.i_no);
+		ASSERT(search_dir_by_ino(dir_i, i_no, &dir_e));
+		ASSERT(S_ISDIR(dir_e.f_type));
 
 		strcat(buf, dir_e.filename);
 		strcat(buf, "/");
+
 		i_no = par_ino;
+		inode = dir_i;
+		if(cnt-- == 0){
+			break;
+		}
 	}
 
-	//倒过来
-	uint32_t len = strlen(buf);
-	char *head = buf;
-	char *tail = buf + len - 1;
-	uint32_t half = len / 2;
-	while(half--)
-		*head++ = *tail--;
-
+	//printk("before swap : %s\n", buf);
 	//去掉最后的 '/'
+	uint32_t len = strlen(buf);
 	buf[len - 1] = '\0';
-	return buf;
+	
+
+	//倒过来
+	char *swap = kmalloc(len + 1);
+	strcpy(swap, buf);
+	buf[0] = '\0';
+	while(len--){
+		if(swap[len] == '/'){
+			strcat(buf, swap + len);
+			swap[len] = '\0';
+		}
+	}
+
+	kfree(swap);
+	return bufhead;
+}
+
+/**
+ * 切换当前工作目录
+ */
+int32_t sys_chdir(const char *path){
+
+	struct inode_info *inode = path2inode(path);
+	if(inode == NULL){
+		return -1;
+	}
+	inode_close(curr->cwd_i);
+	curr->cwd_i = inode;
+	return 0;
 }
 

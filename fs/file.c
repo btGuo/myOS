@@ -1,20 +1,19 @@
-#include "file.h"
-#include "ide.h"
-#include "super_block.h"
-#include "thread.h"
-#include "fs.h"
-#include "interrupt.h"
-#include "dir.h"
-#include "string.h"
-#include "block.h"
-#include "pathparse.h"
-#include "tty.h"
-#include "pipe.h"
-#include "keyboard.h"
+#include <file.h>
+#include <ide.h>
+#include <super_block.h>
+#include <thread.h>
+#include <fs.h>
+#include <interrupt.h>
+#include <dir.h>
+#include <string.h>
+#include <block.h>
+#include <pathparse.h>
+#include <tty.h>
+#include <pipe.h>
+#include <keyboard.h>
 
 
 struct file file_table[MAX_FILE_OPEN];   ///< 文件表
-extern struct partition *cur_par;
 
 /**
  * @brief 在文件表中找到空位
@@ -54,11 +53,11 @@ int32_t set_fd(int32_t fd){
  *
  * @return 文件的inode号
  */
-int32_t file_create(struct dir *par_dir, char *filename, uint8_t flag){
+int32_t file_create(struct inode_info *par_i, char *filename, uint8_t flag){
 
 	//先分配inode
 	struct inode_info *m_inode = NULL;
-	if(!(m_inode = inode_alloc(cur_par))){
+	if(!(m_inode = inode_alloc(par_i->fs))){
 		//内存分配失败，回滚
 		printk("file_create: kmalloc for inode failed\n");
 		return -1;
@@ -66,17 +65,17 @@ int32_t file_create(struct dir *par_dir, char *filename, uint8_t flag){
 
 	uint32_t i_no = m_inode->i_no;
 	//申请并安装目录项
-	struct dir_entry dir_entry;
-	init_dir_entry(filename, m_inode->i_no, FT_REGULAR, &dir_entry);
-	if(!add_dir_entry(par_dir, &dir_entry)){
+	struct fext_dirent dir_entry;
+	init_dir_entry(filename, m_inode->i_no, S_IFREG, &dir_entry);
+	if(!add_dir_entry(par_i, &dir_entry)){
 		printk("add_dir_entry: sync dir_entry to disk failed\n");
 		inode_release(m_inode);
 		return -1;
 	}
 
 	//磁盘同步两个inode
-	inode_sync(cur_par, par_dir->inode);
-	inode_sync(cur_par, m_inode);
+	inode_sync(par_i);
+	inode_sync(m_inode);
 	//记得释放
 	inode_release(m_inode);
 
@@ -98,7 +97,7 @@ int32_t file_open(uint32_t i_no, uint8_t flag){
 		return -1;
 	}
 
-	file_table[fd_idx].fd_inode = inode_open(cur_par, i_no);
+	file_table[fd_idx].fd_inode = inode_open(root_fs, i_no);
 	file_table[fd_idx].fd_pos = 0;
 	file_table[fd_idx].fd_flag = flag;
 
@@ -135,6 +134,7 @@ int32_t file_write(struct file *file, const void *buf, uint32_t count){
 
 	struct buffer_head *bh = NULL;
 	struct inode_info *m_inode = file->fd_inode;
+	struct fext_fs *fs = m_inode->fs;
 
 	ASSERT(file->fd_pos <= m_inode->i_size);
 
@@ -159,10 +159,10 @@ int32_t file_write(struct file *file, const void *buf, uint32_t count){
 			res = 0;
 		}
 		
-		blk_nr = get_block_num(cur_par, m_inode, blk_idx, M_CREATE);
-		bh = read_block(cur_par, blk_nr);
+		blk_nr = get_block_num(m_inode, blk_idx, M_CREATE);
+		bh = read_block(fs, blk_nr);
 		memcpy((bh->data + off_byte), src, to_write);
-	       	write_block(cur_par, bh);	
+	       	write_block(fs, bh);	
 		release_block(bh);
 
 		src += to_write;
@@ -178,7 +178,7 @@ int32_t file_write(struct file *file, const void *buf, uint32_t count){
 		m_inode->i_blocks = DIV_ROUND_UP(m_inode->i_size, BLOCK_SIZE);
 	}
 //	printk("m_inode->i_size %d\n", m_inode->i_size);
-	inode_sync(cur_par, m_inode);
+	inode_sync(m_inode);
 	file->fd_pos += count;
 	return count;
 }
@@ -216,8 +216,8 @@ int32_t file_read(struct file *file, void *buf, uint32_t count){
 			res = 0;
 		}
 
-		blk_nr = get_block_num(cur_par, m_inode, blk_idx, M_CREATE);
-		bh = read_block(cur_par, blk_nr);
+		blk_nr = get_block_num(m_inode, blk_idx, M_CREATE);
+		bh = read_block(m_inode->fs, blk_nr);
 		memcpy(dest, (bh->data + off_byte), to_read);
 		release_block(bh);
 		dest += to_read;
@@ -254,43 +254,43 @@ int32_t sys_open(const char *path, uint8_t flags){
 	int32_t fd = -1;
 
 	//创建或者打开文件都需要先搜索
-	struct dir_entry dir_e;
+	struct fext_dirent dir_e;
 	char filename[MAX_FILE_NAME_LEN];
 	char dirname[MAX_PATH_LEN];
 
 	split_path(path, filename, dirname);
-	struct dir *par_dir = get_last_dir(dirname);
+	struct inode_info *par_i = get_last_dir(dirname);
 
 	//父目录不存在
-	if(!par_dir){
+	if(!par_i){
 		printk("search_dir_entry: open directory error\n");
 		return -1;
 	}
 
 	//先查找，这里需要更高的灵活度，因此用了_开头的
-	bool found = _search_dir_entry(cur_par, par_dir, filename, &dir_e);
+	bool found = _search_dir_entry(par_i, filename, &dir_e);
 
 
 	if(!found && !(flags & O_CREAT)){
 
 		printk("file %s isn't exist\n", filename);
-		dir_close(par_dir);
+		inode_close(par_i);
 		return -1;
 
 	}else if(found && (flags & O_CREAT)){
 
 		printk("file %s has already exist!\n", filename);
-		dir_close(par_dir);
+		inode_close(par_i);
 		return -1;
 	}
 	if(flags & O_CREAT){
 
 		printk("create file %s\n", filename);
 		//TODO 错误处理
-		int32_t i_no = file_create(par_dir, filename, flags);
+		int32_t i_no = file_create(par_i, filename, flags);
 		printk("i_no %d\n", i_no);
 		fd = file_open(i_no, flags);
-		dir_close(par_dir);
+		inode_close(par_i);
 
 	}else {
 		fd = file_open(dir_e.i_no, flags);
@@ -432,19 +432,19 @@ int32_t sys_lseek(int32_t fd, int32_t offset, uint8_t whence){
 int32_t sys_unlink(const char *path){
 
 	//先查找
-	struct dir_entry dir_e;
-	struct dir *par_dir = search_dir_entry(cur_par, path, &dir_e);
+	struct fext_dirent dir_e;
+	struct inode_info *par_i = search_dir_entry(path, &dir_e);
 
 	//查找失败
-	if(!par_dir){
+	if(!par_i){
 		printk("file %s not found!\n", path);
 		return -1;
 	}
 
 	//类型不对
-	if(dir_e.f_type == FT_DIRECTORY){
+	if(!S_ISREG(dir_e.f_type)){
 		printk("can't delete a directory with unlink");
-		dir_close(par_dir);
+		inode_close(par_i);
 		return -1;
 	}
 
@@ -454,16 +454,16 @@ int32_t sys_unlink(const char *path){
 		if(file_table[f_idx].fd_inode != NULL &&\
 			dir_e.i_no == file_table[f_idx].fd_inode->i_no){
 
-			dir_close(par_dir);
+			inode_close(par_i);
 			printk("file %s is in use, not allow to delete\n", path);
 			return -1;
 		}
 		++f_idx;
 	}
 
-	delete_dir_entry(cur_par, par_dir, dir_e.i_no);
-	inode_delete(cur_par, dir_e.i_no);
-	dir_close(par_dir);
+	delete_dir_entry(par_i, dir_e.i_no);
+	inode_delete(par_i->fs, dir_e.i_no);
+	inode_close(par_i);
 	return 0;
 }
 

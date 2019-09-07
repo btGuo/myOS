@@ -1,9 +1,9 @@
-#include "stdint.h"
-#include "thread.h"
-#include "debug.h"
-#include "fs_sys.h"
-#include "process.h"
-#include "thread.h"
+#include <stdint.h>
+#include <thread.h>
+#include <debug.h>
+#include <fs_sys.h>
+#include <process.h>
+#include <thread.h>
 
 
 /**

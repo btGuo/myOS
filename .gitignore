@@ -2,7 +2,6 @@ note.txt
 hd90.img
 hd60.img
 build/
-run.sh
 a.out
 tags
 hex
@@ -11,4 +10,5 @@ hdump.sh
 tmp
 *.o
 *.bin
+*.sh
 

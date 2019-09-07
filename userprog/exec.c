@@ -1,14 +1,14 @@
-#include "stdint.h"
-#include "fs.h"
-#include "string.h"
-#include "memory.h"
-#include "thread.h"
-#include "fs_sys.h"
-#include "vm_area.h"
-#include "process.h"
-#include "elf32.h"
-#include "interrupt.h"
-#include "debug.h"
+#include <stdint.h>
+#include <fs.h>
+#include <string.h>
+#include <memory.h>
+#include <thread.h>
+#include <fs_sys.h>
+#include <vm_area.h>
+#include <process.h>
+#include <elf32.h>
+#include <interrupt.h>
+#include <debug.h>
 
 static void print_Elf32_phdr(struct Elf32_Phdr *prog_h){
 	printk("elf program header info :\n");

@@ -3,8 +3,6 @@
 
 #include "global.h"
 #include "stdint.h"
-#include "ide.h"
-#include "dir.h"
 
 #define MAX_FILE_OPEN 12
 
@@ -24,10 +22,10 @@ enum std_fd{
 };
 
 extern struct file file_table[MAX_FILE_OPEN];
+
 uint32_t to_global_fd(uint32_t fd);
 int32_t get_fd();
 int32_t set_fd(int32_t fd);
-int32_t file_create(struct dir *par_dir, char *filename, uint8_t flag);
 int32_t file_open(uint32_t i_no, uint8_t flag);
 void file_close(struct file *file);
 int32_t file_read(struct file *file, void *buf, uint32_t count);

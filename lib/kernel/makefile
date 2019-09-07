@@ -13,7 +13,7 @@ DEPS = $(SRCS:%.c=$(BUILD_DIR)/%.d)
 
 -include $(DEPS)
 
-all:$(OUT)
+all: copy $(OUT)
 
 $(OUT):$(OBJS)
 	$(LD) $(LDFLAGS) $^ -o $@
@@ -21,7 +21,10 @@ $(OUT):$(OBJS)
 $(BUILD_DIR)/%.o:%.c
 	$(CC) $(CFLAGS) $< -o $@ -MMD -MP
 
-.PHONY: clean
+.PHONY: clean copy
 
 clean:
 	rm $(OBJS) $(DEPS)
+
+copy:
+	cp ../user/syscall.c ../user/stdio.c ../user/string.c .

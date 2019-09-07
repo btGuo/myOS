@@ -3,10 +3,10 @@
 
 #include "stdint.h"
 #include "list.h"
-#include "ide.h"
+#include "fs.h"
+#include <sys/types.h>
 
 
-typedef long time_t;
 #define N_BLOCKS 8 ///< 5个直接，1个间接，1个双间接，1个三间接
 
 /**
@@ -48,8 +48,11 @@ struct inode_info{
 	bool     i_lock;     ///< 上锁意味着必须留在内存
 	bool     i_buffered; ///< 是否位于缓冲区
 	bool     i_write_deny;   ///< 拒绝写标志
+	bool     i_mounted;       ///< 是否挂载点
 	struct list_head hash_tag;   ///< 哈希表标签
 	struct list_head queue_tag;  ///< 队列标签
+	struct fext_fs *fs;         ///< 文件系统指针
+	
 };
 
 /**
@@ -60,18 +63,21 @@ struct inode_pos{
 	uint32_t off_size;  ///< 块内偏移
 };
 
-void inode_locate(struct partition *part, uint32_t i_no, struct inode_pos *pos);
+
+
+int32_t inode_bmp_alloc(struct fext_fs *fs);
+void inode_bmp_clear(struct fext_fs *fs, uint32_t i_no);
+void inode_locate(struct fext_fs *fs, uint32_t i_no, struct inode_pos *pos);
 void inode_release(struct inode_info *m_inode);
-void inode_sync(struct partition *part, struct inode_info *m_inode);
-struct inode_info *inode_open(struct partition *part, uint32_t i_no);
+void inode_sync(struct inode_info *m_inode);
+struct inode_info *inode_open(struct fext_fs *fs, uint32_t i_no);
+struct inode_info *path2inode(const char *path);
 void inode_close(struct inode_info *m_inode);
-void inode_init(struct partition *part, struct inode_info *m_inode, uint32_t i_no);
-void inode_delete(struct partition *part, uint32_t i_no);
-struct inode_info *inode_alloc(struct partition *part);
+struct inode_info *inode_alloc(struct fext_fs *fs);
+void inode_init(struct fext_fs *fs, struct inode_info *m_inode, uint32_t i_no);
+bool inode_is_empty(struct inode_info *inode);
+void inode_delete(struct fext_fs *fs, uint32_t i_no);
 
-void inode_bmp_clear(struct partition *part, uint32_t i_no);
-int32_t inode_bmp_alloc(struct partition *part);
-
-struct inode_info *buffer_read_inode(struct disk_buffer *d_buf, uint32_t i_no);
 bool buffer_add_inode(struct disk_buffer *d_buf, struct inode_info *m_inode);
+struct inode_info *buffer_read_inode(struct disk_buffer *d_buf, uint32_t i_no);
 #endif

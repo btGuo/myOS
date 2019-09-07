@@ -1,4 +1,4 @@
-#include "global.h"
+#include <global.h>
 /**
  * 路径解析，提取出/之间的名字
  *

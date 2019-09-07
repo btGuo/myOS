@@ -1,6 +1,6 @@
-#include "tss.h"
-#include "global.h"
-#include "string.h"
+#include <tss.h>
+#include <global.h>
+#include <string.h>
 
 struct tss{
 	uint32_t  backlink;

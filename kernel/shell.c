@@ -1,8 +1,8 @@
-#include "stdint.h"
-#include "string.h"
-#include "file.h"
-#include "syscall.h"
-#include "debug.h"
+#include <stdint.h>
+#include <string.h>
+#include <file.h>
+#include <syscall.h>
+#include <debug.h>
 
 #define PROMPT(str) printf(prompt_fmt, str)
 #define CMD_BUF_LEN 128

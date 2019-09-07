@@ -2,6 +2,8 @@
 #define __FS_FS_H
 
 #include "buffer.h"
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #define SECTOR_SIZE 512
 #define BLOCK_SIZE 1024
@@ -35,15 +37,6 @@
 })
 
 /**
- * 文件类型
- */
-enum file_types{
-	FT_UNKNOWN,  ///< 未知文件
-	FT_REGULAR,  ///< 普通文件
-	FT_DIRECTORY,  ///< 目录
-	FT_PIPE,    ///< 管道文件
-};
-/**
  * 文件打开标志位
  */
 enum oflags{
@@ -61,19 +54,28 @@ enum whence{
 	SEEK_END       ///< 以文件末尾为参照
 };
 
-/**
- * 文件属性结构体
- */
-struct stat{
-	uint32_t st_ino;    ///< inode号
-	uint32_t st_size;   ///< 文件大小
-	enum file_types st_ftype;  ///< 文件类型
-};
+/************************************************************************************
+ *
+ * total 
+ * --------------------------------------------------------------------
+ * |            |               |               |     |               | 
+ * | boot block | block group 0 | block group 1 | ... | block group n |
+ * |            |               |               |     |               |
+ * --------------------------------------------------------------------
+ * 
+ * for each block group     (group description table -> gdt) 
+ * -------------------------------------------------------------------------------
+ * |             |     |              |              |             |             |
+ * | super block | gdt | block bitmap | inode bitmap | inode table | data blocks |
+ * |             |     |              |              |             |             |
+ * -------------------------------------------------------------------------------
+ *
+ * ***********************************************************************************/
 
 /**
- * 文件系统描述符，类ext2
+ * 文件系统描述符，类fext
  */
-struct ext2_fs{
+struct fext_fs{
 	struct super_block *sb;    ///< 分区超级块
 	struct group_info *groups;  ///< 块组指针
 	struct group_info *cur_gp;  ///< 当前使用块组
@@ -81,8 +83,14 @@ struct ext2_fs{
 	uint32_t groups_blks;      ///< 块组struct group所占块数
 	struct disk_buffer io_buffer;     ///< 磁盘缓冲区，换成指针或许更好
 	struct partition *part;    ///< 挂载分区
+	struct inode_info *root_i;  ///< 根i节点
+	bool mounted;             ///< 是否已挂载
+	char mount_path[32]; ///< 挂载路径
 };
+
+extern struct fext_fs *root_fs;  ///< 根文件系统
 
 void sync();
 void filesys_init();
+void disk_buffer_init(struct disk_buffer *d_buf, struct fext_fs *fs);
 #endif

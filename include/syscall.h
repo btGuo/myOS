@@ -1,9 +1,10 @@
 #ifndef LIB_USER_SYSCALL_H
 #define LIB_USER_SYSCALL_H
 
-#include "stdint.h"
-#include "dir.h"
-#include "fs.h"
+#include <stdint.h>
+#include <dir.h>
+#include <fs.h>
+#include <dirent.h>
 
 uint32_t getpid(void);
 void* malloc(uint32_t size);
@@ -22,12 +23,7 @@ int32_t write(int32_t fd, const void *buf, uint32_t count);
 int32_t lseek(int32_t fd, int32_t offset, uint8_t whence);
 int32_t unlink(const char *path);
 
-
 int32_t rmdir(char *path);
-int32_t readdir(struct dir *dir, struct dir_entry *dir_e);
-void rewinddir(struct dir *dir);
 int32_t mkdir(char *path);
-int32_t closedir(struct dir *dir);
-struct dir *opendir(char *path);
 int32_t stat(const char *path, struct stat *st);
 #endif 

@@ -7,6 +7,7 @@
 #include "string.h"
 #include "tty.h"
 #include "debug.h"
+#include "stdio.h"
 
 #define reg_data(channel)	 (channel->port_base + 0)
 #define reg_error(channel)	 (channel->port_base + 1)
@@ -38,9 +39,9 @@
 /* 定义可读写的最大块数 */
 #define MAX_LBA (1024 * 1024 * 89)
 
-
 uint8_t channel_cnt;     ///< 通道数 1或者2 
 struct ide_channel channels[2];  ///< 两条ide通道
+struct partition *parts[MAX_PARTS] = {NULL};  ///< 所有分区信息
 
 
 /**
@@ -67,7 +68,39 @@ struct boot_sector{
 	uint16_t signature;   ///< 魔数
 }__attribute__((packed));
 
+/**
+ * 根据设备号查找分区
+ * @note 这里只是简单遍历
+ */
+struct partition *get_part(dev_t dev_nr){
+	uint32_t i = 0;
+	while(i < MAX_PARTS){
+		if(parts[i]->dev_nr == dev_nr){
+			return parts[i];
+		}
+		i++;
+	}
+	return NULL;
+}
 
+/**
+ * 根据分区文件名获取分区
+ */
+struct partition *name2part(const char *device){
+	const char *name = 1 + strrchr(device, '/');
+	printk("name %s\n", name);
+	uint32_t i = 0;
+	for(; i < MAX_PARTS && parts[i]; i++){
+		if(strcmp(parts[i]->name, name) == 0){
+			return parts[i];
+		}
+	}
+	return NULL;
+}
+
+/**
+ * 选择硬盘
+ */
 static void select_disk(struct disk *hd){
 	uint8_t reg = BIT_DEV_MBS | BIT_DEV_LBA;
 	if(hd->dev_no == 1){
@@ -76,6 +109,11 @@ static void select_disk(struct disk *hd){
 	outb(reg_dev(hd->channel), reg);
 }
 
+/**
+ * 选择扇区
+ * @param lba 扇区lba地址
+ * @param cnt 要操作的扇区数
+ */
 static void select_sector(struct disk *hd, uint32_t lba, uint8_t cnt){
 	ASSERT(lba < MAX_LBA);
 
@@ -91,12 +129,20 @@ static void select_sector(struct disk *hd, uint32_t lba, uint8_t cnt){
 			(hd->dev_no == 1 ? BIT_DEV_DEV : 0) | lba >> 24);
 }
 
-static void cmd_out(struct ide_channel *channel, uint8_t cmd){
+/**
+ * 往通道写入命令
+ */
+static inline void cmd_out(struct ide_channel *channel, uint8_t cmd){
 
 	outb(reg_cmd(channel), cmd);
 }
 
-static void read_from_sector(struct disk *hd, void *buf, uint8_t cnt){
+/**
+ * 读扇区
+ * @param buf 输出缓冲区
+ * @param cnt 读取扇区数
+ */
+static inline void read_from_sector(struct disk *hd, void *buf, uint8_t cnt){
 
 	//以字为单位
 	int size = cnt * 512 / 2;
@@ -104,14 +150,22 @@ static void read_from_sector(struct disk *hd, void *buf, uint8_t cnt){
 
 }
 
-static void write2sector(struct disk *hd, void *buf, uint8_t cnt){
+/**
+ * 写入扇区
+ * @param buf 输入缓冲区
+ * @param cnt 写入扇区数
+ */
+static inline void write2sector(struct disk *hd, void *buf, uint8_t cnt){
 
 	int size = cnt * 512 / 2;
 	outsw(reg_data(hd->channel), buf, size);
 
 }
 
-static void busy_wait(struct disk *hd){
+/**
+ * 等待硬盘就绪
+ */
+static inline void busy_wait(struct disk *hd){
 
 	//等待
 	while((inb(reg_status(hd->channel)) & BIT_STAT_BSY));
@@ -158,6 +212,9 @@ void ide_read(struct disk *hd, uint32_t lba, void *buf, uint32_t cnt){
 	mutex_lock_release(&hd->channel->lock);
 }
 
+/**
+ * 写硬盘
+ */
 void ide_write(struct disk *hd, uint32_t lba, void *buf, uint32_t cnt){
 	
 	ASSERT(lba < MAX_LBA && cnt > 0);
@@ -207,6 +264,9 @@ static void swap_copy(const char *src, char *buf, uint32_t size){
 	buf[size] = '\0';
 }
 
+/**
+ * 识别磁盘
+ */
 static void identify_disk(struct disk *hd){
 
 	char info[512];
@@ -221,19 +281,30 @@ static void identify_disk(struct disk *hd){
 	swap_copy(info + 10 * 2, buf[0], 20);
 	swap_copy(info + 27 * 2, buf[1], 40);
 	
+#ifdef DEBUG
 	uint32_t sectors = *(uint32_t *)&info[60 * 2];
-	printk("   disk %s info:\n    SN:  %s\n", hd->name, buf[0]);
-	printk("      MODULE: %s\n",buf[1]);
-	printk("      SECTORS  %d\n", sectors);
-	printk("      CAPACITY %dMB\n", sectors * 512 / 1024 / 1024);
+	printk("\tdisk %s info:\n    SN:  %s\n", hd->name, buf[0]);
+	printk("\t\tMODULE: %s\n",buf[1]);
+	printk("\t\tSECTORS  %d\n", sectors);
+	printk("\t\tCAPACITY %dMB\n", sectors * 512 / 1024 / 1024);
+#endif
 }
 
+/**
+ * 打印分区信息
+ */
 static void partition_info(struct partition *part){
 
-	printk("   %s start_lba:%x, sec_cnt:%x\n", part->name, part->start_lba,\
-			part->sec_cnt);
+	printk("\t%s start_lba:%x, sec_cnt:%x\n", 
+			part->name, 
+			part->start_lba,
+			part->sec_cnt
+	);
 }
 			
+/**
+ * 读取启动扇区
+ */
 static void get_boot_sector(struct disk *hd, uint32_t lba, \
 		struct boot_sector *bs){
 	char sec[512];
@@ -242,8 +313,13 @@ static void get_boot_sector(struct disk *hd, uint32_t lba, \
 	memcpy(bs, sec + 446, 66);
 }
 
-uint32_t ext_lba_base = 0;
+/** 这两个变量为了方便用 */
+static uint32_t part_idx = 0;
+static uint32_t ext_lba_base = 0; 
 
+/**
+ * 获取拓展分区
+ */
 static void get_ext_partition(struct disk *hd, uint32_t l_no, uint32_t s_lba){
 	if(l_no >= 8)
 		return;
@@ -259,6 +335,10 @@ static void get_ext_partition(struct disk *hd, uint32_t l_no, uint32_t s_lba){
 		part->start_lba = s_lba + p->start_lba;
 		part->sec_cnt = p->sec_cnt;
 		part->disk = hd;
+		part->dev_nr = IDE_MAJOR << MAJOR_SHIFT |
+			hd->dev_no << MINOR_SHIFT | (l_no + 5);
+
+		parts[part_idx++] = part;
 		sprintf(part->name, "%s%d", hd->name, l_no + 5);
 		partition_info(part);
 	}
@@ -270,7 +350,6 @@ static void get_ext_partition(struct disk *hd, uint32_t l_no, uint32_t s_lba){
 /**
  * 扫描分区表，设置分区描述符中的前四项
  */
-
 static void partition_scan(struct disk *hd, uint32_t ext_lba){
 
 	struct boot_sector bs;
@@ -292,6 +371,10 @@ static void partition_scan(struct disk *hd, uint32_t ext_lba){
 			part->start_lba = ext_lba + p->start_lba;
 			part->sec_cnt = p->sec_cnt;
 			part->disk = hd;
+			part->dev_nr = IDE_MAJOR << MAJOR_SHIFT |
+				hd->dev_no << MINOR_SHIFT | p_no;
+
+			parts[part_idx++] = part;
 			sprintf(part->name, "%s%d", hd->name, p_no);
 			partition_info(part);
 		}
@@ -302,6 +385,7 @@ static void partition_scan(struct disk *hd, uint32_t ext_lba){
 /**
  * 简单测试分区读写
  */
+#ifdef DEBUG
 void test(struct partition *part){
 	printk("test %s\n", part->name);
 	char buf[512];
@@ -311,6 +395,7 @@ void test(struct partition *part){
 	ide_write(part->disk, part->start_lba + 3, buf, 1);
 	printk("end test\n");
 }
+#endif
 
 /**
  * @brief硬盘初始化
@@ -318,8 +403,9 @@ void test(struct partition *part){
  * @attention 分区描述符只初始化了前四项，其余在这里均未初始化，在文件系统处被初始化
  */
 void ide_init(){
-
+#ifdef DEBUG
 	printk("ide_init start\n");
+#endif
 	uint8_t hd_cnt = *((uint8_t *)(0x475));
 	ASSERT(hd_cnt > 0);
 
@@ -361,6 +447,7 @@ void ide_init(){
 		}
 		++channel_no;
 	}
-//	test(&channels[0].devices[1].prim_parts[0]);
+#ifdef DEBUG
 	printk("ide_init done\n");
+#endif
 }

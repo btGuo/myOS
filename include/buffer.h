@@ -23,7 +23,7 @@ struct buffer_head{
  * @brief 磁盘缓冲区描述符
  */
 struct disk_buffer{
-	struct partition *part;          ///< 分区指针
+	struct fext_fs *fs;              ///< 文件系统指针
 	uint32_t b_max_size;             ///< 磁盘块最大缓冲数
 	uint32_t b_size;                 ///< 磁盘块当前缓冲数
 	uint32_t i_max_size;             ///< 索引节点最大缓冲数
@@ -41,6 +41,7 @@ struct disk_buffer{
 
 
 struct buffer_head *buffer_read_block(struct disk_buffer *d_buf, uint32_t blk_nr);
+bool buffer_check_inode(struct disk_buffer *d_buf);
 bool buffer_add_block(struct disk_buffer *d_buf, struct buffer_head *bh);
 void buffer_sync(struct disk_buffer *d_buf);
 #endif

@@ -1,12 +1,12 @@
-#include "memory.h"
-#include "stdint.h"
-#include "debug.h"
-#include "string.h"
-#include "thread.h"
-#include "interrupt.h"
-#include "buddy.h"
-#include "sync.h"
-#include "process.h"
+#include <memory.h>
+#include <stdint.h>
+#include <debug.h>
+#include <string.h>
+#include <thread.h>
+#include <interrupt.h>
+#include <buddy.h>
+#include <sync.h>
+#include <process.h>
 
 /**
  * 内核物理内存固定映射，由伙伴系统统一管理，用户物理内存动态映射，自由链表管理

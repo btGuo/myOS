@@ -1,7 +1,7 @@
-#include "stdarg.h"
-#include "tty.h"
-#include "stdint.h"
-#include "stdio.h"
+#include <stdarg.h>
+#include <tty.h>
+#include <stdint.h>
+#include <stdio.h>
 
 //debug
 int32_t printk(const char *fmt, ...){

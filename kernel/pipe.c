@@ -1,16 +1,16 @@
-#include "fs.h"
-#include "file.h"
-#include "stdint.h"
-#include "global.h"
-#include "thread.h"
-#include "ioqueue.h"
-#include "inode.h"
+#include <fs.h>
+#include <file.h>
+#include <stdint.h>
+#include <global.h>
+#include <thread.h>
+#include <ioqueue.h>
+#include <inode.h>
 
 /**
  * 判断文件类型是否是管道
  */
 bool is_pipe(uint32_t l_fd){
-	return file_table[to_global_fd(l_fd)].fd_flag == FT_PIPE;
+	return file_table[to_global_fd(l_fd)].fd_flag == S_IFIFO;
 }
 
 /**
@@ -28,7 +28,7 @@ int32_t sys_pipe(int32_t pipefd[2]){
 	ioqueue_init(que);
 	//这里复用了fd_inode强制类型转换
 	file_table[gfd].fd_inode = (struct inode_info *)que;
-	file_table[gfd].fd_flag = FT_PIPE;
+	file_table[gfd].fd_flag = S_IFIFO;
 	//复用fd_pos为管道打开数
 	file_table[gfd].fd_pos = 2;
 
@@ -50,7 +50,7 @@ uint32_t pipe_read(int32_t fd, void *_buf, uint32_t cnt){
 	char *buf = _buf;
 
 	int32_t gfd = to_global_fd(fd);
-	ASSERT(file_table[gfd].fd_flag == FT_PIPE);
+	ASSERT(file_table[gfd].fd_flag == S_IFIFO);
 	struct ioqueue *que = (struct ioqueue *)file_table[gfd].fd_inode;
 
 	uint32_t qlen = queue_len(que);
@@ -74,7 +74,7 @@ uint32_t pipe_write(int32_t fd, const void *_buf, uint32_t cnt){
 
 	char *buf = _buf;
 	int32_t gfd = to_global_fd(fd);
-	ASSERT(file_table[gfd].fd_flag == FT_PIPE);
+	ASSERT(file_table[gfd].fd_flag == S_IFIFO);
 	struct ioqueue *que = (struct ioqueue *)file_table[gfd].fd_inode;
 
 	uint32_t qres = que->size - queue_len(que);

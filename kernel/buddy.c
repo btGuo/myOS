@@ -1,5 +1,5 @@
-#include "buddy.h"
-#include "memory.h"
+#include <buddy.h>
+#include <memory.h>
 
 void buddy_add(struct buddy_sys *buddy, uint32_t s_addr, uint32_t pg_cnt){
 

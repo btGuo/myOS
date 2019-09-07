@@ -85,7 +85,7 @@ char *strrchr(const char *str, const uint8_t ch){
 	return (char*)last_ch;
 }
 
-char *strcat(char *dest, char *src){
+char *strcat(char *dest, const char *src){
 	ASSERT(dest != NULL && src != NULL);
 	char *tmp = dest;
 	while(*tmp)

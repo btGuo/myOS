@@ -3,6 +3,7 @@
 #include "stdint.h"
 #include "string.h"
 #include "sync.h"
+#include "io.h"
 
 static const uint32_t VGA_WIDTH = 80;  
 static const uint32_t VGA_HEIGHT = 25;
@@ -16,6 +17,46 @@ static uint16_t* terminal_buffer;
 
 static const uint32_t tab4 = 4;
 static const uint32_t tab8 = 8;
+
+/** 光标寄存器读写端口 */
+#define CUR_PORT(x) ((x) + 0x3d4)
+/** 光标值高位指令 */
+#define CUR_POS_HIGH 0x0e
+/** 光标值低位指令 */
+#define CUR_POS_LOW  0x0f
+
+/**
+ * 获取当前光标位置
+ */
+uint16_t get_cursor_pos(void){
+
+	uint16_t pos = 0;
+	outb(CUR_PORT(0), CUR_POS_LOW);
+	pos |= inb(CUR_PORT(1));
+	outb(CUR_PORT(0), CUR_POS_HIGH);
+	pos |= ((uint16_t)inb(CUR_PORT(1))) << 8;
+	return pos;
+}
+
+/**
+ * 设置光标位置
+ */
+void update_cursor(uint32_t x, uint32_t y){
+
+	uint16_t pos = y * VGA_WIDTH + x;
+	outb(CUR_PORT(0), CUR_POS_LOW);
+	outb(CUR_PORT(1), (uint8_t)(pos & 0xff));
+	outb(CUR_PORT(0), CUR_POS_HIGH);
+	outb(CUR_PORT(1), (uint8_t)((pos >> 8) & 0xff));
+}
+
+
+
+
+
+
+
+
 
 /**
  * 终端初始化

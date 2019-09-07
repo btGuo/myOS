@@ -1,12 +1,12 @@
-#include "buffer.h"
-#include "memory.h"
-#include "ide.h"
-#include "inode.h"
-#include "string.h"
-#include "fs.h"
-#include "block.h"
-#include "hash_table.h"
-#include "dir.h"
+#include <buffer.h>
+#include <memory.h>
+#include <ide.h>
+#include <inode.h>
+#include <string.h>
+#include <fs.h>
+#include <block.h>
+#include <hash_table.h>
+#include <dir.h>
 
 #define BUFFER_HEAD_SIZE 1024
 
@@ -23,15 +23,6 @@ bool compare_block(struct list_head *elem, void *key){
 	struct buffer_head *bh = list_entry(struct buffer_head, hash_tag, elem);
 	uint32_t *_key = (uint32_t *)key;
 	return bh->blk_nr == *_key;
-}
-
-bool compare_dir_e(struct list_head *elem, void *key){
-	struct dir_e_info *m_dire = list_entry(struct dir_e_info, hash_tag, elem);
-	char *str = (char *)key;
-	if(!strcmp(m_dire->filename, str)){
-		return true;
-	}
-	return false;
 }
 
 /**
@@ -85,7 +76,7 @@ static void buffer_sync_disk(struct disk_buffer *d_buf){
 		if(bh->dirty){
 			//printk("write %d\n", bh->blk_nr);
 			//直接写入磁盘
-			write_direct(d_buf->part, bh->blk_nr, bh->data, 1);
+			write_direct(d_buf->fs->part, bh->blk_nr, bh->data, 1);
 			//复位脏
 			bh->dirty = false;
 		}
@@ -109,10 +100,10 @@ static void buffer_sync_inodes(struct disk_buffer *d_buf){
 		if(m_inode->i_dirty){
 			//定位inode
 			//printk("write inode %d %d\n", m_inode->i_no, m_inode->i_size);
-			inode_locate(d_buf->part, m_inode->i_no, &pos);
-			bh = read_block(d_buf->part, pos.blk_nr);
+			inode_locate(d_buf->fs, m_inode->i_no, &pos);
+			bh = read_block(d_buf->fs, pos.blk_nr);
 			memcpy((bh->data + pos.off_size), m_inode, sizeof(struct inode));
-			write_block(d_buf->part, bh);
+			write_block(d_buf->fs, bh);
 			release_block(bh);
 			//复位脏
 			m_inode->i_dirty = false;
@@ -124,9 +115,9 @@ static void buffer_sync_inodes(struct disk_buffer *d_buf){
 /**
  * @brief 初始化磁盘缓冲区
  */
-void disk_buffer_init(struct disk_buffer *d_buf, struct partition *part){
+void disk_buffer_init(struct disk_buffer *d_buf, struct fext_fs *fs){
 
-	d_buf->part = part;
+	d_buf->fs = fs;
 
 	d_buf->b_max_size = BUFFER_HEAD_SIZE;
 	d_buf->i_max_size = BUFFER_HEAD_SIZE;
@@ -174,6 +165,29 @@ struct inode_info *buffer_read_inode(struct disk_buffer *d_buf, uint32_t i_no){
 	}
 	return NULL;
 }
+
+/**
+ * 检查是否有inode还在使用中
+ */
+bool buffer_check_inode(struct disk_buffer *d_buf){
+
+	struct list_head *head = &d_buf->i_queue;
+	struct list_head *cur = head->next;
+	struct inode_info *m_inode = NULL; 
+
+	//遍历缓存队列
+	while(cur != head){
+		m_inode = list_entry(struct inode_info, queue_tag, cur);
+		//节点是脏的
+		if(m_inode->i_lock){
+			return true;
+		}
+		cur = cur->next;
+	}
+	return false;
+}
+	
+
 /**
  * @brief 将块加入缓冲
  *

@@ -1,9 +1,10 @@
-#include "string.h"
-#include "memory.h"
-#include "interrupt.h"
-#include "thread.h"
-#include "process.h"
-#include "global.h"
+#include <string.h>
+#include <memory.h>
+#include <interrupt.h>
+#include <thread.h>
+#include <process.h>
+#include <global.h>
+#include <fs.h>
 
 struct task_struct *main_thread;
 struct task_struct *curr;
@@ -105,6 +106,9 @@ void init_thread(struct task_struct *pthread, char *name, int prio){
 	pthread->priority = prio;
 	pthread->self_kstack = (uint32_t*)((uint32_t)pthread + PG_SIZE);
 	pthread->pid = allocate_pid();
+
+	pthread->root_i = root_fs->root_i;
+	pthread->cwd_i = root_fs->root_i;
 
 	pthread->fd_table[0] = 0;
 	pthread->fd_table[1] = 1;

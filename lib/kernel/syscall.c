@@ -1,6 +1,7 @@
 #include "stdint.h"
 #include "sys_macro.h"
-#include "dir.h"
+#include "dirent.h"
+#include <sys/stat.h>
 
 #define _syscall0(type, name)\
 type name(void)\
@@ -58,15 +59,18 @@ _syscall3(int32_t, write, int32_t, fd, char*, str, uint32_t, count)
 _syscall3(int32_t, lseek, int32_t, fd, int32_t, offset, uint8_t, whence)
 _syscall1(int32_t, unlink, const char *, path)
 _syscall1(int32_t, rmdir, char *, path)
-_syscall2(int32_t, readdir, struct dir *, dir, struct dir_entry *, dir_e)
-_syscall1(int32_t, rewinddir, struct dir *, dir)
+_syscall1(struct dirent *, readdir, struct Dir *, dir)
+_syscall1(void , rewinddir, struct Dir *, dir)
 _syscall1(int32_t, mkdir, char *, path)
-_syscall1(int32_t, closedir, struct dir *, dir)
-_syscall1(struct dir *, opendir, char *, path)
+_syscall1(int32_t, closedir, struct Dir *, dir)
+_syscall1(struct   Dir *, opendir, char *, path)
 _syscall2(int32_t, stat, const char *, path, struct stat *, st)
 _syscall2(int32_t, execv, const char *, path, const char **, argv)
 _syscall0(void, clear)
 _syscall1(void, putchar, char, ch)
+_syscall1(void, exit, int32_t, status)
+_syscall1(int32_t, wait, int32_t, status)
+_syscall2(char *, getcwd, char *, buf, uint32_t, size)
 
 
 

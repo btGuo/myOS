@@ -1,14 +1,15 @@
-#include "fork.h"
-#include "global.h"
-#include "thread.h"
-#include "list.h"
-#include "interrupt.h"
-#include "file.h"
-#include "memory.h"
-#include "file.h"
-#include "process.h"
-#include "string.h"
-#include "pipe.h"
+#include <fork.h>
+#include <global.h>
+#include <thread.h>
+#include <list.h>
+#include <interrupt.h>
+#include <file.h>
+#include <memory.h>
+#include <file.h>
+#include <process.h>
+#include <string.h>
+#include <pipe.h>
+#include <inode.h>
 
 extern void intr_exit(void);
 //TODO 目前fork时vm_struct 是共享的，更新时会一起更新。
