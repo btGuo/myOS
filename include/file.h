@@ -9,7 +9,7 @@
 struct file{
 	uint32_t fd_pos;    ///< 文件偏移
 	uint32_t fd_flag;   ///< 文件属性
-	struct inode_info *fd_inode;   ///< 对应的i节点
+	struct fext_inode_m *fd_inode;   ///< 对应的i节点
 };
 
 /**

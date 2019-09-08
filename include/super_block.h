@@ -21,7 +21,7 @@
 /**
  * 超级块描述符
  */
-struct super_block{
+struct fext_super_block{
 
 	uint32_t magic; ///< 魔数签名
 

@@ -10,7 +10,7 @@
 #include "super_block.h"
 
 #ifdef DEBUG
-void print_root(struct inode_info *m_inode){
+void print_root(struct fext_inode_m *m_inode){
 	printk("root inode info\n");
 	printk("%d\t%d\t%d\n", 
 		m_inode->i_block[0], 
@@ -41,7 +41,7 @@ struct Dir* dir_open(struct fext_fs *fs, uint32_t i_no){
 /**
  * 新建目录
  */
-struct Dir* dir_new(struct inode_info *inode){
+struct Dir* dir_new(struct fext_inode_m *inode){
 	struct Dir *dir = (struct Dir *)kmalloc(sizeof(struct Dir));
 	dir->inode = inode;
 	dir->buffer = NULL;
@@ -65,13 +65,13 @@ void dir_close(struct Dir *dir){
 	kfree(dir);
 }
 
-bool delete_dir_entry(struct inode_info *inode, uint32_t i_no);
+bool delete_dir_entry(struct fext_inode_m *inode, uint32_t i_no);
 
 /**
  * 删除磁盘上目录
  * @param par_i 父目录
  */
-int32_t dir_remove(struct inode_info *par_i, uint32_t i_no){
+int32_t dir_remove(struct fext_inode_m *par_i, uint32_t i_no){
 	if(!delete_dir_entry(par_i, i_no))
 		return -1;
 	inode_delete(par_i->fs, i_no);
@@ -99,7 +99,7 @@ void init_dir_entry(char *filename, uint32_t i_no, uint32_t f_type,\
  * @return 搜索结果
  * 	@retval false 失败
  */
-bool _search_dir_entry(struct inode_info *m_inode, const char *name, 
+bool _search_dir_entry(struct fext_inode_m *m_inode, const char *name, 
 		struct fext_dirent *dir_e){
 
 	uint32_t per_block = BLOCK_SIZE / sizeof(struct fext_dirent);
@@ -141,7 +141,7 @@ bool _search_dir_entry(struct inode_info *m_inode, const char *name,
  * @return 是否成功
  * @note 这个函数和_search_dir_entry基本是一样的，但是从接口写成一个却有点麻烦
  */
-bool search_dir_by_ino(struct inode_info *m_inode, uint32_t i_no, 
+bool search_dir_by_ino(struct fext_inode_m *m_inode, uint32_t i_no, 
 		struct fext_dirent *dir_e){
 
 	uint32_t per_block = BLOCK_SIZE / sizeof(struct fext_dirent);
@@ -174,7 +174,7 @@ bool search_dir_by_ino(struct inode_info *m_inode, uint32_t i_no,
  * @param path 目录路径，形式为 /a/b/c/ 最后一个字符是/
  * @note 对于/a/b/c/ 返回c
  */
-struct inode_info *get_last_dir(const char *path){
+struct fext_inode_m *get_last_dir(const char *path){
 	
 	//根目录直接返回
 	if(!strcmp(path, "/") || !strcmp(path, "/.") || !strcmp(path, "/..")){
@@ -182,7 +182,7 @@ struct inode_info *get_last_dir(const char *path){
 	}
 
 	char name[MAX_FILE_NAME_LEN];
-	struct inode_info *par_i = root_fs->root_i;
+	struct fext_inode_m *par_i = root_fs->root_i;
 	struct fext_dirent dir_e;
 	struct fext_fs *fs = root_fs;
 	
@@ -216,13 +216,13 @@ struct inode_info *get_last_dir(const char *path){
  * @return 父目录指针
  * 	@retval NULL 查找为空 
  */
-struct inode_info *search_dir_entry(const char *path, struct fext_dirent *dir_e){
+struct fext_inode_m *search_dir_entry(const char *path, struct fext_dirent *dir_e){
 
 	char filename[MAX_FILE_NAME_LEN];
 	char dirname[MAX_PATH_LEN];
 
 	split_path(path, filename, dirname);
-	struct inode_info *par_i = get_last_dir(dirname);
+	struct fext_inode_m *par_i = get_last_dir(dirname);
 
 	//父目录不存在
 	if(!par_i){
@@ -247,7 +247,7 @@ struct inode_info *search_dir_entry(const char *path, struct fext_dirent *dir_e)
  *
  * @reture 是否成功
  */
-bool add_dir_entry(struct inode_info *inode, struct fext_dirent *dir_e){
+bool add_dir_entry(struct fext_inode_m *inode, struct fext_dirent *dir_e){
 
 	struct buffer_head *bh = NULL;
 	//最后一块可用块，可能已经满了
@@ -286,7 +286,7 @@ bool add_dir_entry(struct inode_info *inode, struct fext_dirent *dir_e){
  * @note 目录项是定长设计，每次删除时会把最后一个补到当前空位上
  * @return 删除是否成功
  */
-bool delete_dir_entry(struct inode_info *inode, uint32_t i_no){
+bool delete_dir_entry(struct fext_inode_m *inode, uint32_t i_no){
 
 	uint32_t per_block = BLOCK_SIZE / sizeof(struct fext_dirent);
 	uint32_t idx = 0;
@@ -366,7 +366,7 @@ bool delete_dir_entry(struct inode_info *inode, uint32_t i_no){
 int32_t sys_rmdir(char *path){
 
 	struct fext_dirent dir_e;
-	struct inode_info *par_i = search_dir_entry(path, &dir_e);
+	struct fext_inode_m *par_i = search_dir_entry(path, &dir_e);
 
 	//查找为空
 	if(!par_i){
@@ -382,7 +382,7 @@ int32_t sys_rmdir(char *path){
 	}
 
 	//目录不是空的
-	struct inode_info *inode = inode_open(par_i->fs, dir_e.i_no);
+	struct fext_inode_m *inode = inode_open(par_i->fs, dir_e.i_no);
 	if(!inode_is_empty(inode)){
 
 		printk("dir %s is not empty, it is not allowd to delete\n", path);
@@ -416,7 +416,7 @@ static void swap_dirent(void *_dest, void *_src, uint32_t len){
  */
 struct dirent *sys_readdir(struct Dir *dir){
 	ASSERT(dir != NULL);
-	struct inode_info *inode = dir->inode;
+	struct fext_inode_m *inode = dir->inode;
 	//第一次读
 	if(dir->buffer == NULL){
 
@@ -479,7 +479,7 @@ int32_t sys_mkdir(char *path){
 	char dirname[MAX_PATH_LEN];
 
 	split_path(path, filename, dirname);
-	struct inode_info *par_i = get_last_dir(dirname);
+	struct fext_inode_m *par_i = get_last_dir(dirname);
 
 	//父目录不存在
 	if(!par_i){
@@ -497,7 +497,7 @@ int32_t sys_mkdir(char *path){
 	}
 
 //申请inode
-	struct inode_info *m_inode = NULL;
+	struct fext_inode_m *m_inode = NULL;
 	if(!(m_inode = inode_alloc(root_fs))){
 
 		printk("sys_mkdir: kmalloc for inode failed\n");
@@ -522,7 +522,7 @@ int32_t sys_mkdir(char *path){
 	inode_release(m_inode);
 
 	//再打开当前目录
-	struct inode_info *cur_i = inode_open(par_i->fs, i_no);
+	struct fext_inode_m *cur_i = inode_open(par_i->fs, i_no);
 
 //TODO 考虑磁盘同步问题
 	//添加目录项
@@ -563,7 +563,7 @@ struct Dir *sys_opendir(char *path){
 
 	//先查找
 	struct fext_dirent dir_e;
-	struct inode_info *par_i = search_dir_entry(path, &dir_e);
+	struct fext_inode_m *par_i = search_dir_entry(path, &dir_e);
 
 	if(par_i){
 		inode_close(par_i);

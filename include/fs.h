@@ -76,14 +76,14 @@ enum whence{
  * 文件系统描述符，类fext
  */
 struct fext_fs{
-	struct super_block *sb;    ///< 分区超级块
-	struct group_info *groups;  ///< 块组指针
-	struct group_info *cur_gp;  ///< 当前使用块组
+	struct fext_super_block *sb;    ///< 分区超级块
+	struct fext_group_m *groups;  ///< 块组指针
+	struct fext_group_m *cur_gp;  ///< 当前使用块组
 	uint32_t groups_cnt;       ///< 块组数
 	uint32_t groups_blks;      ///< 块组struct group所占块数
 	struct disk_buffer io_buffer;     ///< 磁盘缓冲区，换成指针或许更好
 	struct partition *part;    ///< 挂载分区
-	struct inode_info *root_i;  ///< 根i节点
+	struct fext_inode_m *root_i;  ///< 根i节点
 	bool mounted;             ///< 是否已挂载
 	char mount_path[32]; ///< 挂载路径
 };

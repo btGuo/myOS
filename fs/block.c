@@ -7,6 +7,36 @@
 #include "memory.h"
 #include "ide.h"
 
+
+//下面这组宏名称有点混乱，个人还不知道要起什么名字
+
+//对应block_size 大小
+#define BLOCK_MASK_1 ((1 << ORDER) - 1)
+#define BLOCK_MASK_2 (BLOCK_MASK_1 << ORDER)
+#define BLOCK_MASK_3 (BLOCK_MASK_2 << ORDER)
+
+#define BLK_IDX_1(x) ((x) & BLOCK_MASK_1)
+#define BLK_IDX_2(x) (((x) & BLOCK_MASK_2) >> ORDER)
+#define BLK_IDX_3(x) (((x) & BLOCK_MASK_3) >> (ORDER << 1))
+
+static inline uint32_t BLK_IDX_I(uint32_t x, uint32_t i){
+	return (i == 1 ? BLK_IDX_1(x):
+		i == 2 ? BLK_IDX_2(x):
+		BLK_IDX_3(x)) * 4;
+}
+
+static inline uint32_t BLK_LEVEL(uint32_t idx){
+	return idx < BLOCK_LEVEL_1 ? 1 :
+		idx < BLOCK_LEVEL_2 ? 2 : 3;
+}
+
+static inline uint32_t BLK_IDX(uint32_t idx){
+	return idx - (idx < BLOCK_LEVEL_1 ? BLOCK_LEVEL_0 :
+			idx < BLOCK_LEVEL_2 ? BLOCK_LEVEL_1 :
+			BLOCK_LEVEL_2);
+}
+
+
 /**
  * 分配block块
  *
@@ -14,8 +44,8 @@
  * 	@retval -1 分配失败
  */
 int32_t block_bmp_alloc(struct fext_fs *fs){
-	struct group_info *cur_gp = fs->cur_gp;
-	struct super_block *sb = fs->sb;
+	struct fext_group_m *cur_gp = fs->cur_gp;
+	struct fext_super_block *sb = fs->sb;
 
 	if(sb->free_inodes_count <= 0)
 		return -1;
@@ -40,7 +70,7 @@ int32_t block_bmp_alloc(struct fext_fs *fs){
 
 void block_bmp_clear(struct fext_fs *fs, uint32_t blk_nr){
 	//TODO gp位图可能不在内存中
-	struct group_info *gp = fs->groups + blk_nr / BLOCKS_PER_GROUP;
+	struct fext_group_m *gp = fs->groups + blk_nr / BLOCKS_PER_GROUP;
 
 	//前面加上的，这里要减掉，被坑死了T_T
 	blk_nr -= LEADER_BLKS;
@@ -162,7 +192,7 @@ static void _clear_blocks(struct fext_fs *fs, uint32_t blk_nr, uint32_t depth){
  * @attention 均假定文件连续存储
  * @note 有待debug，只验证了一次间接
  */
-void clear_blocks(struct inode_info *m_inode){
+void clear_blocks(struct fext_inode_m *m_inode){
 	int i = 0;
 	uint32_t *blk_ptr;
 	for(i = 0; i < N_BLOCKS; ++i){
@@ -209,7 +239,7 @@ void init_block(struct fext_fs *fs, uint32_t blk_nr){
  * 	@retval 0 查找失败
  */
 
-uint32_t get_block_num(struct inode_info *inode, uint32_t idx, uint8_t mode){
+uint32_t get_block_num(struct fext_inode_m *inode, uint32_t idx, uint8_t mode){
 
 	if(idx >= BLOCK_LEVEL_3){
 		PANIC("no more space\n");
@@ -322,7 +352,7 @@ static bool _remove_last(struct fext_fs *fs, uint32_t blk_nr, uint32_t depth){
  *
  * @note 间接块有待debug
  */
-void remove_last(struct inode_info *m_inode){
+void remove_last(struct fext_inode_m *m_inode){
 
 	int i = 0;
 	uint32_t *blk_ptr;

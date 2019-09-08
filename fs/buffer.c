@@ -14,7 +14,7 @@
  * @brief 比较函数，通过函数指针回调，性能上可能有问题
  */
 bool compare_inode(struct list_head *elem, void *key){
-	struct inode_info *m_inode = list_entry(struct inode_info, hash_tag, elem);
+	struct fext_inode_m *m_inode = list_entry(struct fext_inode_m, hash_tag, elem);
 	uint32_t *_key = (uint32_t *)key;
 	return m_inode->i_no == *_key;
 }
@@ -31,11 +31,11 @@ bool compare_block(struct list_head *elem, void *key){
  * @return 将被删除的节点
  * 	@retval NULL 缓冲区已经满了
  */
-static struct inode_info *i_buffer_pop(struct list_head *head){
+static struct fext_inode_m *i_buffer_pop(struct list_head *head){
 	struct list_head *cur = head->next;
-	struct inode_info *m_inode = NULL;
+	struct fext_inode_m *m_inode = NULL;
 	while(cur != head){
-		m_inode = list_entry(struct inode_info, queue_tag, cur);
+		m_inode = list_entry(struct fext_inode_m, queue_tag, cur);
 		if(!m_inode->i_lock){
 			//从队列中删除
 			list_del(cur);
@@ -89,20 +89,20 @@ static void buffer_sync_disk(struct disk_buffer *d_buf){
 static void buffer_sync_inodes(struct disk_buffer *d_buf){
 	struct list_head *head = &d_buf->i_queue;
 	struct list_head *cur = head->next;
-	struct inode_info *m_inode = NULL; 
-	struct inode_pos pos;
+	struct fext_inode_m *m_inode = NULL; 
+	struct fext_inode_pos pos;
 	struct buffer_head *bh;
 
 	//遍历缓存队列
 	while(cur != head){
-		m_inode = list_entry(struct inode_info, queue_tag, cur);
+		m_inode = list_entry(struct fext_inode_m, queue_tag, cur);
 		//节点是脏的
 		if(m_inode->i_dirty){
 			//定位inode
 			//printk("write inode %d %d\n", m_inode->i_no, m_inode->i_size);
 			inode_locate(d_buf->fs, m_inode->i_no, &pos);
 			bh = read_block(d_buf->fs, pos.blk_nr);
-			memcpy((bh->data + pos.off_size), m_inode, sizeof(struct inode));
+			memcpy((bh->data + pos.off_size), m_inode, sizeof(struct fext_inode));
 			write_block(d_buf->fs, bh);
 			release_block(bh);
 			//复位脏
@@ -154,12 +154,12 @@ struct buffer_head *buffer_read_block(struct disk_buffer *d_buf, uint32_t blk_nr
 	return NULL;
 }	
 
-struct inode_info *buffer_read_inode(struct disk_buffer *d_buf, uint32_t i_no){
+struct fext_inode_m *buffer_read_inode(struct disk_buffer *d_buf, uint32_t i_no){
 	
 	struct list_head *lh = hash_table_find(&d_buf->i_map, &i_no);
-	struct inode_info *m_inode = NULL;
+	struct fext_inode_m *m_inode = NULL;
 	if(lh){
-		m_inode = list_entry(struct inode_info, hash_tag, lh);
+		m_inode = list_entry(struct fext_inode_m, hash_tag, lh);
 		m_inode->i_lock = true;
 		return m_inode;
 	}
@@ -173,11 +173,11 @@ bool buffer_check_inode(struct disk_buffer *d_buf){
 
 	struct list_head *head = &d_buf->i_queue;
 	struct list_head *cur = head->next;
-	struct inode_info *m_inode = NULL; 
+	struct fext_inode_m *m_inode = NULL; 
 
 	//遍历缓存队列
 	while(cur != head){
-		m_inode = list_entry(struct inode_info, queue_tag, cur);
+		m_inode = list_entry(struct fext_inode_m, queue_tag, cur);
 		//节点是脏的
 		if(m_inode->i_lock){
 			return true;
@@ -220,10 +220,10 @@ bool buffer_add_block(struct disk_buffer *d_buf, struct buffer_head *bh){
 	return true;
 }
 
-bool buffer_add_inode(struct disk_buffer *d_buf, struct inode_info *m_inode){
+bool buffer_add_inode(struct disk_buffer *d_buf, struct fext_inode_m *m_inode){
 	if(d_buf->i_size == d_buf->i_max_size){
 		buffer_sync_inodes(d_buf);
-		struct inode_info *old_inode = i_buffer_pop(&d_buf->i_queue);
+		struct fext_inode_m *old_inode = i_buffer_pop(&d_buf->i_queue);
 		if(!old_inode){
 			return false;
 		}

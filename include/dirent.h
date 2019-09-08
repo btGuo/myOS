@@ -11,7 +11,7 @@
  * 目录，用于内存
  */
 struct Dir{
-	struct inode_info *inode; ///< 对应的inode
+	struct fext_inode_m *inode; ///< 对应的inode
 	struct dirent *buffer; ///< 缓冲区
 	uint32_t current;    ///< 当前遍历到的位置
 	uint32_t count;      ///< 目录项总数

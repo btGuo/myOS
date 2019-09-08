@@ -27,7 +27,7 @@ int32_t sys_pipe(int32_t pipefd[2]){
 
 	ioqueue_init(que);
 	//这里复用了fd_inode强制类型转换
-	file_table[gfd].fd_inode = (struct inode_info *)que;
+	file_table[gfd].fd_inode = (struct fext_inode_m *)que;
 	file_table[gfd].fd_flag = S_IFIFO;
 	//复用fd_pos为管道打开数
 	file_table[gfd].fd_pos = 2;

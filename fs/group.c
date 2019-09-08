@@ -7,7 +7,7 @@
 /**
  * 初始化组描述符，如果位图不在内存中则加载到内存并初始化
  */
-void group_info_init(struct fext_fs *fs, struct group_info *gp){
+void group_info_init(struct fext_fs *fs, struct fext_group_m *gp){
 	if(!gp->block_bmp_bh){
 		gp->block_bmp_bh = read_block(fs, gp->block_bitmap);
 		gp->block_bmp.bits = gp->block_bmp_bh->data;
@@ -23,9 +23,9 @@ void group_info_init(struct fext_fs *fs, struct group_info *gp){
 /**
  * 切换组
  */
-struct group_info *group_switch(struct fext_fs *fs){
+struct fext_group_m *group_switch(struct fext_fs *fs){
 	
-	struct group_info *cur_gp = fs->cur_gp;
+	struct fext_group_m *cur_gp = fs->cur_gp;
 
 	//写入前一组位图
 	write_block(fs, cur_gp->block_bmp_bh);
@@ -47,7 +47,7 @@ struct group_info *group_switch(struct fext_fs *fs){
  */
 void group_bmp_sync(struct fext_fs *fs){
 
-	struct group_info *cur_gp = fs->cur_gp;
+	struct fext_group_m *cur_gp = fs->cur_gp;
 
 	//写入当前组
 	write_block(fs, cur_gp->block_bmp_bh);

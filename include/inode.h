@@ -12,7 +12,7 @@
 /**
  * 磁盘上索引节点结构，64字节
  */
-struct inode{
+struct fext_inode{
 	uint16_t i_type;     ///< 文件类型
 	uint16_t i_mode;     ///< 访问模式位
 	uint16_t i_uid;      ///< 用户id
@@ -28,7 +28,7 @@ struct inode{
 /**
  * 内存上索引节点结构
  */
-struct inode_info{
+struct fext_inode_m{
 	uint16_t i_type;     ///< 文件类型
 	uint16_t i_mode;     ///< 访问模式位
 	uint16_t i_uid;      ///< 用户id
@@ -58,7 +58,7 @@ struct inode_info{
 /**
  * inode 在块内的位置
  */
-struct inode_pos{
+struct fext_inode_pos{
 	uint32_t blk_nr;    ///< 块号
 	uint32_t off_size;  ///< 块内偏移
 };
@@ -67,17 +67,17 @@ struct inode_pos{
 
 int32_t inode_bmp_alloc(struct fext_fs *fs);
 void inode_bmp_clear(struct fext_fs *fs, uint32_t i_no);
-void inode_locate(struct fext_fs *fs, uint32_t i_no, struct inode_pos *pos);
-void inode_release(struct inode_info *m_inode);
-void inode_sync(struct inode_info *m_inode);
-struct inode_info *inode_open(struct fext_fs *fs, uint32_t i_no);
-struct inode_info *path2inode(const char *path);
-void inode_close(struct inode_info *m_inode);
-struct inode_info *inode_alloc(struct fext_fs *fs);
-void inode_init(struct fext_fs *fs, struct inode_info *m_inode, uint32_t i_no);
-bool inode_is_empty(struct inode_info *inode);
+void inode_locate(struct fext_fs *fs, uint32_t i_no, struct fext_inode_pos *pos);
+void inode_release(struct fext_inode_m *m_inode);
+void inode_sync(struct fext_inode_m *m_inode);
+struct fext_inode_m *inode_open(struct fext_fs *fs, uint32_t i_no);
+struct fext_inode_m *path2inode(const char *path);
+void inode_close(struct fext_inode_m *m_inode);
+struct fext_inode_m *inode_alloc(struct fext_fs *fs);
+void inode_init(struct fext_fs *fs, struct fext_inode_m *m_inode, uint32_t i_no);
+bool inode_is_empty(struct fext_inode_m *inode);
 void inode_delete(struct fext_fs *fs, uint32_t i_no);
 
-bool buffer_add_inode(struct disk_buffer *d_buf, struct inode_info *m_inode);
-struct inode_info *buffer_read_inode(struct disk_buffer *d_buf, uint32_t i_no);
+bool buffer_add_inode(struct disk_buffer *d_buf, struct fext_inode_m *m_inode);
+struct fext_inode_m *buffer_read_inode(struct disk_buffer *d_buf, uint32_t i_no);
 #endif

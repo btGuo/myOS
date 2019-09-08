@@ -53,10 +53,10 @@ int32_t set_fd(int32_t fd){
  *
  * @return 文件的inode号
  */
-int32_t file_create(struct inode_info *par_i, char *filename, uint8_t flag){
+int32_t file_create(struct fext_inode_m *par_i, char *filename, uint8_t flag){
 
 	//先分配inode
-	struct inode_info *m_inode = NULL;
+	struct fext_inode_m *m_inode = NULL;
 	if(!(m_inode = inode_alloc(par_i->fs))){
 		//内存分配失败，回滚
 		printk("file_create: kmalloc for inode failed\n");
@@ -133,7 +133,7 @@ void file_close(struct file *file){
 int32_t file_write(struct file *file, const void *buf, uint32_t count){
 
 	struct buffer_head *bh = NULL;
-	struct inode_info *m_inode = file->fd_inode;
+	struct fext_inode_m *m_inode = file->fd_inode;
 	struct fext_fs *fs = m_inode->fs;
 
 	ASSERT(file->fd_pos <= m_inode->i_size);
@@ -195,7 +195,7 @@ int32_t file_write(struct file *file, const void *buf, uint32_t count){
 int32_t file_read(struct file *file, void *buf, uint32_t count){
 
 	struct buffer_head *bh = NULL;
-	struct inode_info *m_inode = file->fd_inode;
+	struct fext_inode_m *m_inode = file->fd_inode;
 
 	ASSERT(file->fd_pos + count <= m_inode->i_size);
 
@@ -259,7 +259,7 @@ int32_t sys_open(const char *path, uint8_t flags){
 	char dirname[MAX_PATH_LEN];
 
 	split_path(path, filename, dirname);
-	struct inode_info *par_i = get_last_dir(dirname);
+	struct fext_inode_m *par_i = get_last_dir(dirname);
 
 	//父目录不存在
 	if(!par_i){
@@ -433,7 +433,7 @@ int32_t sys_unlink(const char *path){
 
 	//先查找
 	struct fext_dirent dir_e;
-	struct inode_info *par_i = search_dir_entry(path, &dir_e);
+	struct fext_inode_m *par_i = search_dir_entry(path, &dir_e);
 
 	//查找失败
 	if(!par_i){

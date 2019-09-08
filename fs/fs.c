@@ -26,7 +26,7 @@ static struct fext_fs *fs_table[MAX_FS] = {NULL};   ///< 挂载文件系统表
 //==========================================================================
 #ifdef DEBUG
 
-void print_super_block(struct super_block *sb){
+void print_super_block(struct fext_super_block *sb){
 	printk("start print super_block\n");
 	printk("block_size %d\t"
 	        "blocks_per_group %d\t"  
@@ -49,8 +49,8 @@ void print_super_block(struct super_block *sb){
 	printk("end printk super_block\n");
 }
 
-///注意这里打印的是group不是group_info
-void print_group(struct group *gp, int cnt){
+///注意这里打印的是group不是fext_group_m
+void print_group(struct fext_group *gp, int cnt){
 	int i = 0;
 	printk("start print group\n");
 	printk("b_bmp\ti_bmp\ti_tab\tf_blk\tf_ino\n");
@@ -68,7 +68,7 @@ void print_group(struct group *gp, int cnt){
 	printk("end printk group\n");
 }
 
-void print_group_info(struct group_info *gp, int cnt){
+void print_fext_group_m(struct fext_group_m *gp, int cnt){
 	int i = 0;
 	printk("start print group\n");
 	printk("b_bmp\ti_bmp\ti_tab\tf_blk\tf_ino\ti_bit\tb_bit\tgp_nr\n");
@@ -96,9 +96,9 @@ void print_group_info(struct group_info *gp, int cnt){
  * 打印元信息
  */
 void print_meta_info(){
-	printk("inode size : %d\n", sizeof(struct inode));
-	printk("super_block size : %d\n", sizeof(struct super_block));
-	printk("group size : %d\n", sizeof(struct group));
+	printk("inode size : %d\n", sizeof(struct fext_inode));
+	printk("super_block size : %d\n", sizeof(struct fext_super_block));
+	printk("group size : %d\n", sizeof(struct fext_group));
 	printk("sizeof block : %d\n", BLOCK_SIZE);
 }
 
@@ -161,14 +161,14 @@ void sync_fext(struct fext_fs *fs){
 
 	uint8_t *buf = kmalloc(fs->groups_blks * BLOCK_SIZE);
 	MEMORY_OK(buf);
-	struct group *gp = (struct group *)buf;
-	struct group_info *gp_info = fs->groups;
-	struct super_block *sb = fs->sb;
+	struct fext_group *gp = (struct fext_group *)buf;
+	struct fext_group_m *gp_info = fs->groups;
+	struct fext_super_block *sb = fs->sb;
 
 	uint32_t cnt = fs->groups_cnt;
 //复制块组
 	while(cnt--){
-		memcpy(gp, gp_info, sizeof(struct group));
+		memcpy(gp, gp_info, sizeof(struct fext_group));
 		++gp; ++gp_info;
 	}
 
@@ -206,31 +206,31 @@ static struct fext_fs *create_fextfs(struct partition *part){
 
 	fs->part = part;
 //先处理超级块
-	fs->sb = kmalloc(sizeof(struct super_block));
+	fs->sb = kmalloc(sizeof(struct fext_super_block));
 	MEMORY_OK(fs->sb);
 	//直接读取超级块
 	read_direct(part, 1, fs->sb, SUPER_BLKS);
 
 	fs->groups_cnt = fs->sb->blocks_count / fs->sb->blocks_per_group;
-	fs->groups_blks = DIV_ROUND_UP(fs->groups_cnt * sizeof(struct group), \
+	fs->groups_blks = DIV_ROUND_UP(fs->groups_cnt * sizeof(struct fext_group), \
 			BLOCK_SIZE);
 
 //处理块组，由于块组磁盘上和内存上存储形式不同，处理方法和超级块不同
-	fs->cur_gp = fs->groups = kmalloc(fs->groups_cnt * sizeof(struct group_info));
+	fs->cur_gp = fs->groups = kmalloc(fs->groups_cnt * sizeof(struct fext_group_m));
 	MEMORY_OK(fs->groups);
-	memset(fs->groups, 0, fs->groups_cnt * sizeof(struct group_info));
+	memset(fs->groups, 0, fs->groups_cnt * sizeof(struct fext_group_m));
 
 	//读取磁盘上块组
 	uint8_t *buf = kmalloc(fs->groups_blks * BLOCK_SIZE);
-	struct group *gp = (struct group *)buf;
-	struct group_info *gp_info = fs->groups;
+	struct fext_group *gp = (struct fext_group *)buf;
+	struct fext_group_m *gp_info = fs->groups;
 	read_direct(part, fs->sb->groups_table, gp, fs->groups_blks);
 
 	//复制内存
 	int cnt = 0;
 	while(cnt < fs->groups_cnt){
 
-		memcpy(gp_info, gp, sizeof(struct group));
+		memcpy(gp_info, gp, sizeof(struct fext_group));
 		gp_info->group_nr = cnt;
 		++gp_info; ++gp; ++cnt;
 	}
@@ -253,7 +253,7 @@ static struct fext_fs *create_fextfs(struct partition *part){
  */
 int32_t sys_unmount(const char *device){
 
-	struct inode_info *m_inode = path2inode(device);
+	struct fext_inode_m *m_inode = path2inode(device);
 	if(m_inode == NULL){
 		printk("sys_mount: error device name %s\n", device);
 		return -1;
@@ -272,7 +272,7 @@ int32_t sys_unmount(const char *device){
 	if(!fs->mounted){
 		return -1;
 	}
-	struct inode_info *mounted_i = path2inode(fs->mount_path);
+	struct fext_inode_m *mounted_i = path2inode(fs->mount_path);
 	if(mounted_i == NULL){
 		return -1;
 	}
@@ -299,7 +299,7 @@ int32_t sys_unmount(const char *device){
 int32_t sys_mount(const char *device, const char *dir_path){
 
 	//只读方式打开设备文件
-	struct inode_info *m_inode = path2inode(device);
+	struct fext_inode_m *m_inode = path2inode(device);
 	if(m_inode == NULL){
 		printk("sys_mount: error device name %s\n", device);
 		return -1;
@@ -315,7 +315,7 @@ int32_t sys_mount(const char *device, const char *dir_path){
 		printk("sys_mount: no such device\n");
 		return -1;
 	}
-	struct inode_info *inode = path2inode(dir_path);
+	struct fext_inode_m *inode = path2inode(dir_path);
 	if(inode == NULL){
 		printk("sys_mount: open dir %s failed\n", dir_path);
 		return -1;
@@ -360,7 +360,7 @@ void filesys_init(){
 		PANIC("build root_fs failed\n");
 	}
 	
-	struct inode_info *inode = inode_open(root_fs, ROOT_INODE);
+	struct fext_inode_m *inode = inode_open(root_fs, ROOT_INODE);
 	inode->i_mounted = true;
 
 	root_fs->root_i = inode;
@@ -388,13 +388,13 @@ void filesys_init(){
 int32_t sys_stat(const char *path, struct stat *st){
 
 	struct fext_dirent dir_e;
-	struct inode_info *par_i = search_dir_entry(path, &dir_e);
+	struct fext_inode_m *par_i = search_dir_entry(path, &dir_e);
 	if(!par_i){
 		printk("sys_stat %s not found\n", path);
 		return -1;
 	}
 
-	struct inode_info *m_inode = inode_open(par_i->fs, dir_e.i_no);
+	struct fext_inode_m *m_inode = inode_open(par_i->fs, dir_e.i_no);
 	if(!m_inode){
 		printk("sys_stat open inode failed\n");
 		return -1;
@@ -421,7 +421,7 @@ char *sys_getcwd(char *buf, uint32_t size){
 	ASSERT(buf != NULL);
 	
 	ASSERT(curr->cwd_i);
-	struct inode_info *inode = curr->cwd_i;
+	struct fext_inode_m *inode = curr->cwd_i;
 	uint32_t i_no = inode->i_no;
 	struct fext_fs *fs = inode->fs;
 
@@ -441,7 +441,7 @@ char *sys_getcwd(char *buf, uint32_t size){
 		buf += strlen(buf) - 1;
 	}
 
-	struct inode_info *dir_i = NULL;
+	struct fext_inode_m *dir_i = NULL;
 	uint32_t par_ino = 0;
 	struct fext_dirent dir_e;
 	uint32_t cnt = 4;
@@ -499,7 +499,7 @@ char *sys_getcwd(char *buf, uint32_t size){
  */
 int32_t sys_chdir(const char *path){
 
-	struct inode_info *inode = path2inode(path);
+	struct fext_inode_m *inode = path2inode(path);
 	if(inode == NULL){
 		return -1;
 	}
