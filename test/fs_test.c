@@ -214,4 +214,6 @@ void test_fs(){
 	//test_writelong();
 	//wl_verify();
 	test_dir();
+	for(int i = 0; i < 10; i++);
+	_Bool b = 1;
 }
