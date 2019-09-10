@@ -86,6 +86,13 @@ struct fext_fs{
 	struct fext_inode_m *root_i;  ///< 根i节点
 	bool mounted;             ///< 是否已挂载
 	char mount_path[32]; ///< 挂载路径
+	uint32_t order;      ///< 处理块号时用到
+	uint32_t direct_blknr;     ///< 直接块数量
+	uint32_t s_indirect_blknr;      ///< 一次间接块数量
+	uint32_t d_indirect_blknr;      ///< 二次间接块数量
+	uint32_t t_indirect_blknr;      ///< 三次间接块数量
+	uint32_t max_blocks;            ///< 最大块数
+	uint32_t lba_per_blk;           ///< 每块可以存放多少块号
 };
 
 extern struct fext_fs *root_fs;  ///< 根文件系统

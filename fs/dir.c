@@ -255,13 +255,13 @@ bool add_dir_entry(struct fext_inode_m *inode, struct fext_dirent *dir_e){
 	int32_t blk_idx = inode->i_blocks - 1;    
 	uint32_t off_byte = inode->i_size % BLOCK_SIZE;
 
-	if(blk_idx >= BLOCK_LEVEL_3)
+	if(blk_idx >= inode->fs->max_blocks)
 		return false;
 	//块内没有剩余，这里假定目录项不跨块
 	if(!off_byte){
 		++blk_idx;
 		inode->i_blocks += 1;
-		if(blk_idx >= BLOCK_LEVEL_3)
+		if(blk_idx >= inode->fs->max_blocks)
 			return false;
 	}
 	
@@ -276,6 +276,7 @@ bool add_dir_entry(struct fext_inode_m *inode, struct fext_dirent *dir_e){
 	release_block(bh);
 	return true;
 }
+
 
 /**
  * 删除目录项
@@ -353,8 +354,6 @@ bool delete_dir_entry(struct fext_inode_m *inode, uint32_t i_no){
 		remove_last(inode);
 	return true;
 }
-
-
 
 //===============================================================
 //下面为相关系统调用执行函数
@@ -456,6 +455,7 @@ void sys_rewinddir(struct Dir *dir){
 	dir->current = 0;
 }
 			
+
 //这个有点随意
 #define FIXUP_PATH(path)\
 do{\
@@ -579,3 +579,4 @@ struct Dir *sys_opendir(char *path){
 	printk("%s isn't exist\n", path);
 	return NULL;
 }	
+

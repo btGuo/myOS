@@ -1,6 +1,5 @@
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 #include "md5.h"
@@ -184,6 +183,7 @@ void md5_update(struct md5_ctx *md5, const char *data, uint32_t size)
 	uint32_t pad_size = (sz + 8 + 63) & (~63);
 
 	uint8_t *buf = malloc(pad_size);
+	uint8_t *head = buf;
 	memset(buf, 0, pad_size);
 	memcpy(buf, data, sz);
 	buf[sz] = 0x80;
@@ -196,7 +196,7 @@ void md5_update(struct md5_ctx *md5, const char *data, uint32_t size)
 		pad_size -= 64;
 		buf += 64;
 	}
-	free(buf);
+	free(head);
 }
 
 void md5_print(struct md5_ctx *md5)

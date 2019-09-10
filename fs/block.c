@@ -1,14 +1,20 @@
 #include "block.h"
+#include "memory.h"
 #include "fs.h"
 #include "group.h"
 #include "bitmap.h"
 #include "super_block.h"
-#include "string.h"
-#include "memory.h"
 #include "ide.h"
+#include "string.h"
 
+/*
+#define ORDER 8    ///< 对应LBA_PER_BLK 位数为8
+#define LBA_PER_BLK  (BLOCK_SIZE / 4) ///< 一块可以存放多少lba地址，每个lba地址32位，4字节
 
-//下面这组宏名称有点混乱，个人还不知道要起什么名字
+#define BLOCK_LEVEL_0 5         ///< 直接块5
+#define BLOCK_LEVEL_1 (BLOCK_LEVEL_0 + LBA_PER_BLK)  ///< 一次间接
+#define BLOCK_LEVEL_2 (BLOCK_LEVEL_1 + LBA_PER_BLK * LBA_PER_BLK)   ///< 二次间接
+#define BLOCK_LEVEL_3 (BLOCK_LEVEL_2 + LBA_PER_BLK * LBA_PER_BLK * LBA_PER_BLK)  ///< 三次间接
 
 //对应block_size 大小
 #define BLOCK_MASK_1 ((1 << ORDER) - 1)
@@ -19,23 +25,86 @@
 #define BLK_IDX_2(x) (((x) & BLOCK_MASK_2) >> ORDER)
 #define BLK_IDX_3(x) (((x) & BLOCK_MASK_3) >> (ORDER << 1))
 
-static inline uint32_t BLK_IDX_I(uint32_t x, uint32_t i){
-	return (i == 1 ? BLK_IDX_1(x):
-		i == 2 ? BLK_IDX_2(x):
-		BLK_IDX_3(x)) * 4;
+*/
+
+//下面这组内联名称有点混乱，个人还不知道要起什么名字
+
+/**
+ * 一次间接块掩码
+ */
+static inline uint32_t block_mask1(struct fext_fs *fs)
+{
+	return ((1 << fs->order) - 1);
 }
 
-static inline uint32_t BLK_LEVEL(uint32_t idx){
-	return idx < BLOCK_LEVEL_1 ? 1 :
-		idx < BLOCK_LEVEL_2 ? 2 : 3;
+/**
+ * 二次间接块掩码
+ */
+static inline uint32_t block_mask2(struct fext_fs *fs)
+{
+	return (block_mask1(fs) << fs->order);
 }
 
-static inline uint32_t BLK_IDX(uint32_t idx){
-	return idx - (idx < BLOCK_LEVEL_1 ? BLOCK_LEVEL_0 :
-			idx < BLOCK_LEVEL_2 ? BLOCK_LEVEL_1 :
-			BLOCK_LEVEL_2);
+/**
+ * 三次间接块掩码
+ */
+static inline uint32_t block_mask3(struct fext_fs *fs)
+{
+	return (block_mask2(fs) << fs->order);
 }
 
+/**
+ * 在一次间接块中的索引
+ */
+static inline uint32_t BLK_IDX_1(struct fext_fs *fs, uint32_t x)
+{
+	return (x & block_mask1(fs));
+}
+
+/**
+ * 在二次间接块中的索引
+ */
+static inline uint32_t BLK_IDX_2(struct fext_fs *fs, uint32_t x)
+{
+	return ((x & block_mask2(fs)) >> fs->order);
+}
+
+/**
+ * 在三次间接块中的索引
+ */
+static inline uint32_t BLK_IDX_3(struct fext_fs *fs, uint32_t x)
+{
+	return ((x & block_mask3(fs)) >> fs->order >> fs->order);
+}
+
+/**
+ * 根据间接次数返回块中索引
+ */
+static inline uint32_t BLK_IDX_I(struct fext_fs *fs, uint32_t x, uint32_t i)
+{
+	return (i == 1 ? BLK_IDX_1(fs, x):
+		i == 2 ? BLK_IDX_2(fs, x):
+		BLK_IDX_3(fs, x)) * 4;
+}
+
+/**
+ * 返回块号对应的级别，一次间接，二次间接或者三次间接
+ */
+static inline uint32_t BLK_LEVEL(struct fext_fs *fs, uint32_t idx)
+{
+	return idx < fs->s_indirect_blknr ? 1 :
+		idx < fs->d_indirect_blknr ? 2 : 3;
+}
+
+static inline uint32_t BLK_IDX(struct fext_fs *fs, uint32_t idx)
+{
+	return idx - (idx < fs->s_indirect_blknr ? 
+			fs->direct_blknr :
+			idx < fs->d_indirect_blknr ? 
+				fs->s_indirect_blknr :
+				fs->d_indirect_blknr
+		);
+}
 
 /**
  * 分配block块
@@ -77,6 +146,7 @@ void block_bmp_clear(struct fext_fs *fs, uint32_t blk_nr){
 	blk_nr %= BLOCKS_PER_GROUP;
 	bitmap_set(&gp->block_bmp, blk_nr, 0);
 }
+
 
 //将文件系统块号转换为磁盘扇区号
 /**
@@ -173,7 +243,8 @@ static void _clear_blocks(struct fext_fs *fs, uint32_t blk_nr, uint32_t depth){
 	uint32_t *blk_ptr = (uint32_t *)bh->data;
 
 	int i = 0;
-	for(i = 0; i< LBA_PER_BLK; ++i){
+	uint32_t lba_per_blk = fs->lba_per_blk;
+	for(i = 0; i< lba_per_blk; ++i){
 
 		if(blk_ptr[i]){
 
@@ -195,6 +266,7 @@ static void _clear_blocks(struct fext_fs *fs, uint32_t blk_nr, uint32_t depth){
 void clear_blocks(struct fext_inode_m *m_inode){
 	int i = 0;
 	uint32_t *blk_ptr;
+	struct fext_fs *fs = m_inode->fs;
 	for(i = 0; i < N_BLOCKS; ++i){
 		blk_ptr = &m_inode->i_block[i];
 		//一旦不存在就返回
@@ -202,8 +274,8 @@ void clear_blocks(struct fext_inode_m *m_inode){
 			return;
 
 		//间接块
-		if(i >= BLOCK_LEVEL_0){
-			_clear_blocks(m_inode->fs, *blk_ptr, i + 1 - BLOCK_LEVEL_0);
+		if(i >= fs->direct_blknr){
+			_clear_blocks(m_inode->fs, *blk_ptr, i + 1 - fs->direct_blknr);
 		}
 
 		block_bmp_clear(m_inode->fs, *blk_ptr);
@@ -241,7 +313,8 @@ void init_block(struct fext_fs *fs, uint32_t blk_nr){
 
 uint32_t get_block_num(struct fext_inode_m *inode, uint32_t idx, uint8_t mode){
 
-	if(idx >= BLOCK_LEVEL_3){
+	struct fext_fs *fs = inode->fs;
+	if(idx >= fs->max_blocks){
 		PANIC("no more space\n");
 	}
 	
@@ -249,7 +322,7 @@ uint32_t get_block_num(struct fext_inode_m *inode, uint32_t idx, uint8_t mode){
 	uint32_t blk_nr = 0;
 
 	//直接块
-	if(idx < BLOCK_LEVEL_0){
+	if(idx < fs->direct_blknr){
 		blk_nr = inode->i_block[idx];
 		if(!blk_nr){
 
@@ -265,9 +338,9 @@ uint32_t get_block_num(struct fext_inode_m *inode, uint32_t idx, uint8_t mode){
 	//间接块
 	}else {
 
-		idx = BLK_IDX(idx);
+		idx = BLK_IDX(inode->fs, idx);
 		//间接次数
-		uint32_t cnt = BLK_LEVEL(idx);
+		uint32_t cnt = BLK_LEVEL(inode->fs, idx);
 
 		blk_nr = inode->i_block[MAX_BLOCK_DIR_POS + cnt];
 		//基地址不存在，单独处理
@@ -284,7 +357,7 @@ uint32_t get_block_num(struct fext_inode_m *inode, uint32_t idx, uint8_t mode){
 		while(i <= cnt){
 
 			bh = read_block(inode->fs, blk_nr);
-			pos = (uint32_t *)&bh->data[BLK_IDX_I(idx, i)];
+			pos = (uint32_t *)&bh->data[BLK_IDX_I(inode->fs, idx, i)];
 			blk_nr = *pos;
 
 			//块不存在
@@ -323,7 +396,8 @@ static bool _remove_last(struct fext_fs *fs, uint32_t blk_nr, uint32_t depth){
 	uint32_t *blk_ptr = (uint32_t *)bh->data;
 	
 	int i = 0;
-	for(i = 0; i < LBA_PER_BLK; ++i){
+	uint32_t lba_per_blk = fs->lba_per_blk;
+	for(i = 0; i < lba_per_blk; ++i){
 		if(!blk_ptr[i]){
 			--i; break;
 		}
@@ -356,6 +430,7 @@ void remove_last(struct fext_inode_m *m_inode){
 
 	int i = 0;
 	uint32_t *blk_ptr;
+	struct fext_fs *fs = m_inode->fs;
 	//找到最后一个块号
 	for(i = 0; i < N_BLOCKS; ++i){
 		blk_ptr = &m_inode->i_block[i];
@@ -366,9 +441,9 @@ void remove_last(struct fext_inode_m *m_inode){
 	}
 	blk_ptr = &m_inode->i_block[i];
 	//间接块
-	if(i >= BLOCK_LEVEL_0){
+	if(i >= fs->direct_blknr){
 
-		if(!_remove_last(m_inode->fs, *blk_ptr, i + 1 - BLOCK_LEVEL_0)){
+		if(!_remove_last(fs, *blk_ptr, i + 1 - fs->direct_blknr)){
 			//间接块不空，直接返回
 			inode_sync(m_inode);
 			return;

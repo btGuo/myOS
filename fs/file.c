@@ -142,7 +142,7 @@ int32_t file_write(struct file *file, const void *buf, uint32_t count){
 	int32_t off_byte = file->fd_pos % BLOCK_SIZE;
 	uint8_t *src = (uint8_t *)buf;
 
-	if(blk_idx >= BLOCK_LEVEL_3)
+	if(blk_idx >= fs->max_blocks)
 		return -1;
 
 	uint32_t res = count;
@@ -169,7 +169,7 @@ int32_t file_write(struct file *file, const void *buf, uint32_t count){
 		//第一次循环时有用
 		off_byte = 0;
 		++blk_idx;
-		if(blk_idx >= BLOCK_LEVEL_3)
+		if(blk_idx >= fs->max_blocks)
 			return count - res;
 	}
 	//大于原来长度时才更新
@@ -306,6 +306,7 @@ uint32_t to_global_fd(uint32_t fd){
 	ASSERT(g_fd >= 0 && g_fd < MAX_FILE_OPEN);
 	return g_fd;
 }
+
 
 /**
  * 关闭文件
@@ -466,4 +467,5 @@ int32_t sys_unlink(const char *path){
 	inode_close(par_i);
 	return 0;
 }
+
 

@@ -1,6 +1,5 @@
 #include "inode.h"
 #include "global.h"
-#include "ide.h"
 #include "string.h"
 #include "fs.h"
 #include "buffer.h"

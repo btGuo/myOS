@@ -103,6 +103,25 @@ void print_meta_info(){
 }
 
 
+static inline void fext_set_blockarg(struct fext_fs *fs)
+{
+	uint32_t order = 0;
+	uint32_t block_size = fs->sb->block_size;
+	while((block_size >>= 1)){
+		order++;
+	}
+	order >>= 2;
+	fs->order = order;
+
+	uint32_t lba_per_blk = block_size / 4;
+	fs->direct_blknr = 5;
+	fs->s_indirect_blknr = lba_per_blk + fs->direct_blknr;
+	fs->d_indirect_blknr = fs->s_indirect_blknr + lba_per_blk * lba_per_blk;
+	fs->t_indirect_blknr = fs->d_indirect_blknr + lba_per_blk * lba_per_blk * lba_per_blk;
+	fs->max_blocks = fs->t_indirect_blknr;
+	fs->lba_per_blk = lba_per_blk;
+}
+
 //===================================================================================
 
 /**
@@ -240,6 +259,8 @@ static struct fext_fs *create_fextfs(struct partition *part){
 
 	//初始化第一个组
 	group_info_init(fs, fs->cur_gp);
+
+	fext_set_blockarg(fs);
 
 	//释放缓冲
 	kfree(buf);
