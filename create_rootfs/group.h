@@ -4,9 +4,7 @@
 #include <stdint.h>
 #include "bitmap.h"
 #include "fs.h"
-
-#define GROUP_PTR(gp, i_no)\
-	((gp) + ((i_no) / INODES_PER_GROUP))
+#include "super_block.h"
 
 /**
  * 组描述符
@@ -40,6 +38,12 @@ struct fext_group_m{
 	struct buffer_head *block_bmp_bh;  ///< 当前block位图缓冲区指针
 	uint32_t group_nr;             ///< 组号
 };
+
+static inline struct fext_group_m * 
+fext_group_ptr(struct fext_fs *fs, uint32_t i_no)
+{
+	return (fs->groups + (i_no / fs->sb->inodes_per_group));
+}
 
 void group_info_init(struct fext_fs *fs, struct fext_group_m *gp);
 struct fext_group_m *group_switch(struct fext_fs *fs);

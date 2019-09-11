@@ -102,19 +102,21 @@ void init_dir_entry(char *filename, uint32_t i_no, uint32_t f_type,\
 bool _search_dir_entry(struct fext_inode_m *m_inode, const char *name, 
 		struct fext_dirent *dir_e){
 
-	uint32_t per_block = BLOCK_SIZE / sizeof(struct fext_dirent);
+	struct fext_fs *fs = m_inode->fs;
+	uint32_t block_size = fs->sb->block_size;
+	uint32_t per_block = block_size / sizeof(struct fext_dirent);
 	uint32_t idx = 0;
 	struct buffer_head *bh = NULL;
 	uint32_t blk_nr;
 	//挂载了别的分区，换成新inode
 	if(m_inode->i_mounted){
 		//TODO
-		m_inode = m_inode->fs->root_i;
+		m_inode = fs->root_i;
 	}	
 
 	while((blk_nr = get_block_num(m_inode, idx, M_SEARCH))){
 
-		bh = read_block(m_inode->fs, blk_nr);
+		bh = read_block(fs, blk_nr);
 		uint32_t dir_entry_idx = 0;
 		struct fext_dirent *p_de = (struct fext_dirent *)bh->data;
 
@@ -144,7 +146,8 @@ bool _search_dir_entry(struct fext_inode_m *m_inode, const char *name,
 bool search_dir_by_ino(struct fext_inode_m *m_inode, uint32_t i_no, 
 		struct fext_dirent *dir_e){
 
-	uint32_t per_block = BLOCK_SIZE / sizeof(struct fext_dirent);
+	uint32_t block_size = m_inode->fs->sb->block_size;
+	uint32_t per_block = block_size / sizeof(struct fext_dirent);
 	uint32_t idx = 0;
 	struct buffer_head *bh = NULL;
 	uint32_t blk_nr;
@@ -249,30 +252,32 @@ struct fext_inode_m *search_dir_entry(const char *path, struct fext_dirent *dir_
  */
 bool add_dir_entry(struct fext_inode_m *inode, struct fext_dirent *dir_e){
 
+	struct fext_fs *fs = inode->fs;
+	uint32_t block_size = fs->sb->block_size;
 	struct buffer_head *bh = NULL;
 	//最后一块可用块，可能已经满了
 	//这里用有符号的,第一块时是-1
 	int32_t blk_idx = inode->i_blocks - 1;    
-	uint32_t off_byte = inode->i_size % BLOCK_SIZE;
+	uint32_t off_byte = inode->i_size % block_size;
 
-	if(blk_idx >= inode->fs->max_blocks)
+	if(blk_idx >= fs->max_blocks)
 		return false;
 	//块内没有剩余，这里假定目录项不跨块
 	if(!off_byte){
 		++blk_idx;
 		inode->i_blocks += 1;
-		if(blk_idx >= inode->fs->max_blocks)
+		if(blk_idx >= fs->max_blocks)
 			return false;
 	}
 	
 	//printk("blk_idx %d\n", blk_idx);
 	uint32_t blk_nr = get_block_num(inode, blk_idx, M_CREATE);
-	bh = read_block(inode->fs, blk_nr);
+	bh = read_block(fs, blk_nr);
 
 	memcpy((bh->data + off_byte), dir_e, sizeof(struct fext_dirent));
 	inode->i_size += sizeof(struct fext_dirent);
 //	printk("%d\n", inode->i_size);
-	write_block(inode->fs, bh);
+	write_block(fs, bh);
 	release_block(bh);
 	return true;
 }
@@ -289,13 +294,14 @@ bool add_dir_entry(struct fext_inode_m *inode, struct fext_dirent *dir_e){
  */
 bool delete_dir_entry(struct fext_inode_m *inode, uint32_t i_no){
 
-	uint32_t per_block = BLOCK_SIZE / sizeof(struct fext_dirent);
+	struct fext_fs *fs = inode->fs;
+	uint32_t block_size = fs->sb->block_size;
+	uint32_t per_block = block_size / sizeof(struct fext_dirent);
 	uint32_t idx = 0;
 	struct buffer_head *bh = NULL;
 	uint32_t blk_nr = 0;;
 	uint32_t off_byte = 0;
 	bool hit = false;
-	struct fext_fs *fs = inode->fs;
 
 //先找出要删除的目录项
 	while((blk_nr = get_block_num(inode, idx, M_SEARCH))){
@@ -324,7 +330,7 @@ bool delete_dir_entry(struct fext_inode_m *inode, uint32_t i_no){
 //找出最后一个目录项，复制到当前位置
 	int fin_idx = inode->i_blocks - 1;
 	//算错了。。。 先减再求模
-	int fin_off_byte = (inode->i_size - sizeof(struct fext_dirent)) % BLOCK_SIZE;
+	int fin_off_byte = (inode->i_size - sizeof(struct fext_dirent)) % block_size;
 	struct buffer_head *fin_bh = NULL;
 
 //	printk("fin_off_byte %d\n", fin_off_byte);
@@ -349,8 +355,8 @@ bool delete_dir_entry(struct fext_inode_m *inode, uint32_t i_no){
 
 //检查是否有块已经空，如果有则调用remove_last释放该块
 	inode->i_size -= sizeof(struct fext_dirent);
-	inode->i_blocks = DIV_ROUND_UP(inode->i_size, BLOCK_SIZE);
-	if(!(inode->i_size % BLOCK_SIZE))
+	inode->i_blocks = DIV_ROUND_UP(inode->i_size, block_size);
+	if(!(inode->i_size % block_size))
 		remove_last(inode);
 	return true;
 }

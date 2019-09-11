@@ -19,5 +19,7 @@ void release_block(struct buffer_head *bh);
 void clear_blocks(struct fext_inode_m *m_inode);
 uint32_t get_block_num(struct fext_inode_m *inode, uint32_t idx, uint8_t mode);
 void remove_last(struct fext_inode_m *m_inode);
+void write_direct(struct fext_fs *fs, uint32_t sta_blk_nr, void *data, uint32_t cnt);
+void read_direct(struct fext_fs *fs, uint32_t sta_blk_nr, void *data, uint32_t cnt);
 
 #endif

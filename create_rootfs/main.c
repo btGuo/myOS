@@ -14,11 +14,10 @@
 #include "super_block.h"
 #include "fs.h"
 #include "group.h"
+#include "rw_img.h"
 #include "dir.h"
 #include "fs.h"
 #include "file.h"
-
-//TODO 更改block.c中的宏
 
 struct fext_fs *fs = NULL;
 
@@ -126,6 +125,8 @@ void create(struct options *opt, struct partition *part){
 
 	//块大小
 	uint32_t blocksize = opt->blocksize;
+	//每块扇区数
+	uint32_t sec_per_blk = blocksize / SECTOR_SIZE;
 	//组数
 	uint32_t groups_cnt = opt->groupcount;
 	//每组块数量
@@ -154,6 +155,7 @@ void create(struct options *opt, struct partition *part){
 
 //初始化超级块
 	struct fext_super_block *sb = (struct fext_super_block *)malloc(SUPER_BLKS * blocksize);
+
 	MEMORY_OK(sb);
 	memset(sb, 0, SUPER_BLKS * blocksize);
  	
@@ -169,7 +171,7 @@ void create(struct options *opt, struct partition *part){
 	sb->blocks_count = blocks;
 	sb->inodes_count = inodes;
 	//1块引导块及1块根目录块
-	sb->free_blocks_count = sb->blocks_count - LEADER_BLKS - gp_used_blks * groups_cnt;
+	sb->free_blocks_count = sb->blocks_count - gp_used_blks * groups_cnt;
 	//0号inode 给根节点
 	sb->free_inodes_count = sb->inodes_count;
 
@@ -181,12 +183,14 @@ void create(struct options *opt, struct partition *part){
 	memset(gp_head, 0, gp_blks * blocksize);
 	struct fext_group *gp = gp_head;
 	uint32_t cnt = 0;
+
+	uint32_t group_blks = blocksize * 8;
 	while(cnt < groups_cnt){
 		gp->free_blocks_count = sb->blocks_per_group - gp_blks - SUPER_BLKS;
 		gp->free_inodes_count = sb->inodes_per_group;
-		gp->block_bitmap = GROUP_INNER(gp, BLOCKS_BMP_BLKS, cnt);
-		gp->inode_bitmap = GROUP_INNER(gp, INODES_BMP_BLKS, cnt);
-		gp->inode_table  = GROUP_INNER(gp, INODES_BLKS, cnt);
+		gp->block_bitmap = GROUP_INNER(gp, BLOCKS_BMP_BLKS, cnt, group_blks);
+		gp->inode_bitmap = GROUP_INNER(gp, INODES_BMP_BLKS, cnt, group_blks);
+		gp->inode_table  = GROUP_INNER(gp, inodes_blks, cnt, group_blks);
 		++gp;
 		++cnt;
 	}
@@ -199,8 +203,18 @@ void create(struct options *opt, struct partition *part){
 	gp = gp_head;
 	cnt = groups_cnt;
 	while(cnt--){
-		write_direct(part, SUPER_BLK(sb, cnt), sb, SUPER_BLKS);
-		write_direct(part, GROUP_BLK(sb, cnt), gp_head, gp_blks); 
+
+		ide_write(part->disk, 
+				part->start_lba + SUPER_BLK(sb, cnt) * sec_per_blk, 
+				sb,
+				SUPER_BLKS * sec_per_blk
+			 );
+
+		ide_write(part->disk,
+				part->start_lba + GROUP_BLK(sb, cnt) * sec_per_blk,
+				gp_head,
+				gp_blks * sec_per_blk
+			 );
 	}
 //创建位图
 	struct bitmap bitmap;
@@ -213,7 +227,12 @@ void create(struct options *opt, struct partition *part){
 	cnt = groups_cnt;
 	while(cnt--){
 		//写入各个组对应位图
-	       	write_direct(part, gp->block_bitmap, bitmap.bits, 1);
+
+		ide_write(part->disk,
+				part->start_lba + gp->block_bitmap * sec_per_blk,
+				bitmap.bits,
+				1 * sec_per_blk
+			 );
 	       	++gp;
 	}
 

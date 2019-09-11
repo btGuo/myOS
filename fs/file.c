@@ -135,11 +135,12 @@ int32_t file_write(struct file *file, const void *buf, uint32_t count){
 	struct buffer_head *bh = NULL;
 	struct fext_inode_m *m_inode = file->fd_inode;
 	struct fext_fs *fs = m_inode->fs;
+	uint32_t block_size = fs->sb->block_size;
 
 	ASSERT(file->fd_pos <= m_inode->i_size);
 
-	int32_t blk_idx = file->fd_pos / BLOCK_SIZE;
-	int32_t off_byte = file->fd_pos % BLOCK_SIZE;
+	int32_t blk_idx = file->fd_pos / block_size;
+	int32_t off_byte = file->fd_pos % block_size;
 	uint8_t *src = (uint8_t *)buf;
 
 	if(blk_idx >= fs->max_blocks)
@@ -151,8 +152,8 @@ int32_t file_write(struct file *file, const void *buf, uint32_t count){
 
 
 	while(res){
-		if(res > BLOCK_SIZE - off_byte){
-			to_write = BLOCK_SIZE - off_byte;
+		if(res > block_size - off_byte){
+			to_write = block_size - off_byte;
 			res -= to_write;
 		}else {
 			to_write = res;
@@ -175,7 +176,7 @@ int32_t file_write(struct file *file, const void *buf, uint32_t count){
 	//大于原来长度时才更新
 	if(file->fd_pos + count > m_inode->i_size){
 		m_inode->i_size = file->fd_pos + count;
-		m_inode->i_blocks = DIV_ROUND_UP(m_inode->i_size, BLOCK_SIZE);
+		m_inode->i_blocks = DIV_ROUND_UP(m_inode->i_size, block_size);
 	}
 //	printk("m_inode->i_size %d\n", m_inode->i_size);
 	inode_sync(m_inode);
@@ -196,11 +197,13 @@ int32_t file_read(struct file *file, void *buf, uint32_t count){
 
 	struct buffer_head *bh = NULL;
 	struct fext_inode_m *m_inode = file->fd_inode;
+	struct fext_fs *fs = m_inode->fs;
+	uint32_t block_size = fs->sb->block_size;
 
 	ASSERT(file->fd_pos + count <= m_inode->i_size);
 
-	int32_t blk_idx = file->fd_pos / BLOCK_SIZE;
-	int32_t off_byte = file->fd_pos % BLOCK_SIZE;
+	int32_t blk_idx = file->fd_pos / block_size;
+	int32_t off_byte = file->fd_pos % block_size;
 	uint8_t *dest = (uint8_t *)buf;
 
 	uint32_t res = count;
@@ -208,8 +211,8 @@ int32_t file_read(struct file *file, void *buf, uint32_t count){
 	uint32_t blk_nr = 0;
 
 	while(res){
-		if(res > BLOCK_SIZE - off_byte){
-			to_read = BLOCK_SIZE - off_byte;
+		if(res > block_size - off_byte){
+			to_read = block_size - off_byte;
 			res -= to_read;
 		}else {
 			to_read = res;
@@ -217,7 +220,7 @@ int32_t file_read(struct file *file, void *buf, uint32_t count){
 		}
 
 		blk_nr = get_block_num(m_inode, blk_idx, M_CREATE);
-		bh = read_block(m_inode->fs, blk_nr);
+		bh = read_block(fs, blk_nr);
 		memcpy(dest, (bh->data + off_byte), to_read);
 		release_block(bh);
 		dest += to_read;

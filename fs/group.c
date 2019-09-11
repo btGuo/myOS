@@ -3,6 +3,7 @@
 #include "fs.h"
 #include "ide.h"
 #include "block.h"
+#include "super_block.h"
 
 /**
  * 初始化组描述符，如果位图不在内存中则加载到内存并初始化
@@ -11,12 +12,12 @@ void group_info_init(struct fext_fs *fs, struct fext_group_m *gp){
 	if(!gp->block_bmp_bh){
 		gp->block_bmp_bh = read_block(fs, gp->block_bitmap);
 		gp->block_bmp.bits = gp->block_bmp_bh->data;
-		gp->block_bmp.byte_len = BLOCKS_PER_GROUP / 8;
+		gp->block_bmp.byte_len = fs->sb->inodes_per_group / 8;
 	}
 	if(!gp->inode_bmp_bh){
 		gp->inode_bmp_bh = read_block(fs, gp->inode_bitmap);
 		gp->inode_bmp.bits = gp->inode_bmp_bh->data;
-		gp->inode_bmp.byte_len = INODES_PER_GROUP / 8;
+		gp->inode_bmp.byte_len = fs->sb->inodes_per_group / 8;
 	}
 }
 

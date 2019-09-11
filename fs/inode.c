@@ -35,15 +35,15 @@ int32_t inode_bmp_alloc(struct fext_fs *fs){
 
 	uint32_t idx = bitmap_scan(&cur_gp->inode_bmp, 1);
 	bitmap_set(&cur_gp->inode_bmp, idx, 1);
-	return idx + cur_gp->group_nr * INODES_PER_GROUP;
+	return idx + cur_gp->group_nr * sb->inodes_per_group;
 }
 
 /**
  * 复位inode位图
  */
 void inode_bmp_clear(struct fext_fs *fs, uint32_t i_no){
-	struct fext_group_m *gp = fs->groups + i_no / INODES_PER_GROUP;
-	i_no %= INODES_PER_GROUP;
+	struct fext_group_m *gp = fs->groups + i_no / fs->sb->inodes_per_group;
+	i_no %= fs->sb->inodes_per_group;
 	bitmap_set(&gp->inode_bmp, i_no, 0);
 }
 
@@ -55,11 +55,12 @@ void inode_bmp_clear(struct fext_fs *fs, uint32_t i_no){
  */
 void inode_locate(struct fext_fs *fs, uint32_t i_no, struct fext_inode_pos *pos){
 	ASSERT(i_no < fs->sb->inodes_count);
-	struct fext_group_m *gp = GROUP_PTR(fs->groups, i_no);
-	uint32_t offset = (i_no % INODES_PER_GROUP) * sizeof(struct fext_inode);
+	struct fext_group_m *gp = fext_group_ptr(fs, i_no);
+	uint32_t offset = (i_no % fs->sb->inodes_per_group) * sizeof(struct fext_inode);
+	uint32_t block_size = fs->sb->block_size;
 	
-	pos->blk_nr = gp->inode_table + offset / BLOCK_SIZE ;
-	pos->off_size = offset % BLOCK_SIZE;
+	pos->blk_nr = gp->inode_table + offset / block_size ;
+	pos->off_size = offset % block_size;
 //	printk("pos->blo_nr %d pos->off_size %d\n", pos->blk_nr, pos->off_size);
 }
 
@@ -187,8 +188,9 @@ struct fext_inode_m *inode_alloc(struct fext_fs *fs){
  */
 void inode_init(struct fext_fs *fs, struct fext_inode_m *m_inode, uint32_t i_no){
 
+	uint32_t block_size = fs->sb->block_size;
 	//对块大小上取整
-	m_inode->i_blocks = DIV_ROUND_UP(m_inode->i_size, BLOCK_SIZE);
+	m_inode->i_blocks = DIV_ROUND_UP(m_inode->i_size, block_size);
 	m_inode->i_no = i_no;
 	m_inode->i_open_cnts = 0;
 	m_inode->i_dirty = true;

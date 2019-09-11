@@ -76,7 +76,7 @@ static void buffer_sync_disk(struct disk_buffer *d_buf){
 		if(bh->dirty){
 			//printk("write %d\n", bh->blk_nr);
 			//直接写入磁盘
-			write_direct(d_buf->fs->part, bh->blk_nr, bh->data, 1);
+			write_direct(d_buf->fs, bh->blk_nr, bh->data, 1);
 			//复位脏
 			bh->dirty = false;
 		}

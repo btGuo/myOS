@@ -33,7 +33,9 @@ void init_dir_entry(char *filename, uint32_t i_no, uint32_t f_type,\
 bool _search_dir_entry(struct fext_inode_m *m_inode, const char *name, 
 		struct fext_dirent *dir_e){
 
-	uint32_t per_block = BLOCK_SIZE / sizeof(struct fext_dirent);
+	struct fext_fs *fs = m_inode->fs;
+	uint32_t block_size = fs->sb->block_size;
+	uint32_t per_block = block_size / sizeof(struct fext_dirent);
 	uint32_t idx = 0;
 	struct buffer_head *bh = NULL;
 	uint32_t blk_nr;
@@ -145,19 +147,21 @@ struct fext_inode_m *search_dir_entry(const char *path, struct fext_dirent *dir_
  */
 bool add_dir_entry(struct fext_inode_m *inode, struct fext_dirent *dir_e){
 
+	struct fext_fs *fs = inode->fs;
+	uint32_t block_size = fs->sb->block_size;
 	struct buffer_head *bh = NULL;
 	//最后一块可用块，可能已经满了
 	//这里用有符号的,第一块时是-1
 	int32_t blk_idx = inode->i_blocks - 1;    
-	uint32_t off_byte = inode->i_size % BLOCK_SIZE;
+	uint32_t off_byte = inode->i_size % block_size;
 
-	if(blk_idx >= BLOCK_LEVEL_3)
+	if(blk_idx >= fs->max_blocks)
 		return false;
 	//块内没有剩余，这里假定目录项不跨块
 	if(!off_byte){
 		++blk_idx;
 		inode->i_blocks += 1;
-		if(blk_idx >= BLOCK_LEVEL_3)
+		if(blk_idx >= fs->max_blocks)
 			return false;
 	}
 	

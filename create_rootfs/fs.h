@@ -6,21 +6,12 @@
 #include "rw_img.h"
 
 #define SECTOR_SIZE 512
-#define BLOCK_SIZE 1024
-#define GROUP_SIZE (8192 * BLOCK_SIZE)
-#define GROUP_BLKS 8192
 
-///每个块有多少位  1024 * 8
-#define BITS_PER_BLOCK 8192
-#define INODES_PER_GROUP BITS_PER_BLOCK
-#define BLOCKS_PER_GROUP BITS_PER_BLOCK
+/**  引导块大小，固定值  */
+#define BOOT_BLKSZ 1024
 
-//每个块有多少个扇区
-#define BLK_PER_SEC (BLOCK_SIZE / SECTOR_SIZE)
-//引导块数
-#define LEADER_BLKS 1
-
-#define INODE_SIZE 64
+/**  引导块扇区数        */
+#define BOOT_SECS (BOOT_BLKSZ / SECTOR_SIZE)
 
 #define BLOCKS_BMP_BLKS 1
 #define INODES_BMP_BLKS 1
@@ -28,12 +19,10 @@
 
 #define ROOT_INODE 0
 
-#define MAX_BLOCK_DIR_POS 4
-
-#define GROUP_INNER(gp, cnt, off)({\
+#define GROUP_INNER(gp, cnt, off, group_blks)({\
 	(gp)->free_blocks_count -= (cnt);\
-	GROUP_BLKS - (gp)->free_blocks_count - (cnt) + 1 + \
-		(off) * GROUP_BLKS;\
+	group_blks - (gp)->free_blocks_count - (cnt) + 1 + \
+		(off) * group_blks;\
 })
 
 
@@ -69,6 +58,14 @@ struct fext_fs{
 	struct fext_inode_m *root_i;  ///< 根i节点
 	bool mounted;             ///< 是否已挂载
 	char mount_path[32]; ///< 挂载路径
+	uint32_t order;      ///< 处理块号时用到
+	uint32_t direct_blknr;     ///< 直接块数量
+	uint32_t s_indirect_blknr;      ///< 一次间接块数量
+	uint32_t d_indirect_blknr;      ///< 二次间接块数量
+	uint32_t t_indirect_blknr;      ///< 三次间接块数量
+	uint32_t max_blocks;            ///< 最大块数
+	uint32_t lba_per_blk;           ///< 每块可以存放多少块号
+	uint32_t sec_per_blk;           ///< 每块有多少扇区
 };
 
 extern struct fext_fs *root_fs;  ///< 根文件系统
