@@ -27,11 +27,12 @@ void print_meta_info(){
 }
 
 void print_super_block(struct fext_super_block *sb){
+	printk("\n");
 	printk("start print super_block\n");
 	printk("block_size %d\t"
 	        "blocks_per_group %d\t"  
 		"inodes_per_group %d\t"  
-		"res_blocks %d\t"
+		"res_blocks %d\n"
 		"blocks_count %d\t"
 	      	"inodes_count %d\t"
 	       	"free_blocks_count %d\t"
@@ -68,17 +69,43 @@ void print_group(struct fext_group *gp, int cnt){
 	printk("end printk group\n");
 }
 
+void print_blockarg(struct fext_fs *fs){
+
+	printk("\n");
+	printk("block arguments:\n");
+	printk("direct_blknr %u\t"
+		"s_indirect_blknr %u\t"
+		"d_indirect_blknr %u\t"
+		"t_indirect_blknr %u\n"
+		"max_blocks %u\t"
+		"lba_per_blk %u\t"
+		"sec_per_blk %u"
+		"order %u\n",
+		fs->direct_blknr,
+		fs->s_indirect_blknr,
+		fs->d_indirect_blknr,
+		fs->t_indirect_blknr,
+		fs->max_blocks,
+		fs->lba_per_blk,
+		fs->sec_per_blk,
+		fs->order
+	);
+	printk("\n");
+}
+
 static inline void fext_set_blockarg(struct fext_fs *fs)
 {
 	uint32_t order = 0;
 	uint32_t block_size = fs->sb->block_size;
-	while((block_size >>= 1)){
+	uint32_t size = block_size;
+	while((size >>= 1)){
 		order++;
 	}
 	order >>= 2;
 	fs->order = order;
 
 	uint32_t lba_per_blk = block_size / 4;
+
 	fs->direct_blknr = 5;
 	fs->s_indirect_blknr = lba_per_blk + fs->direct_blknr;
 	fs->d_indirect_blknr = fs->s_indirect_blknr + lba_per_blk * lba_per_blk;
@@ -86,6 +113,8 @@ static inline void fext_set_blockarg(struct fext_fs *fs)
 	fs->max_blocks = fs->t_indirect_blknr;
 	fs->lba_per_blk = lba_per_blk;
 	fs->sec_per_blk = block_size / SECTOR_SIZE;
+
+	print_blockarg(fs);
 }
 //===================================================================================
 
@@ -185,7 +214,8 @@ static struct fext_inode_m *create_root(struct fext_fs *fs){
 	uint32_t i_no = inode_bmp_alloc(fs);
 	ASSERT(i_no == 0);
 
-	struct fext_inode_m *m_inode = (struct fext_inode_m *)kmalloc(sizeof(struct fext_inode_m));
+	struct fext_inode_m *m_inode = 
+		(struct fext_inode_m *)kmalloc(sizeof(struct fext_inode_m));
 	inode_init(fs, m_inode, i_no);
 	struct fext_dirent dir_e;
 
@@ -221,12 +251,25 @@ static struct fext_fs *create_fextfs(struct partition *part){
 	MEMORY_OK(fs->sb);
 
 	//直接读取超级块
-	ide_read(part->disk, BOOT_SECS, fs->sb, 
-			sizeof(struct fext_super_block) / SECTOR_SIZE);
+	ide_read(part->disk, 
+			part->start_lba + BOOT_SECS, 
+			fs->sb, 
+			sizeof(struct fext_super_block) / SECTOR_SIZE
+		);
+
+	if(fs->sb->magic != EXT2_SUPER_MAGIC){
+
+		printk("super block error\n");
+		return NULL;
+	}
+	//这个要放前面
+	fext_set_blockarg(fs);
+
+	print_super_block(fs->sb);
 
 	uint32_t block_size = fs->sb->block_size;
 	fs->groups_cnt = fs->sb->blocks_count / fs->sb->blocks_per_group;
-	fs->groups_blks = DIV_ROUND_UP(fs->groups_cnt * sizeof(struct fext_group), \
+	fs->groups_blks = DIV_ROUND_UP(fs->groups_cnt * sizeof(struct fext_group), 
 			block_size);
 
 //处理块组，由于块组磁盘上和内存上存储形式不同，处理方法和超级块不同
@@ -238,7 +281,10 @@ static struct fext_fs *create_fextfs(struct partition *part){
 	uint8_t *buf = kmalloc(fs->groups_blks * block_size);
 	struct fext_group *gp = (struct fext_group *)buf;
 	struct fext_group_m *gp_info = fs->groups;
+
 	read_direct(fs, fs->sb->groups_table, gp, fs->groups_blks);
+
+	print_group(gp, fs->groups_cnt);
 
 	//复制内存
 	int cnt = 0;
@@ -255,12 +301,10 @@ static struct fext_fs *create_fextfs(struct partition *part){
 	//初始化第一个组
 	group_info_init(fs, fs->cur_gp);
 
-	fext_set_blockarg(fs);
-
 	//释放缓冲
 	kfree(buf);
 
-	printk("mount fsition done\n");
+	printk("mount filesystem done\n");
 	return fs;
 }
 
@@ -273,4 +317,5 @@ void init_fs(struct partition *part){
 	strcpy(root_fs->mount_path, "/");
 	root_fs->mounted = true;
 	root_fs->root_i = create_root(root_fs);
+	printk("init filesystem done\n");
 }

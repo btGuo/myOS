@@ -19,16 +19,19 @@
 #include "fs.h"
 #include "file.h"
 
+// TODO  检查所有块定位
+
 struct fext_fs *fs = NULL;
 
+#define PATH_LEN 128
 struct options {
 	uint32_t blocksize;
 	uint32_t groupcount;
 	uint32_t verbose;
 	uint32_t blocks_per_group;
-	char *inputdir;
-	char *image;
-	char *progname;
+	char inputdir[PATH_LEN];
+	char image[PATH_LEN];
+	char progname[PATH_LEN];
 };
 
 void copy2file(struct fext_inode_m *dest, char *src, uint32_t file_sz)
@@ -61,33 +64,39 @@ done:
 void insert_directory(char *inputDir, char *target_path)
 {
 
-	struct dirent *ent;
+	printf("insert directory\n");
+	struct dirent *ent = NULL;
 	struct stat st;
-	DIR *dir;
+      	DIR *dir = NULL;
 	char path[512];
-	uint32_t child = 0;
 	char t_path[512];
 
 	if((dir = opendir(inputDir)) == NULL){
+		
 		printf("failed to opendir() `%s': %s\n",
 			inputDir, strerror(errno));
 		exit(EXIT_FAILURE);
+		
+		return;
     	}
 
+	closedir(dir);	
+	/*
+	while((ent = readdir(dir)) != NULL){
 
-	while((ent = readdir(dir))){
-
-		if(ent->d_name[0] == '0'){
+		if(ent->d_name[0] == '.'){
 			continue;
 		}
 
-		snprintf(path, sizeof(path), "%s/%s",
+		snprintf(path, 512, "%s/%s",
 				inputDir, ent->d_name);
 
-		snprintf(t_path, sizeof(t_path), "%s/%s",
+		snprintf(t_path, 512, "%s/%s",
 				target_path, ent->d_name);
 
-		printf("%s\n", path);
+		printf("local %s\n", path);
+		printf("target %s\n", t_path);
+
 		if(stat(path, &st) != 0){
 		
 	    		printf("failed to stat() `%s': %s\n",
@@ -98,8 +107,13 @@ void insert_directory(char *inputDir, char *target_path)
 
 		if(S_ISDIR(st.st_mode)){
 
-			sys_mkdir(t_path);
-			insert_directory(path, t_path);
+			if(sys_mkdir(t_path) == -1){
+				
+				printf("mkdir %s failed\n", t_path);
+				continue;
+				//exit(EXIT_FAILURE);
+			}
+			//insert_directory(path, t_path);
 		}
 		if(S_ISREG(st.st_mode)){
 			
@@ -114,7 +128,9 @@ void insert_directory(char *inputDir, char *target_path)
 			inode_close(m_inode);
 		}
 	}
-	closedir(dir);	
+
+		*/
+	printf("end\n");
 }
 
 void create(struct options *opt, struct partition *part){
@@ -154,7 +170,8 @@ void create(struct options *opt, struct partition *part){
 
 
 //初始化超级块
-	struct fext_super_block *sb = (struct fext_super_block *)malloc(SUPER_BLKS * blocksize);
+	struct fext_super_block *sb = 
+		(struct fext_super_block *)malloc(SUPER_BLKS * blocksize);
 
 	MEMORY_OK(sb);
 	memset(sb, 0, SUPER_BLKS * blocksize);
@@ -175,8 +192,8 @@ void create(struct options *opt, struct partition *part){
 	//0号inode 给根节点
 	sb->free_inodes_count = sb->inodes_count;
 
-	//从2开始
-	sb->groups_table = 2;
+	//从1开始
+	sb->groups_table = 1;
 
 //初始化块组
 	struct fext_group *gp_head = (struct fext_group *)malloc(gp_blks * blocksize);
@@ -185,12 +202,26 @@ void create(struct options *opt, struct partition *part){
 	uint32_t cnt = 0;
 
 	uint32_t group_blks = blocksize * 8;
+	
+	uint32_t gp_used = gp_blks + 
+			SUPER_BLKS + 
+			BLOCKS_BMP_BLKS + 
+			INODES_BMP_BLKS +
+			inodes_blks;
+
+	uint32_t bbmp_off = SUPER_BLKS + gp_blks;
+	uint32_t ibmp_off = bbmp_off + BLOCKS_BMP_BLKS;
+	uint32_t ino_off  = ibmp_off + INODES_BMP_BLKS;
+
 	while(cnt < groups_cnt){
-		gp->free_blocks_count = sb->blocks_per_group - gp_blks - SUPER_BLKS;
+
+		gp->free_blocks_count = sb->blocks_per_group - gp_used;
 		gp->free_inodes_count = sb->inodes_per_group;
-		gp->block_bitmap = GROUP_INNER(gp, BLOCKS_BMP_BLKS, cnt, group_blks);
-		gp->inode_bitmap = GROUP_INNER(gp, INODES_BMP_BLKS, cnt, group_blks);
-		gp->inode_table  = GROUP_INNER(gp, inodes_blks, cnt, group_blks);
+
+		gp->block_bitmap = cnt * group_blks + bbmp_off;
+		gp->inode_bitmap = cnt * group_blks + ibmp_off;
+		gp->inode_table  = cnt * group_blks + ino_off;
+
 		++gp;
 		++cnt;
 	}
@@ -205,13 +236,13 @@ void create(struct options *opt, struct partition *part){
 	while(cnt--){
 
 		ide_write(part->disk, 
-				part->start_lba + SUPER_BLK(sb, cnt) * sec_per_blk, 
+				part->start_lba + BOOT_SECS + SUPER_BLK(sb, cnt) * sec_per_blk, ///< 这里注意加上BOOT_SECS
 				sb,
 				SUPER_BLKS * sec_per_blk
 			 );
 
 		ide_write(part->disk,
-				part->start_lba + GROUP_BLK(sb, cnt) * sec_per_blk,
+				part->start_lba + BOOT_SECS + GROUP_BLK(sb, cnt) * sec_per_blk,
 				gp_head,
 				gp_blks * sec_per_blk
 			 );
@@ -229,12 +260,16 @@ void create(struct options *opt, struct partition *part){
 		//写入各个组对应位图
 
 		ide_write(part->disk,
-				part->start_lba + gp->block_bitmap * sec_per_blk,
+				part->start_lba + BOOT_SECS + gp->block_bitmap * sec_per_blk,
 				bitmap.bits,
 				1 * sec_per_blk
 			 );
 	       	++gp;
 	}
+
+	free(sb);
+	free(gp_head);
+	free(bitmap.bits);
 
 	if(opt->verbose){
 		printf("partition format done\n");
@@ -260,9 +295,19 @@ int main(int argc, char **argv){
 
 	/** 处理命令行参数，配置文件系统   */
 
-	struct options fs_opt;
+	//默认最小配置
+	struct options fs_opt = {
+		.blocksize = 1024,
+		.groupcount = 1,
+		.verbose = 0,
+		.blocks_per_group = 8192,
+		.image = "",
+		.inputdir = "",
+		.progname = "create",
+	};
+
 	int opt;
-	static const char *short_options = "d:b:n:l:hv";
+	static const char *short_options = "d:b:g:hv";
 	static struct option long_options[] = {
 		{"directory" , required_argument, NULL, 'd'},
 		{"blocksize" , required_argument, NULL, 'b'},
@@ -271,12 +316,14 @@ int main(int argc, char **argv){
 		{"verbose"   , no_argument      , NULL, 'v'},
 	};
 
-	fs_opt.progname = argv[0];
+	strcpy(fs_opt.progname, argv[0]);
 	if (argc < 2){
 		print_help(argv[0]);
+		return 0;
 	}
 
-	fs_opt.image = argv[1];
+	strcpy(fs_opt.image, argv[1]);
+	bool set_gpcnt = false;
 
 	while((opt = getopt_long(argc, argv, short_options, long_options, NULL)) != -1){
 		switch(opt){
@@ -294,24 +341,25 @@ int main(int argc, char **argv){
 					return 0;
 				}
 			case 'g':
+				set_gpcnt = true;
 				fs_opt.groupcount = atoi(optarg);
 				break;
 			case 'v':
 				fs_opt.verbose = 1;
 				break;
 			case 'd':
-				fs_opt.inputdir = optarg;
+				strcpy(fs_opt.inputdir, optarg);
 				break;
 			default:
 				printf("%s: unknown option '%s'\n",
 						argv[0], optarg);
 		}
 	}
-	fs_opt.blocks_per_group = fs_opt.blocksize * 8;
 
+	fs_opt.blocks_per_group = fs_opt.blocksize * 8;
+	uint32_t total = fs_opt.blocks_per_group * fs_opt.blocksize * fs_opt.groupcount;
 
 	/** 确认分区 */
-
 	
 	struct disk hd;
 	ide_ctor(&hd, fs_opt.image);
@@ -322,16 +370,17 @@ int main(int argc, char **argv){
 	int32_t id = 0;
 	while(1){
 		scanf("%d", &id);
+		--id;
 
 		if(id < 0 || id >= 12){
 			printf("input error, illegal serial num %d\n", id);
 			printf("please reinput the serial num\n");
 		}
 		if(id < 4 && hd.prim_parts[id].sec_cnt == 0){
-			printf("no such partition %d\n", id);
+			printf("no such partition %d\n", id + 1);
 		}
-		if(id >= 4 && hd.logic_parts[id].sec_cnt == 0){
-			printf("no such partition %d\n", id);
+		if(id >= 4 && hd.logic_parts[id - 4].sec_cnt == 0){
+			printf("no such partition %d\n", id + 1);
 		}
 		else {
 			break;
@@ -341,7 +390,22 @@ int main(int argc, char **argv){
 	/**   选择分区  */
 
 	struct partition *part = NULL;
-	id >= 4 ? (part = &hd.logic_parts[id]) : (part = &hd.prim_parts[id]);
+	id >= 4 ? (part = &hd.logic_parts[id - 4]) : (part = &hd.prim_parts[id]);
+
+	/**   确认分区是否有足够空间  */
+
+	if(part->sec_cnt * SECTOR_SIZE < total){
+
+		printf("no enought space in partition %d to create filesystem on\n", id + 1);
+		printf("actual size %d(Byte)\tneeded size %d(Byte)\n", part->sec_cnt * SECTOR_SIZE, total);
+
+		if(set_gpcnt){
+			printf("try to decrease the groups count\n");
+			goto done;
+		}
+		printf("try to select another bigger partition\n");
+		goto done;
+	}
 
 	/**   创建文件系统并初始化    */
 
@@ -350,7 +414,27 @@ int main(int argc, char **argv){
 
 
 	/**   插入目录    */
-	insert_directory(fs_opt.inputdir, "/");
+	if(strlen(fs_opt.inputdir)){
 
+		//先处理一下目录，后面可能有'/'
+		uint32_t len = strlen(fs_opt.inputdir);
+		if(fs_opt.inputdir[len - 1] == '/'){
+			fs_opt.inputdir[len - 1] = '\0';
+		}
+
+		if(fs_opt.verbose){
+			printf("start to insert directory %s to %s\n",
+					fs_opt.inputdir,
+					fs_opt.image
+			      );
+		}
+
+		insert_directory(fs_opt.inputdir, "");
+	}
+
+done:
 	ide_dtor(&hd);
+	if(fs_opt.verbose){
+		printf("everything is ok!\n");
+	}
 }

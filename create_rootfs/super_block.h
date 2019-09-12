@@ -5,19 +5,6 @@
 #define MAJOR 1
 #define MINOR 0
 
-#define BLOCKS(sb, cnt)({\
-	if((sb)->free_blocks_count < (cnt)){\
-		PANIC("error");\
-	}\
-	(sb)->free_blocks_count -= (cnt);\
-	((sb)->blocks_count - (sb)->free_blocks_count - (cnt));\
-})
-
-#define GROUP_BLK(sb, cnt) ((sb)->groups_table + (sb)->blocks_per_group * (cnt))
-
-#define SUPER_BLK(sb, cnt) (1 + (sb)->blocks_per_group * (cnt))
-
-#define SUPER_BLKS 1
 /**
  * 超级块描述符
  */

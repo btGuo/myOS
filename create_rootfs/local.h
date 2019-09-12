@@ -8,7 +8,13 @@
 #include <string.h>
 
 #define printk printf
-#define ASSERT(x) (0)
+
+#define ASSERT(x) \
+if(!(x)){\
+	printf("============= assert error =============\n");\
+}
+
+
 #define PANIC(...) (0)
 #define DIV_ROUND_UP(x, step) (((x) + (step) - 1) / (step))
 #define kmalloc malloc

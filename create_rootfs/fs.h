@@ -19,12 +19,12 @@
 
 #define ROOT_INODE 0
 
-#define GROUP_INNER(gp, cnt, off, group_blks)({\
-	(gp)->free_blocks_count -= (cnt);\
-	group_blks - (gp)->free_blocks_count - (cnt) + 1 + \
-		(off) * group_blks;\
-})
+/**    这里直接加1，super_block总是占用一块  */
+#define GROUP_BLK(sb, cnt) (1 + (sb)->blocks_per_group * (cnt))
 
+#define SUPER_BLK(sb, cnt) ((sb)->blocks_per_group * (cnt))
+
+#define SUPER_BLKS 1
 
 /************************************************************************************
  *

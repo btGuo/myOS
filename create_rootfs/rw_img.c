@@ -68,10 +68,11 @@ struct partition *name2part(const char *device){
  */
 static void partition_info(struct partition *part){
 
-	printk("%s\n\tstart_lba:%x\n\tsec_cnt:%x\n", 
+	printk("%s\n\tstart_lba:%u\n\tsec_cnt:%u\tsize:%u(MB)\n", 
 			part->name, 
 			part->start_lba,
-			part->sec_cnt
+			part->sec_cnt,
+			part->sec_cnt * 512 / 1024 / 1024
 	);
 }
 
@@ -107,9 +108,10 @@ static void get_ext_partition(struct disk *hd, uint32_t l_no, uint32_t s_lba){
 		part = &hd->logic_parts[l_no];
 		part->start_lba = s_lba + p->start_lba;
 		part->sec_cnt = p->sec_cnt;
+		part->disk = hd;
+		sprintf(part->name, "%s%d", hd->name, l_no + 5);
 
 		parts[part_idx++] = part;
-		sprintf(part->name, "%s%d", hd->name, l_no + 5);
 		partition_info(part);
 	}
 	//还有分区
@@ -140,9 +142,10 @@ static void partition_scan(struct disk *hd, uint32_t ext_lba){
 			part = &hd->prim_parts[p_no++];
 			part->start_lba = ext_lba + p->start_lba;
 			part->sec_cnt = p->sec_cnt;
+			part->disk = hd;
+			sprintf(part->name, "%s%d", hd->name, p_no);
 
 			parts[part_idx++] = part;
-			sprintf(part->name, "%s%d", hd->name, p_no);
 			partition_info(part);
 		}
 		++p;
@@ -151,6 +154,7 @@ static void partition_scan(struct disk *hd, uint32_t ext_lba){
 
 int32_t ide_ctor(struct disk *hd, const char *image){
 
+	memset(hd, 0, sizeof(struct disk));
 	strcpy(hd->name, image);
 	if((hd->fd = open(image, O_RDWR)) == -1){
 		printk("open file %s error\n", image);

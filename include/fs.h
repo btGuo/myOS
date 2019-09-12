@@ -10,7 +10,7 @@
 
 /************************************************************************************
  *
- * total 
+ * total        0 块号从这里开始 
  * --------------------------------------------------------------------
  * |            |               |               |     |               | 
  * | boot block | block group 0 | block group 1 | ... | block group n |
@@ -39,6 +39,11 @@
 /** 根inode号  */
 #define ROOT_INODE 0
 
+#define GROUP_BLK(sb, cnt) (1 + (sb)->blocks_per_group * (cnt))
+
+#define SUPER_BLK(sb, cnt) ((sb)->blocks_per_group * (cnt))
+
+#define SUPER_BLKS 1
 /**
  * 文件打开标志位
  */

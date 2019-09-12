@@ -127,27 +127,31 @@ void block_bmp_clear(struct fext_fs *fs, uint32_t blk_nr){
 	bitmap_set(&gp->block_bmp, blk_nr, 0);
 }
 
+
 //将文件系统块号转换为磁盘扇区号
 /**
  * 磁盘直接写
  */
 void write_direct(struct fext_fs *fs, uint32_t sta_blk_nr, void *data, uint32_t cnt){
-	sta_blk_nr *= fs->sec_per_blk;
-	cnt *= fs->sec_per_blk;
 	//这里要加上分区起始lba
-	ide_write(fs->part->disk, fs->part->start_lba + sta_blk_nr, data, cnt);
+	ide_write(fs->part->disk, 
+			fs->part->start_lba + sta_blk_nr *fs->sec_per_blk + BOOT_SECS, 
+			data, 
+			cnt * fs->sec_per_blk
+		);
 }	
 
 /**
  * 磁盘直接读
  */
 void read_direct(struct fext_fs *fs, uint32_t sta_blk_nr, void *data, uint32_t cnt){
-	sta_blk_nr *= fs->sec_per_blk;
-	cnt *= fs->sec_per_blk;
 	//这里要加上分区起始lba
-	ide_read(fs->part->disk, fs->part->start_lba + sta_blk_nr, data, cnt);
+	ide_read(fs->part->disk, 
+			fs->part->start_lba + sta_blk_nr * fs->sec_per_blk + BOOT_SECS, 
+			data, 
+			cnt * fs->sec_per_blk
+		);
 }
-
 /**
  * @brief 写磁盘块
  * @note 操作的对象为buffer_head

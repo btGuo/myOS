@@ -70,7 +70,7 @@ void inode_release(struct fext_inode_m *m_inode){
 		BUFR_INODE(m_inode);
 		return;
 	}
-	kfree(m_inode);
+	free(m_inode);
 }
 
 /**
@@ -108,7 +108,7 @@ struct fext_inode_m *inode_open(struct fext_fs *fs, uint32_t i_no){
 	struct fext_inode_pos pos;
 	struct buffer_head *bh;
 
-	m_inode = (struct fext_inode_m *)kmalloc(sizeof(struct fext_inode_m));
+	m_inode = (struct fext_inode_m *)malloc(sizeof(struct fext_inode_m));
 	MEMORY_OK(m_inode);
 
 	//定位后读出块
@@ -136,17 +136,9 @@ void inode_close(struct fext_inode_m *m_inode){
 	ASSERT(m_inode->i_open_cnts > 0);
 	m_inode->i_write_deny = false;
 
-#ifdef __TARGET
-	//关中断，防止重复释放
-	enum intr_status old_stat = intr_disable();
-	//引用计数为0则释放inode
-#endif
 	if(--m_inode->i_open_cnts == 0){
 		inode_release(m_inode);
 	}
-#ifdef __TARGET
-	intr_set_status(old_stat);
-#endif
 }
 
 /**
@@ -157,7 +149,8 @@ struct fext_inode_m *inode_alloc(struct fext_fs *fs){
 	if(i_no < 0){
 		return NULL;
 	}
-	struct fext_inode_m *m_inode = (struct fext_inode_m *)kmalloc(sizeof(struct fext_inode_m));
+	struct fext_inode_m *m_inode = 
+		(struct fext_inode_m *)malloc(sizeof(struct fext_inode_m));
 	if(!m_inode){
 		inode_bmp_clear(fs, i_no);
 		return NULL;
