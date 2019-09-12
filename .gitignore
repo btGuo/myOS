@@ -1,14 +1,11 @@
-note.txt
-hd90.img
-hd60.img
 build/
 a.out
 tags
-hex
-hex.old
-hdump.sh
 tmp
+*.txt
 *.o
 *.bin
 *.sh
 *.d
+*.img
+root_fs

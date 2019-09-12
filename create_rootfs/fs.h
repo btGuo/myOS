@@ -4,6 +4,7 @@
 #include "buffer.h"
 #include "local.h"
 #include "rw_img.h"
+#include <stdbool.h>
 
 #define SECTOR_SIZE 512
 
@@ -71,5 +72,6 @@ struct fext_fs{
 extern struct fext_fs *root_fs;  ///< 根文件系统
 
 void disk_buffer_init(struct disk_buffer *d_buf, struct fext_fs *fs);
-void init_fs(struct partition *part);
+void init_fs(struct partition *part, bool verbose);
+void sync_fs();
 #endif

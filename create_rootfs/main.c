@@ -19,8 +19,6 @@
 #include "fs.h"
 #include "file.h"
 
-// TODO  检查所有块定位
-
 struct fext_fs *fs = NULL;
 
 #define PATH_LEN 128
@@ -63,8 +61,7 @@ done:
 
 void insert_directory(char *inputDir, char *target_path)
 {
-
-	printf("insert directory\n");
+	printf("handle dir %s\n", inputDir);
 	struct dirent *ent = NULL;
 	struct stat st;
       	DIR *dir = NULL;
@@ -80,22 +77,17 @@ void insert_directory(char *inputDir, char *target_path)
 		return;
     	}
 
-	closedir(dir);	
-	/*
 	while((ent = readdir(dir)) != NULL){
 
 		if(ent->d_name[0] == '.'){
 			continue;
 		}
 
-		snprintf(path, 512, "%s/%s",
+		snprintf(path, sizeof(path), "%s/%s",
 				inputDir, ent->d_name);
 
-		snprintf(t_path, 512, "%s/%s",
+		snprintf(t_path, sizeof(t_path), "%s/%s",
 				target_path, ent->d_name);
-
-		printf("local %s\n", path);
-		printf("target %s\n", t_path);
 
 		if(stat(path, &st) != 0){
 		
@@ -112,29 +104,32 @@ void insert_directory(char *inputDir, char *target_path)
 				printf("mkdir %s failed\n", t_path);
 				continue;
 				//exit(EXIT_FAILURE);
+			}else {
+				printf("mkdir %s success!\n", t_path);
 			}
-			//insert_directory(path, t_path);
+			insert_directory(path, t_path);
 		}
 		if(S_ISREG(st.st_mode)){
 			
 			uint32_t file_sz = st.st_size;
-			struct fext_inode_m *m_inode = file_create(target_path);
+			struct fext_inode_m *m_inode = file_create(t_path);
 
 			if(m_inode == NULL){
-				printf("create file %s failed\n", target_path);
+				printf("create file %s failed\n", t_path);
 				continue;
+			}else {
+				printf("create file %s success\n", t_path);
 			}
 			copy2file(m_inode, path, file_sz);
 			inode_close(m_inode);
 		}
 	}
-
-		*/
-	printf("end\n");
+	closedir(dir);	
 }
 
 void create(struct options *opt, struct partition *part){
 	
+	clear_partition(part);
 	if(opt->verbose){
 		printf("image %s start format...\n", opt->image);
 	}
@@ -249,7 +244,7 @@ void create(struct options *opt, struct partition *part){
 	}
 //创建位图
 	struct bitmap bitmap;
-	bitmap.byte_len = gp_blks / 8;
+	bitmap.byte_len = blocksize;
 	bitmap.bits = (uint8_t *)malloc(bitmap.byte_len);
 	bitmap_set_range(&bitmap, 0, 1, gp_used_blks);
 
@@ -410,7 +405,7 @@ int main(int argc, char **argv){
 	/**   创建文件系统并初始化    */
 
 	create(&fs_opt, part);
-	init_fs(part);
+	init_fs(part, fs_opt.verbose);
 
 
 	/**   插入目录    */
@@ -433,8 +428,10 @@ int main(int argc, char **argv){
 	}
 
 done:
+	sync_fs();
 	ide_dtor(&hd);
 	if(fs_opt.verbose){
 		printf("everything is ok!\n");
 	}
+	printf("%lu\n", sizeof(struct fext_inode));
 }

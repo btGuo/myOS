@@ -439,6 +439,7 @@ struct dirent *sys_readdir(struct Dir *dir){
 		
 		//全部读出来
 		for(; (blk_nr = get_block_num(inode, idx, M_SEARCH)) ; idx++){
+			printk("blknr %d\n", blk_nr);
 			bh = read_block(inode->fs, blk_nr);
 			swap_dirent(buffer + idx * batch_size, bh->data, block_size);
 			release_block(bh);

@@ -58,7 +58,9 @@ void inode_locate(struct fext_fs *fs, uint32_t i_no, struct fext_inode_pos *pos)
 	
 	pos->blk_nr = gp->inode_table + offset / block_size ;
 	pos->off_size = offset % block_size;
-//	printk("pos->blo_nr %d pos->off_size %d\n", pos->blk_nr, pos->off_size);
+	if(i_no == 0)
+		printk("pos->blk_nr %d pos->off_size %d\n", pos->blk_nr, pos->off_size);
+
 }
 
 /**
@@ -82,6 +84,9 @@ void inode_sync(struct fext_inode_m *m_inode){
 	if(m_inode->i_buffered){
 		BUFW_INODE(m_inode);
 		return;
+	}
+	if(m_inode->i_no == 0){
+		printk("i_blocks[0] %u\n", m_inode->i_block[0]);
 	}
 	struct fext_fs *fs = m_inode->fs;
 	struct fext_inode_pos pos;

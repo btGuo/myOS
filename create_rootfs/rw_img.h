@@ -33,5 +33,6 @@ void ide_read(struct disk *hd, uint32_t lba, void *buf, uint32_t cnt);
 int32_t ide_ctor(struct disk *hd, const char *image);
 int32_t ide_dtor(struct disk *hd);
 void ide_scan(struct disk *hd);
+void clear_partition(struct partition *part);
 
 #endif

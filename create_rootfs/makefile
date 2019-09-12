@@ -1,5 +1,5 @@
 BUILD_DIR = ./build
-OUT = create
+OUT = create.bin
 
 
 CC = gcc

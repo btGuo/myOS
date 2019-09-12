@@ -30,6 +30,7 @@ struct partition_table_entry{
 
 void ide_read(struct disk *hd, uint32_t lba, void *buf, uint32_t cnt){
 
+	//printk("ide_read at ----------------------- %d\n", lba);
 	lseek(hd->fd, lba * SECTOR_SZ, SEEK_SET);
 	read(hd->fd, buf, cnt * SECTOR_SZ);
 }
@@ -150,6 +151,16 @@ static void partition_scan(struct disk *hd, uint32_t ext_lba){
 		}
 		++p;
 	}
+}
+
+void clear_partition(struct partition *part){
+
+	char buf[512];
+	memset(buf, 0, 512);
+	uint32_t cnt = part->sec_cnt;
+	while(cnt--)
+		ide_write(part->disk, part->start_lba + cnt, buf, 1);
+
 }
 
 int32_t ide_ctor(struct disk *hd, const char *image){

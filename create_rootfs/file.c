@@ -44,6 +44,14 @@ struct fext_inode_m *file_create(const char *path)
 	inode_sync(m_inode);
 	//记得释放
 
+	inode_close(par_i);
+	inode_release(m_inode);
+
+	if((m_inode = inode_open(root_fs, i_no)) == NULL){
+
+		printk("open inode failed\n");
+		return NULL;
+	}
 	return m_inode;
 }
 

@@ -23,6 +23,7 @@ struct fext_fs *root_fs = NULL;                   ///< 根分区文件系统
 static struct fext_fs *fs_table[MAX_FS] = {NULL};   ///< 挂载文件系统表
 
 
+#define DEBUG 1
 //==========================================================================
 #ifdef DEBUG
 
@@ -90,6 +91,29 @@ void print_fext_group_m(struct fext_group_m *gp, int cnt){
 
 }
 
+void print_blockarg(struct fext_fs *fs){
+
+	printk("\n");
+	printk("block information:\n");
+	printk("direct_blknr %u\t"
+		"s_indirect_blknr %u\t"
+		"d_indirect_blknr %u\t"
+		"t_indirect_blknr %u\n"
+		"max_blocks %u\t"
+		"lba_per_blk %u\t"
+		"sec_per_blk %u\t"
+		"order %u\n",
+		fs->direct_blknr,
+		fs->s_indirect_blknr,
+		fs->d_indirect_blknr,
+		fs->t_indirect_blknr,
+		fs->max_blocks,
+		fs->lba_per_blk,
+		fs->sec_per_blk,
+		fs->order
+	);
+}
+
 #endif
 
 /**
@@ -107,10 +131,11 @@ static void fext_set_blockarg(struct fext_fs *fs)
 {
 	uint32_t order = 0;
 	uint32_t block_size = fs->sb->block_size;
-	while((block_size >>= 1)){
+	uint32_t size = block_size;
+	while((size >>= 1)){
 		order++;
 	}
-	order >>= 2;
+	order -= 2;
 	fs->order = order;
 
 	uint32_t lba_per_blk = block_size / 4;
@@ -147,15 +172,19 @@ static struct fext_fs *new_fext(){
  * 删除文件系统，卸载时用
  */
 static void delete_fext(struct fext_fs *fs){
+	//先在全局表中删除
 	uint32_t i = 0;
 	for(; i < MAX_FS; i++){
 		if(fs_table[i] == fs){
 			fs_table[i] = NULL;
-			kfree(fs);
-			return;
+			break;
 		}
 	}
-	/** do nothing */
+	//释放相关资源
+	kfree(fs->sb);
+	kfree(fs->groups);
+	kfree(fs->root_i);
+	kfree(fs);
 }
 
 /**
@@ -232,8 +261,20 @@ static struct fext_fs *create_fextfs(struct partition *part){
 	MEMORY_OK(fs->sb);
 
 	//直接读取超级块
-	ide_read(part->disk, BOOT_SECS, fs->sb, 
-			sizeof(struct fext_super_block) / SECTOR_SIZE);
+	ide_read(part->disk, 
+			part->start_lba + BOOT_SECS, 
+			fs->sb, 
+			sizeof(struct fext_super_block) / SECTOR_SIZE
+		);
+
+	if(fs->sb->magic != EXT2_SUPER_MAGIC){
+
+		printk("super block error\n");
+		delete_fext(fs);
+		return NULL;
+	}
+
+	fext_set_blockarg(fs);
 
 	uint32_t block_size = fs->sb->block_size;
 	fs->groups_cnt = fs->sb->blocks_count / fs->sb->blocks_per_group;
@@ -249,6 +290,7 @@ static struct fext_fs *create_fextfs(struct partition *part){
 	uint8_t *buf = kmalloc(fs->groups_blks * block_size);
 	struct fext_group *gp = (struct fext_group *)buf;
 	struct fext_group_m *gp_info = fs->groups;
+
 	read_direct(fs, fs->sb->groups_table, gp, fs->groups_blks);
 
 	//复制内存
@@ -266,11 +308,11 @@ static struct fext_fs *create_fextfs(struct partition *part){
 	//初始化第一个组
 	group_info_init(fs, fs->cur_gp);
 
-	fext_set_blockarg(fs);
-
 	//释放缓冲
 	kfree(buf);
 
+	//print_super_block(fs->sb);
+	//print_fext_group_m(fs->cur_gp, 1);
 	printk("mount fsition done\n");
 	return fs;
 }
@@ -388,11 +430,25 @@ void filesys_init(){
 	}
 	
 	struct fext_inode_m *inode = inode_open(root_fs, ROOT_INODE);
+	if(inode == NULL){
+		PANIC("can't find root inode\n");
+	}
 	inode->i_mounted = true;
 
 	root_fs->root_i = inode;
 	strcpy(root_fs->mount_path, "/");
 	root_fs->mounted = true;
+
+	//print_super_block(root_fs->sb);
+	printk("i_size %d\n", inode->i_size);
+	printk("i_block[0] %d\n", inode->i_block[0]);
+	printk("i_block[1] %d\n", inode->i_block[1]);
+	printk("i_block[2] %d\n", inode->i_block[2]);
+	printk("i_block[3] %d\n", inode->i_block[3]);
+	printk("i_block[4] %d\n", inode->i_block[4]);
+	printk("i_block[5] %d\n", inode->i_block[5]);
+	printk("i_block[6] %d\n", inode->i_block[6]);
+	printk("i_block[7] %d\n", inode->i_block[7]);
 
 //初始化文件表
 	uint32_t fd_idx = 0;

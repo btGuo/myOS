@@ -181,6 +181,7 @@ static inline void busy_wait(struct disk *hd){
 void ide_read(struct disk *hd, uint32_t lba, void *buf, uint32_t cnt){
 
 	ASSERT(lba < MAX_LBA && cnt > 0);
+	printk("ide_read at %d\n", lba);
 
 	mutex_lock_acquire(&hd->channel->lock);
 

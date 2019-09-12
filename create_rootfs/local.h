@@ -12,6 +12,8 @@
 #define ASSERT(x) \
 if(!(x)){\
 	printf("============= assert error =============\n");\
+	printf("%s\n", #x);\
+	while(1);\
 }
 
 

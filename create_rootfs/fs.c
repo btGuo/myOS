@@ -28,7 +28,7 @@ void print_meta_info(){
 
 void print_super_block(struct fext_super_block *sb){
 	printk("\n");
-	printk("start print super_block\n");
+	printk("super block information:\n");
 	printk("block_size %d\t"
 	        "blocks_per_group %d\t"  
 		"inodes_per_group %d\t"  
@@ -53,7 +53,8 @@ void print_super_block(struct fext_super_block *sb){
 ///注意这里打印的是group不是fext_group_m
 void print_group(struct fext_group *gp, int cnt){
 	int i = 0;
-	printk("start print group\n");
+	printk("\n");
+	printk("group information:\n");
 	printk("b_bmp\ti_bmp\ti_tab\tf_blk\tf_ino\n");
 	while(i < cnt){
 		printk("%d\t%d\t%d\t%d\t%d\n", 
@@ -66,20 +67,19 @@ void print_group(struct fext_group *gp, int cnt){
 		++i;
 		++gp;
 	}
-	printk("end printk group\n");
 }
 
 void print_blockarg(struct fext_fs *fs){
 
 	printk("\n");
-	printk("block arguments:\n");
+	printk("block information:\n");
 	printk("direct_blknr %u\t"
 		"s_indirect_blknr %u\t"
 		"d_indirect_blknr %u\t"
 		"t_indirect_blknr %u\n"
 		"max_blocks %u\t"
 		"lba_per_blk %u\t"
-		"sec_per_blk %u"
+		"sec_per_blk %u\t"
 		"order %u\n",
 		fs->direct_blknr,
 		fs->s_indirect_blknr,
@@ -90,7 +90,6 @@ void print_blockarg(struct fext_fs *fs){
 		fs->sec_per_blk,
 		fs->order
 	);
-	printk("\n");
 }
 
 static inline void fext_set_blockarg(struct fext_fs *fs)
@@ -101,7 +100,7 @@ static inline void fext_set_blockarg(struct fext_fs *fs)
 	while((size >>= 1)){
 		order++;
 	}
-	order >>= 2;
+	order -= 2;
 	fs->order = order;
 
 	uint32_t lba_per_blk = block_size / 4;
@@ -113,8 +112,6 @@ static inline void fext_set_blockarg(struct fext_fs *fs)
 	fs->max_blocks = fs->t_indirect_blknr;
 	fs->lba_per_blk = lba_per_blk;
 	fs->sec_per_blk = block_size / SECTOR_SIZE;
-
-	print_blockarg(fs);
 }
 //===================================================================================
 
@@ -144,7 +141,7 @@ static void delete_fext(struct fext_fs *fs){
 	for(; i < MAX_FS; i++){
 		if(fs_table[i] == fs){
 			fs_table[i] = NULL;
-			kfree(fs);
+			free(fs);
 			return;
 		}
 	}
@@ -198,10 +195,17 @@ void sync_fext(struct fext_fs *fs){
 
 	//根目录不在缓冲中
 	inode_sync(root_fs->root_i);
-	kfree(buf);
+	free(buf);
 
 //同步缓冲区，这个应该放在最后
 	buffer_sync(&fs->io_buffer);
+}
+
+/**
+ * 查看根目录是否存在，这里假设cur_gp 已经初始化
+ */
+static bool scan_root(struct fext_fs *fs){
+	return bitmap_verify(&fs->cur_gp->inode_bmp, ROOT_INODE);
 }
 
 /**
@@ -235,9 +239,10 @@ static struct fext_inode_m *create_root(struct fext_fs *fs){
  * 新建fext文件系统
  * @param part 所在分区
  */
-static struct fext_fs *create_fextfs(struct partition *part){
+static struct fext_fs *create_fextfs(struct partition *part, bool verbose){
 
-	printk("mount_partition in %s\n", part->name);
+	if(verbose)
+		printk("mount_partition in %s\n", part->name);
 
 	struct fext_fs *fs = new_fext();
 	if(fs == NULL){
@@ -265,7 +270,10 @@ static struct fext_fs *create_fextfs(struct partition *part){
 	//这个要放前面
 	fext_set_blockarg(fs);
 
-	print_super_block(fs->sb);
+	if(verbose)
+		print_super_block(fs->sb);
+	if(verbose)
+		print_blockarg(fs);
 
 	uint32_t block_size = fs->sb->block_size;
 	fs->groups_cnt = fs->sb->blocks_count / fs->sb->blocks_per_group;
@@ -284,7 +292,8 @@ static struct fext_fs *create_fextfs(struct partition *part){
 
 	read_direct(fs, fs->sb->groups_table, gp, fs->groups_blks);
 
-	print_group(gp, fs->groups_cnt);
+	if(verbose)
+		print_group(gp, fs->groups_cnt);
 
 	//复制内存
 	int cnt = 0;
@@ -302,20 +311,39 @@ static struct fext_fs *create_fextfs(struct partition *part){
 	group_info_init(fs, fs->cur_gp);
 
 	//释放缓冲
-	kfree(buf);
+	free(buf);
 
-	printk("mount filesystem done\n");
+	if(verbose)
+		printk("mount filesystem done\n");
 	return fs;
 }
 
-void init_fs(struct partition *part){
-	root_fs = create_fextfs(part);
+void init_fs(struct partition *part, bool verbose){
+	root_fs = create_fextfs(part, verbose);
+
 	if(root_fs == NULL){
 		printf("panic create fextfs error\n");
 		return;
 	}
+
 	strcpy(root_fs->mount_path, "/");
 	root_fs->mounted = true;
-	root_fs->root_i = create_root(root_fs);
-	printk("init filesystem done\n");
+
+	if(!scan_root(root_fs)){
+
+		root_fs->root_i = create_root(root_fs);
+	}else {
+		printf("the root inode exist!\n");
+		root_fs->root_i = inode_open(root_fs, ROOT_INODE);
+		printf("i_size %d\n", root_fs->root_i->i_size);
+		printf("i_block[0] %d\n", root_fs->root_i->i_block[0]);
+		printf("I_no %d\n", root_fs->root_i->i_no);
+	}
+	if(verbose)
+		printk("init filesystem done\n");
+}
+
+void sync_fs(){
+	sync_fext(root_fs);
+	delete_fext(root_fs);
 }

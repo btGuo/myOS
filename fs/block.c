@@ -138,7 +138,7 @@ void write_direct(struct fext_fs *fs, uint32_t sta_blk_nr, void *data, uint32_t 
 	ide_write(fs->part->disk, 
 			fs->part->start_lba + sta_blk_nr *fs->sec_per_blk + BOOT_SECS, 
 			data, 
-			cnt * fs->sec_per_blk;
+			cnt * fs->sec_per_blk
 		);
 }	
 

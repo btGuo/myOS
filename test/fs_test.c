@@ -4,6 +4,7 @@
 #include "memory.h"
 #include "data.h"
 #include "dir.h"
+#include "string.h"
 
 const uint32_t sz = 2384;
 const char *name = "/sdfii";
@@ -144,11 +145,25 @@ void test_dir(){
 	struct Dir *root = sys_opendir("/");
 	struct dirent *de = NULL;
 	while((de = sys_readdir(root))){
-		printk("%s\t", de->filename);
+		printk("%s %d;\t", de->filename, de->i_no);
 	}
 	sys_closedir(root);
 	printk("\n");
 
+	int fd = -1;
+	if((fd = sys_open("/etc/passwd", O_RDONLY)) == -1){
+		printk("open passwd failed\n");
+		return;
+	}
+
+	char buf[512];
+	memset(buf, 0, 512);
+	int bytes = 0;
+	bytes = sys_read(fd, buf, 20);
+	printk("read %d(byte) from %d\n", bytes, fd);
+	printk("content %s\n", buf);
+
+	/*
 	if(sys_mkdir("/test_dir") == -1){
 		printk("mkdir error\n");
 		return;
@@ -203,7 +218,7 @@ void test_dir(){
 	}
 	
 	printk("%s\n", buf);
-	
+	*/	
 }
 
 void test_fs(){
@@ -214,6 +229,4 @@ void test_fs(){
 	//test_writelong();
 	//wl_verify();
 	test_dir();
-	for(int i = 0; i < 10; i++);
-	_Bool b = 1;
 }
