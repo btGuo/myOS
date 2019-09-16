@@ -1,13 +1,6 @@
-AS = nasm
+OBJS = ../build/boot.o
+AS = as
+ASFLAGS = --32 
 
-all: loader mbr hd
-
-loader:loader.S
-	$(AS) $<
-
-mbr:mbr.S
-	$(AS) $<
-
-hd:
-	dd if=mbr of=../hd60.img count=1 bs=512 conv=notrunc ;\
-		dd if=loader of=../hd60.img count=4 bs=512 seek=2 conv=notrunc
+$OBJS:boot.S
+	$(AS) $(ASFLAGS) -o $(OBJS) boot.S	

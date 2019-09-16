@@ -13,8 +13,8 @@ ata0: enabled=1, ioaddr1=0x1f0, ioaddr2=0x3f0, irq=14
 #ata0-master: type=disk, path="", mode=flat, cylinders=1024, heads=16, spt=63
 #ata0-slave: type=cdrom, path="/dev/cdrom", status=inserted
 
-ata0-master:type=disk, mode=flat, path="../hd60.img"
-ata0-slave:type=disk, mode=flat, path="../hd90.img"
+ata0-master:type=disk, mode=flat, path="../disk.img"
+#ata0-slave:type=disk, mode=flat, path="../hd90.img"
 
 #boot: cdrom
 boot :disk

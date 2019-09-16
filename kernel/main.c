@@ -7,21 +7,24 @@
 #include <tty.h>
 #include <stdio.h>
 #include <clock.h>
+#include <multiboot.h>
 
 void init(void);
 
-int main() {
+void kernel_main(struct multiboot_info *info) {
+	set_info(info);
 	init_all();
+	printk("memory %d\n", get_mem_upper());
 	//test_fmt();
 	//test_memory();
 	//test_hashtable();
 	///test_thread();
-	test_fs();
+	//test_fs();
 	//test_exec();
 	//intr_enable();
 
 	while(1);
-	return 0;
+	//return 0;
 }
 
 void init(void){

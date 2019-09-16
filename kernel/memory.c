@@ -7,6 +7,7 @@
 #include <buddy.h>
 #include <sync.h>
 #include <process.h>
+#include <multiboot.h>
 
 /**
  * 内核物理内存固定映射，由伙伴系统统一管理，用户物理内存动态映射，自由链表管理
@@ -21,11 +22,11 @@ struct umem_manager umm;
  */
 static void build_k_pgtable(uint32_t pg_cnt){
 
-	//前2M已经用了
-	uint32_t paddr = (1 << 21) | 0x7;
-	pg_cnt -= 512;
+	//前4M已经用了
+	uint32_t paddr = (1 << 22) | 0x7;
+	pg_cnt -= 768;
 
-	uint32_t vaddr = 0xc0100000;
+	uint32_t vaddr = 0xc0400000;
 	uint32_t *pte_ptr = PTE_PTR(vaddr);
 
 	//这里页表是连续的
@@ -70,7 +71,7 @@ static void km_manager_init(uint32_t k_pgs, uint32_t all_pgs, uint32_t paddr_sta
 	ASSERT((paddr_start & ~(1 << 22)) == 0)
 
 	uint32_t pgt_pgs = DIV_ROUND_UP(all_pgs * sizeof(struct page_desc), PG_SIZE);
-	uint32_t used_pgs = 512 + pgt_pgs;
+	uint32_t used_pgs = 768 + pgt_pgs;
 
 	uint32_t free_paddr_s = paddr_start + used_pgs * PG_SIZE;
 	//4M对齐
@@ -642,7 +643,9 @@ void copy_page_table(uint32_t *pde){
 void mem_init(){
 
 	printk("mem_init start\n");
-	uint32_t all_mem = *((uint32_t*)0xb00);
+	//这里加了1M
+	uint32_t all_mem = get_mem_upper() + 0x100000;
+	printk("all_memory %d\n", all_mem);
 	mem_pool_init(all_mem);
 	printk("mem_init done\n");
 }

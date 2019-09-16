@@ -1,5 +1,5 @@
 BUILD_DIR = ./build
-OUT = create.bin
+OUT = mkfext
 
 
 CC = gcc

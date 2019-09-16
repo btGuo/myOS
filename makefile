@@ -2,25 +2,17 @@ ENTRY_POINT = 0xc0001500
 LIB = -I include
 BUILD_DIR = $(PWD)/build
 
-AS = nasm
-ASFLAGS = -f elf
 CC = gcc
 CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall -fno-stack-protector
 LD = ld
-LDFALGS = -Ttext $(ENTRY_POINT) -e main -Map $(BUILD_DIR)/kernel.map \
-		  -m elf_i386
+LDFALGS = -T ./boot/linker.ld -m elf_i386
 
 SUBDIRS = device kernel lib thread userprog fs test
-OBJS = $(BUILD_DIR)/main.o $(BUILD_DIR)/_kernel.o $(BUILD_DIR)/_thread.o \
+OBJS = $(BUILD_DIR)/boot.o $(BUILD_DIR)/_kernel.o $(BUILD_DIR)/_thread.o \
 	   $(BUILD_DIR)/_device.o  $(BUILD_DIR)/_userprog.o $(BUILD_DIR)/_fs.o \
 	   $(BUILD_DIR)/_test.o $(BUILD_DIR)/_lib_kernel.o
 
 OUT = $(BUILD_DIR)/kernel.bin
-
--include $(BUILD_DIR)/main.d
-
-$(BUILD_DIR)/main.o:./kernel/main.c
-	$(CC) $(CFLAGS) $< -o $@ -MMD -MP
 
 $(OUT):$(OBJS)
 	$(LD) $(LDFALGS) -o $(OUT) $(OBJS)
@@ -29,9 +21,9 @@ hd60.img:$(OUT)
 	dd if=$(OUT) of=hd60.img seek=9 count=200 bs=512 \
 		conv=notrunc
 
-all :mk_dir subdir $(OUT) hd60.img objdump
+all :mk_dir subdir $(OUT)
 
-.PHONY:mk_dir clean subdir objdump
+.PHONY:mk_dir clean subdir objdump install
 
 subdir:
 	@for dir in $(SUBDIRS); do $(MAKE) -C $$dir all;done
@@ -44,6 +36,7 @@ clean:
 
 objdump:
 	objdump -D ./build/kernel.bin > ./build/kernel.uasm
+
 
 
 

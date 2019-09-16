@@ -9,8 +9,7 @@ CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall -fno-stack-protector
 LD = ld
 LDFLAGS = -m elf_i386 -r
 
-_SRCS = $(wildcard *.c)
-SRCS = $(_SRCS:main.c= )
+SRCS = $(wildcard *.c)
 OBJS = $(SRCS:%.c=$(BUILD_DIR)/%.o)
 DEPS = $(SRCS:%.c=$(BUILD_DIR)/%.d)
 

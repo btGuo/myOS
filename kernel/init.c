@@ -19,12 +19,14 @@ void init_all(){
 	idt_init();
 	timer_init();
 	mem_init();
+	/*
 	ide_init();
 	keyboard_init();
 	tss_init();
 	sys_call_init();
 	filesys_init();
 	thread_init();
-	
+	*/	
+
 	printk("init_all done\n");
 }

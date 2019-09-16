@@ -14,7 +14,7 @@
  * --------------------------------------------------------------------
  * |            |               |               |     |               | 
  * | boot block | block group 0 | block group 1 | ... | block group n |
- * |            |               |               |     |               |
+ * | (1024)Byte |               |               |     |               |
  * --------------------------------------------------------------------
  * 
  * for each block group     (group description table -> gdt) 
@@ -39,11 +39,15 @@
 /** 根inode号  */
 #define ROOT_INODE 0
 
+/**  找到块组cnt的指针    */
 #define GROUP_BLK(sb, cnt) (1 + (sb)->blocks_per_group * (cnt))
 
+/**  找到超级块cnt的指针    */
 #define SUPER_BLK(sb, cnt) ((sb)->blocks_per_group * (cnt))
 
+/** 超级块占用的块数   */
 #define SUPER_BLKS 1
+
 /**
  * 文件打开标志位
  */
@@ -61,8 +65,6 @@ enum whence{
 	SEEK_CUR,      ///< 以文件当前位置为参照
 	SEEK_END       ///< 以文件末尾为参照
 };
-
-//TODO 把sb拿出来直接放在fs里面，好多变量都要直接用到
 
 /**
  * 文件系统描述符，类fext
