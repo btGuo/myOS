@@ -93,7 +93,7 @@ struct task_struct{
 	struct task_struct *par;        ///< 父进程
 	struct fext_inode_m *root_i;      ///< 所在根inode
 	struct fext_inode_m *cwd_i;      ///< 当前目录inode
-	int32_t fd_table[MAX_FILES_OPEN_PER_PROC];    ///< 文件号表
+	struct file *fd_table[MAX_FILES_OPEN_PER_PROC];    ///< 文件号表
 	struct vm_struct vm_struct;   		      ///< 内存区管理
 	int8_t exit_status;        
 	uint32_t stack_magic;                         ///< 魔数，标记是否越界

@@ -15,10 +15,17 @@
 
 struct file file_table[MAX_FILE_OPEN];   ///< 文件表
 
+//TODO 初始化
+struct file *stdin_fp  = &file_table[0];
+struct file *stdout_fp = &file_table[1];
+struct file *stderr_fp = &file_table[2];
+
+int32_t sys_close(int32_t fd);
+
 static int dupfd(uint32_t fd, uint32_t arg){
 	
 	if(fd < 0 || fd >= MAX_FILES_OPEN_PER_PROC ||
-			curr->fd_table[fd] == -1){
+			curr->fd_table[fd] == NULL){
 
 		return -1;
 	}
@@ -29,7 +36,7 @@ static int dupfd(uint32_t fd, uint32_t arg){
 
 	while(arg < MAX_FILES_OPEN_PER_PROC){
 
-		if(curr->fd_table[arg] == -1){
+		if(curr->fd_table[arg] == NULL){
 			
 			break;
 		}
@@ -40,12 +47,9 @@ static int dupfd(uint32_t fd, uint32_t arg){
 		return -1;
 	}
 
-	curr->fd_table[arg] = curr->fd_table[fd];
-	file_table[curr->fd_table[fd]].fd_count++;
+	(curr->fd_table[arg] = curr->fd_table[fd])->fd_count++;
 	return arg;
 }
-
-
 
 int32_t sys_dup(int32_t fd){
 
@@ -58,32 +62,34 @@ int32_t sys_dup2(int32_t oldfd, int32_t newfd){
 	return dupfd(oldfd, newfd);
 }
 
-
 /**
  * @brief 在文件表中找到空位
  */
-int32_t get_fd(){
+struct file *get_file(){
+
 	uint32_t idx = 3;
 	while(idx < MAX_FILE_OPEN){
 		if(file_table[idx].fd_inode == NULL){
-			return idx;
+			return &file_table[idx];
 		}
 		++idx;
 	}
-	return -1;
+	return NULL;
 }
 
 /**
- * @brief 在当前进程文件表中安装文件
+ * 在当前进程中查找空闲项
  */
-int32_t set_fd(int32_t fd){
-	int idx = 3;
+int32_t get_fd(){
+	
+	int32_t idx = 0;
 	while(idx < MAX_FILES_OPEN_PER_PROC){
-		if(curr->fd_table[idx] == -1){
-			curr->fd_table[idx] = fd;
+
+		if(curr->fd_table[idx] == NULL){
+
 			return idx;
 		}
-		++idx;
+		idx++;
 	}
 	return -1;
 }
@@ -135,17 +141,24 @@ int32_t file_create(struct fext_inode_m *par_i, char *filename, uint8_t flag){
  * 	@retval -1 失败
  */
 int32_t file_open(uint32_t i_no, uint8_t flag){
-	int fd_idx = get_fd();
-	if(fd_idx == -1){
-		printk("exceed max open files\n");
+
+	struct file *fp = get_file();
+	int32_t fd = get_fd();
+
+	if(fp == NULL || fd == 0){
+
+	//达到全局最大文件打开数或者当前进程最大文件打开数
 		return -1;
 	}
+	
+	curr->fd_table[fd] = fp;
 
-	file_table[fd_idx].fd_inode = inode_open(root_fs, i_no);
-	file_table[fd_idx].fd_pos = 0;
-	file_table[fd_idx].fd_flag = flag;
+	fp->fd_inode = inode_open(root_fs, i_no);
+	fp->fd_pos = 0;
+	fp->fd_flag = flag;
+	fp->fd_count = 1;
 
-	bool *write_deny = &file_table[fd_idx].fd_inode->i_write_deny;
+	bool *write_deny = &fp->fd_inode->i_write_deny;
 
 	if(flag & O_WRONLY || flag & O_RDWR){
 		//这里应该改为锁
@@ -159,7 +172,7 @@ int32_t file_open(uint32_t i_no, uint8_t flag){
 			return -1;
 		}
 	}
-	return set_fd(fd_idx);
+	return fd;
 }
 
 /**
@@ -168,7 +181,10 @@ int32_t file_open(uint32_t i_no, uint8_t flag){
 void file_close(struct file *file){
 
 	inode_close(file->fd_inode);
-	file->fd_inode = NULL;
+
+	if(file->fd_count-- == 0){
+		file->fd_inode = NULL;
+	}
 }
 
 /**
@@ -346,6 +362,7 @@ int32_t sys_open(const char *path, uint8_t flags){
 	return fd;
 }	
 
+/*
 uint32_t to_global_fd(uint32_t fd){
 
 	ASSERT(fd >= 0 && fd < MAX_FILES_OPEN_PER_PROC);
@@ -353,7 +370,7 @@ uint32_t to_global_fd(uint32_t fd){
 	ASSERT(g_fd >= 0 && g_fd < MAX_FILE_OPEN);
 	return g_fd;
 }
-
+*/
 
 /**
  * 关闭文件
@@ -361,19 +378,22 @@ uint32_t to_global_fd(uint32_t fd){
  */
 int32_t sys_close(int32_t fd){
 
-	if(fd > 2){
+	if(fd < 0 || fd >= MAX_FILES_OPEN_PER_PROC ||
+		curr->fd_table[fd] == NULL){
 
-		if(is_pipe(fd)){
-
-			pipe_close(fd);
-		}else {
-			uint32_t g_fd = to_global_fd(fd);
-			file_close(&file_table[g_fd]);
-		}
-		curr->fd_table[fd] = -1;
-		return 0;
+		return -1;
 	}
-	return -1;
+
+	uint32_t type = curr->fd_table[fd]->fd_inode->i_type;
+	if(S_ISFIFO(type)){
+
+		pipe_close(fd);
+	}else {
+
+		file_close(curr->fd_table[fd]);
+	}
+	curr->fd_table[fd] = NULL;
+	return 0;
 }
 
 #define FD_LEGAL(fd)\
@@ -390,28 +410,41 @@ do{\
  */
 int32_t sys_write(int32_t fd, const void *buf, uint32_t count){
 
-	FD_LEGAL(fd);
-	if(fd == stdout_no){
-		//标准输入被重定向
-		if(is_pipe(fd)){
-			return pipe_write(fd, buf, count);
+	if(fd < 0 || fd >= MAX_FILES_OPEN_PER_PROC ||
+		curr->fd_table[fd] == NULL){
+
+		return -1;
+	}
+
+	struct file *fp = curr->fd_table[fd];
+	struct fext_inode_m *inode = fp->fd_inode;
+
+	if(S_ISREG(inode->i_type)){
+
+		if(fp->fd_flag & O_WRONLY || fp->fd_flag & O_RDWR){
+
+			return file_write(fp, buf, count);
 		}
-		terminal_writestr(buf);
-		return count;
-	}
-	if(is_pipe(fd)){
-		return pipe_write(fd, buf, count);
-	}
-
-	uint32_t g_fd = to_global_fd(fd);
-	struct file *file = &file_table[g_fd];
-	if(file->fd_flag & O_WRONLY || file->fd_flag & O_RDWR){
-
-		return file_write(file, buf, count);
-	}else {
 		printk("sys_write flag error\n");
 		return -1;
 	}
+
+	if(S_ISCHR(inode->i_type)){
+
+		//TODO 
+		terminal_writestr(buf);
+		return count;
+	}
+
+	if(S_ISFIFO(inode->i_type)){
+
+		return pipe_write(fd, buf, count);
+	}
+
+	if(S_ISBLK(inode->i_type)){
+		//TODO
+	}
+	return -1;
 }
 
 /**
@@ -419,26 +452,35 @@ int32_t sys_write(int32_t fd, const void *buf, uint32_t count){
  */
 int32_t sys_read(int32_t fd, void *buf, uint32_t count){
 
-	FD_LEGAL(fd);
-	if(fd == stdout_no || fd == stderr_no){
-		printk("sys_read fd error\n");
+	if(fd < 0 || fd >= MAX_FILES_OPEN_PER_PROC ||
+		curr->fd_table[fd] == NULL){
+
 		return -1;
 	}
-	if(fd == stdin_no){
-		//同上
-		if(is_pipe(fd)){
-			return pipe_read(fd, buf, count);
-		}
+
+	struct file *fp = curr->fd_table[fd];
+	struct fext_inode_m *inode = fp->fd_inode;
+
+	if(S_ISREG(inode->i_type)){
+
+		return file_read(fp, buf, count);
+	}
+
+	if(S_ISCHR(inode->i_type)){
+
+		//TODO 
 		return kb_read(buf, count);
 	}
 
-	if(is_pipe(fd)){
+	if(S_ISFIFO(inode->i_type)){
+
 		return pipe_read(fd, buf, count);
 	}
 
-	uint32_t g_fd = to_global_fd(fd);
-	struct file *file = &file_table[g_fd];
-	return file_read(file, buf, count);
+	if(S_ISBLK(inode->i_type)){
+		//TODO
+	}
+	return -1;
 }
 
 /**
@@ -452,7 +494,8 @@ int32_t sys_lseek(int32_t fd, int32_t offset, uint8_t whence){
 
 	FD_LEGAL(fd);
 	ASSERT(whence > 0 && whence < 4);
-	struct file *file = &file_table[to_global_fd(fd)];
+
+	struct file *file = curr->fd_table[fd];
 	uint32_t file_size = file->fd_inode->i_size;
 	int32_t new_pos = 0;
 

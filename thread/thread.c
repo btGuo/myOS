@@ -5,6 +5,7 @@
 #include <process.h>
 #include <global.h>
 #include <fs.h>
+#include <file.h>
 
 struct task_struct *main_thread;
 struct task_struct *curr;
@@ -114,9 +115,9 @@ void init_thread(struct task_struct *pthread, char *name, int prio){
 		pthread->cwd_i = root_fs->root_i;
 	}
 
-	pthread->fd_table[0] = 0;
-	pthread->fd_table[1] = 1;
-	pthread->fd_table[2] = 2;
+	pthread->fd_table[0] = stdin_fp;
+	pthread->fd_table[1] = stdout_fp;
+	pthread->fd_table[2] = stderr_fp;
 	uint8_t idx = 3;
 	while(idx < MAX_FILES_OPEN_PER_PROC){
 		pthread->fd_table[idx] = -1;

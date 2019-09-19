@@ -65,19 +65,23 @@ static int32_t build_child_stack0(struct task_struct *child){
  */
 static void up_inode(struct task_struct *thread){
 
-	int32_t l_fd = 3, g_fd = 0;
-	while(l_fd < MAX_FILES_OPEN_PER_PROC){
+	struct file *fp = NULL;
+	struct fext_inode_m *inode = NULL;
+	int32_t idx = 3;
 
-		g_fd = thread->fd_table[l_fd];
-		if(g_fd != -1){
-			if(is_pipe(l_fd)){
+	while(idx < MAX_FILES_OPEN_PER_PROC){
+		
+		fp = curr->fd_table[idx];
+		if(fp){
+			inode = fp->fd_inode;
+			if(S_ISFIFO(inode->i_type)){
 				
-				file_table[g_fd].fd_pos++;
+				fp->fd_pos++;
 			}else {
-				file_table[g_fd].fd_inode->i_open_cnts++;
+				inode->i_open_cnts++;
 			}
 		}
-		++l_fd;
+		idx++;
 	}
 }
 

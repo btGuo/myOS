@@ -24,9 +24,12 @@ enum std_fd{
 
 extern struct file file_table[MAX_FILE_OPEN];
 
-uint32_t to_global_fd(uint32_t fd);
+extern struct file *stdin_fp;
+extern struct file *stdout_fp;
+extern struct file *stderr_fp;
+
+struct file *get_file();
 int32_t get_fd();
-int32_t set_fd(int32_t fd);
 int32_t file_open(uint32_t i_no, uint8_t flag);
 void file_close(struct file *file);
 int32_t file_read(struct file *file, void *buf, uint32_t count);
