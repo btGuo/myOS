@@ -11,6 +11,7 @@
 #include <pipe.h>
 #include <inode.h>
 
+#define DEBUG 1
 extern void intr_exit(void);
 //TODO 目前fork时vm_struct 是共享的，更新时会一起更新。
 
@@ -90,6 +91,7 @@ static int32_t copy_process(struct task_struct *child, struct task_struct *paren
 	if(child->pg_dir == NULL)
 		return -1;
 
+	printk("child pg_dir %x\n", child->pg_dir);
 	copy_page_table(child->pg_dir);		
 
 	build_child_stack0(child);

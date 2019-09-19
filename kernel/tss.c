@@ -60,23 +60,31 @@ static struct gdt_desc make_gdt_desc(uint32_t base, uint32_t limit, \
 }
 
 void tss_init(){
+	uint32_t gdt_base = 0;
+	uint64_t gdt_operand = 0;
+
+	asm volatile("sgdt %0"::"m"(gdt_operand));
+
+	gdt_base = gdt_operand >> 16;
+	printk("gdt base addr is %x\n", gdt_base);
+
 	printk("tss init start\n");
 	uint32_t tss_size = sizeof(tss);
 	memset(&tss, 0, tss_size);
 	tss.ss0 = SELECTOR_K_STACK;
 	tss.io_base = (tss_size << 16);
 
-	*((struct gdt_desc *)(GDT_BASE + 0x20)) = make_gdt_desc(\
+	*((struct gdt_desc *)(gdt_base + 0x20)) = make_gdt_desc(\
 			(uint32_t)&tss, tss_size - 1, 0x89, 0x80);	
 
-	*((struct gdt_desc *)(GDT_BASE + 0x28)) = make_gdt_desc(\
+	*((struct gdt_desc *)(gdt_base + 0x28)) = make_gdt_desc(\
 			0, 0x000fffff, 0xf8, 0xc0);
 
-	*((struct gdt_desc *)(GDT_BASE + 0x30)) = make_gdt_desc(\
+	*((struct gdt_desc *)(gdt_base + 0x30)) = make_gdt_desc(\
 			0, 0x000fffff, 0xf2, 0xc0);
 
-	uint64_t gdt_operand = ((8 * 7 -1) | \
-			((uint64_t)(uint32_t)0xc0000900 << 16));
+	uint16_t *gdt_limit = &gdt_operand;
+	*gdt_limit = 8 * 7 - 1;
 
 	asm volatile("lgdt %0"::"m"(gdt_operand));
 	asm volatile("ltr %w0"::"r"(SELECTOR_K_TSS));

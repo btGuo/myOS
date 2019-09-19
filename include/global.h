@@ -14,8 +14,6 @@
 #define IDT_DESC_ATTR_DPL0 0x8e
 #define IDT_DESC_ATTR_DPL3 0xee
 
-#define GDT_BASE 0xc0000900
-
 #define EFLAGS_MBS (1 << 1)
 #define EFLAGS_IF_ON (1 << 9)
 #define EFLAGS_IF_OFF 0

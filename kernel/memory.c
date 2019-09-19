@@ -24,7 +24,7 @@ static void build_k_pgtable(uint32_t pg_cnt){
 
 	//前4M已经用了
 	uint32_t paddr = (1 << 22) | 0x7;
-	pg_cnt -= 768;
+	pg_cnt -= 1024;
 
 	uint32_t vaddr = 0xc0400000;
 	uint32_t *pte_ptr = PTE_PTR(vaddr);
@@ -35,6 +35,7 @@ static void build_k_pgtable(uint32_t pg_cnt){
 		paddr += PG_SIZE;
 		++pte_ptr;
 	}
+	//printk("build done\n");
 }
 
 /**
@@ -89,8 +90,9 @@ static void km_manager_init(uint32_t k_pgs, uint32_t all_pgs, uint32_t paddr_sta
 	kmm.paddr_start = paddr_start;
 	kmm.pages = k_pgs;
 	kmm.buddy_paddr_start = buddy_paddr_start;
-	kmm.page_table = (struct page_desc *)0xc0100000;
-	kmm.v_area_saddr = K_VADDR_START + (k_pgs - 256) * PG_SIZE;
+	kmm.page_table = (struct page_desc *)0xc0300000;
+	kmm.v_area_saddr = K_VADDR_START + k_pgs * PG_SIZE;
+		
 	LIST_HEAD_INIT(kmm.v_area_head);
 	LIST_HEAD_INIT(kmm.page_caches);
 
@@ -138,7 +140,8 @@ static void mem_pool_init(uint32_t all_mem){
 	printk("memory pool init start\n");
 	uint32_t all_pgs = all_mem >> 12;
 	//内核物理页，占总内存1/4
-	uint32_t k_pgs = all_pgs >> 2;
+	//对1024取整
+	uint32_t k_pgs = ((all_pgs >> 2) + 0x3ff) & 0xfffffc00;
 	uint32_t u_pgs = all_pgs - k_pgs;
 	
 	printk("total pages : %d\n", all_pgs);
@@ -267,6 +270,7 @@ static void *vaddr_get(uint32_t pg_cnt){
 void flush_tlb_all(){
 
 	uint32_t paddr = addr_v2p((uint32_t)curr->pg_dir);
+	//printk("flush_tlb_all paddr %x\n", paddr);
 	asm volatile("movl %0, %%cr3"::"r"(paddr):"memory");
 }
 
@@ -343,7 +347,12 @@ struct v_area *v_area_get(uint32_t pg_cnt){
 		return NULL;
 
 	struct v_area *n_area = kmalloc(sizeof(struct v_area));
-	list_add_tail(&kmm.v_area_head, &n_area->list_tag);
+
+	if(n_area == NULL){
+		return NULL;
+	}
+
+	list_add_tail(&n_area->list_tag, &kmm.v_area_head);
 	n_area->s_addr = saddr;
 	n_area->pg_cnt = pg_cnt;
 	return n_area;
@@ -367,6 +376,7 @@ uint32_t v_area_del(uint32_t *vaddr){
 			kfree(va);
 			return ret;
 		}
+		walk = walk->next;
 	}
 	return 0;
 }	
@@ -404,6 +414,8 @@ void vfree(void *_vaddr){
 	mutex_lock_acquire(&kmm.lock);
 	uint32_t cnt = v_area_del(_vaddr);
 	uint32_t vaddr = (uint32_t)_vaddr;
+
+	printk("vfree %d pages at %x\n", cnt, vaddr);
 
 	//删除页表映射
 	while(cnt--){

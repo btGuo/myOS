@@ -168,7 +168,7 @@ void start_process(void *filename_){
  * 激活页目录
  */
 void page_dir_activate(struct task_struct *p_thread){
-	uint32_t paddr = 0x100000;
+	uint32_t paddr = KPG_DIR_PADDR;
 	if(p_thread->pg_dir){
 		paddr = addr_v2p((uint32_t)p_thread->pg_dir);
 	}
@@ -192,6 +192,7 @@ uint32_t *create_page_dir(void){
 	uint32_t *vaddr = get_kernel_pages(1);
 	if(vaddr == NULL){
 		printk("create page dir failed, no more space!\n");
+		return NULL;
 	}
 
 	//复制高端内存页目录

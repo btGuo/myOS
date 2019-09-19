@@ -5,7 +5,7 @@ OUT = $(BUILD_DIR)/_thread.o
 AS = nasm
 ASFLAGS = -f elf
 CC = gcc
-CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall -fno-stack-protector
+CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall -fno-stack-protector -fno-pie
 LD = ld
 LDFLAGS = -m elf_i386 -r
 

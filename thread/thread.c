@@ -23,6 +23,7 @@ void print_thread(struct task_struct *task){
 }
 
 static void kernel_thread(thread_func *function, void *func_arg){
+	printk("kernel thread\n");
 	//这里打开中断
 	intr_enable();
 	function(func_arg);
@@ -107,8 +108,11 @@ void init_thread(struct task_struct *pthread, char *name, int prio){
 	pthread->self_kstack = (uint32_t*)((uint32_t)pthread + PG_SIZE);
 	pthread->pid = allocate_pid();
 
-	pthread->root_i = root_fs->root_i;
-	pthread->cwd_i = root_fs->root_i;
+	if(root_fs){
+
+		pthread->root_i = root_fs->root_i;
+		pthread->cwd_i = root_fs->root_i;
+	}
 
 	pthread->fd_table[0] = 0;
 	pthread->fd_table[1] = 1;
@@ -126,6 +130,7 @@ void init_thread(struct task_struct *pthread, char *name, int prio){
  */
 struct tack_struct* thread_start(char *name, int prio, \
 		thread_func function, void *func_arg){
+
 	struct task_struct *thread = (struct task_struct*)get_kernel_pages(1);
 	init_thread(thread, name, prio);
 	thread_create(thread, function, func_arg);
@@ -159,6 +164,7 @@ void thread_unblock(struct task_struct *nthread){
 static void make_main_thread(void){
 	main_thread = (struct task_struct *)MAIN_PCB;
 	init_thread(main_thread, "main", 31);
+	main_thread->pg_dir = 0xc0200000;
 	//不需要加入read队列
 	list_add_tail(&main_thread->all_tag, &thread_all_list);
 	curr = main_thread;

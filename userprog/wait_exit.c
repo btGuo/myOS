@@ -122,7 +122,7 @@ pid_t sys_wait(int32_t status){
 		}
 		
 		if(walk == head){
-			printk("no hanging children\n");
+		//	printk("no hanging children\n");
 			//找不到，阻塞自己
 			thread_block(TASK_WATTING);
 			printk("wake up\n");

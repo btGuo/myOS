@@ -2,5 +2,7 @@ OBJS = ../build/boot.o
 AS = as
 ASFLAGS = --32 
 
-$OBJS:boot.S
+all:$(OBJS)
+
+$(OBJS):boot.S
 	$(AS) $(ASFLAGS) -o $(OBJS) boot.S	

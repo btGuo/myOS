@@ -166,7 +166,7 @@ bool add_dir_entry(struct fext_inode_m *inode, struct fext_dirent *dir_e){
 			return false;
 	}
 	
-	printk("blk_idx %d\n", blk_idx);
+	//printk("blk_idx %d\n", blk_idx);
 	uint32_t blk_nr = get_block_num(inode, blk_idx, M_CREATE);
 	bh = read_block(inode->fs, blk_nr);
 
@@ -211,7 +211,7 @@ int32_t sys_mkdir(char *path){
 
 	//先查找
 	bool found = _search_dir_entry(par_i, filename, &dir_e);
-	printk("%s, %d\n", dir_e.filename, dir_e.i_no);
+	//printk("%s, %d\n", dir_e.filename, dir_e.i_no);
 
 	if(found){
 		printk("sys_mkdir: file or directory %s exist!\n", path);

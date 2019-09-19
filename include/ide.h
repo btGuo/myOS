@@ -34,6 +34,7 @@ struct disk{
 	struct partition prim_parts[4];  ///< 4个主分区
 	struct partition logic_parts[8]; ///< 8个逻辑分区，这里设了上限
 	uint8_t dev_no;   ///< 设备号
+	uint32_t sectors;  ///< 扇区数
 };
 
 /**

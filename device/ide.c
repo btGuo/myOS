@@ -43,6 +43,7 @@ uint8_t channel_cnt;     ///< 通道数 1或者2
 struct ide_channel channels[2];  ///< 两条ide通道
 struct partition *parts[MAX_PARTS] = {NULL};  ///< 所有分区信息
 
+#define DEBUG 1
 
 /**
  * @brief 分区表描述符 一个32字节
@@ -88,7 +89,7 @@ struct partition *get_part(dev_t dev_nr){
  */
 struct partition *name2part(const char *device){
 	const char *name = 1 + strrchr(device, '/');
-	printk("name %s\n", name);
+	//printk("name %s\n", name);
 	uint32_t i = 0;
 	for(; i < MAX_PARTS && parts[i]; i++){
 		if(strcmp(parts[i]->name, name) == 0){
@@ -181,7 +182,7 @@ static inline void busy_wait(struct disk *hd){
 void ide_read(struct disk *hd, uint32_t lba, void *buf, uint32_t cnt){
 
 	ASSERT(lba < MAX_LBA && cnt > 0);
-	printk("ide_read at %d\n", lba);
+	//printk("ide_read at %d\n", lba);
 
 	mutex_lock_acquire(&hd->channel->lock);
 
@@ -267,8 +268,9 @@ static void swap_copy(const char *src, char *buf, uint32_t size){
 
 /**
  * 识别磁盘
+ * @return 硬盘是否存在
  */
-static void identify_disk(struct disk *hd){
+static bool identify_disk(struct disk *hd){
 
 	char info[512];
 	select_disk(hd);
@@ -282,13 +284,20 @@ static void identify_disk(struct disk *hd){
 	swap_copy(info + 10 * 2, buf[0], 20);
 	swap_copy(info + 27 * 2, buf[1], 40);
 	
-#ifdef DEBUG
 	uint32_t sectors = *(uint32_t *)&info[60 * 2];
-	printk("\tdisk %s info:\n    SN:  %s\n", hd->name, buf[0]);
-	printk("\t\tMODULE: %s\n",buf[1]);
-	printk("\t\tSECTORS  %d\n", sectors);
-	printk("\t\tCAPACITY %dMB\n", sectors * 512 / 1024 / 1024);
+
+	if(sectors){
+
+		hd->sectors = sectors;
+#ifdef DEBUG
+		printk("\tdisk %s info:\n\tSN:  %s\n", hd->name, buf[0]);
+		printk("\t\tMODULE: %s\n",buf[1]);
+		printk("\t\tSECTORS  %d\n", sectors);
+		printk("\t\tCAPACITY %dMB\n", sectors * 512 / 1024 / 1024);
 #endif
+		return true;
+	}
+	return false;
 }
 
 /**
@@ -408,6 +417,7 @@ void ide_init(){
 	printk("ide_init start\n");
 #endif
 	uint8_t hd_cnt = *((uint8_t *)(0x475));
+	printk("total parts %d\n", hd_cnt);
 	ASSERT(hd_cnt > 0);
 
 	channel_cnt =  DIV_ROUND_UP(hd_cnt, 2);
@@ -435,15 +445,17 @@ void ide_init(){
 		//处理每个硬盘
 		int dev_no = 0;
 		while(dev_no < 2){
+
 			hd = &channels[channel_no].devices[dev_no];
 			hd->channel = &channels[channel_no];
 			hd->dev_no = dev_no;
 			sprintf(hd->name, "sd%c", 'a' + channel_no * 2 + dev_no);
-			identify_disk(hd);
-			//主盘为系统盘，不做处理
-			if(dev_no){
+
+			if(identify_disk(hd)){
+
 				partition_scan(hd, 0);
 			}
+			
 			++dev_no;
 		}
 		++channel_no;

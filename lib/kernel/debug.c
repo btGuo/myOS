@@ -2,7 +2,8 @@
 #include "debug.h"
 
 void panic_spin(char *filename, int line, const char *func, const char *condition){
-	STI();
+
+	intr_disable();
 
 	printk("\n========== error ===========\n");
 	printk("filename : %s\n", filename);

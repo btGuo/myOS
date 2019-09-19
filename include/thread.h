@@ -11,6 +11,8 @@
 #define MAX_FILES_OPEN_PER_PROC 6    ///< 每进程最大打开文件数
 #define MAX_PID 32768    ///< 最大进程数
 
+#define KPG_DIR_PADDR 0x00200000 
+
 typedef int32_t pid_t;
 typedef void thread_func(void*);
 /**

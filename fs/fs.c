@@ -18,7 +18,9 @@
 
 #define FEXT_SUPER_SIZE sizeof(struct fext_super_block)
 #define MAX_FS 64
-static const char *root_device = "/dev/sdb1";     ///< 根分区
+
+/** 根分区，这里是固定的，改为动态识别应该比较好 */
+static const char *root_device = "/dev/sda2";      
 struct fext_fs *root_fs = NULL;                   ///< 根分区文件系统
 static struct fext_fs *fs_table[MAX_FS] = {NULL};   ///< 挂载文件系统表
 
@@ -424,7 +426,12 @@ void filesys_init(){
 	printk("filesys_init start\n");
 #endif
 //加载根文件系统
-	root_fs = create_fextfs(name2part(root_device));
+	struct partition *part = name2part(root_device);
+	if(part == NULL){
+		PANIC("couldn't find fs on anypart\n");
+		return;
+	}
+	root_fs = create_fextfs(part);
 	if(root_fs == NULL){
 		PANIC("build root_fs failed\n");
 	}
@@ -440,16 +447,6 @@ void filesys_init(){
 	root_fs->mounted = true;
 
 	//print_super_block(root_fs->sb);
-	printk("i_size %d\n", inode->i_size);
-	printk("i_block[0] %d\n", inode->i_block[0]);
-	printk("i_block[1] %d\n", inode->i_block[1]);
-	printk("i_block[2] %d\n", inode->i_block[2]);
-	printk("i_block[3] %d\n", inode->i_block[3]);
-	printk("i_block[4] %d\n", inode->i_block[4]);
-	printk("i_block[5] %d\n", inode->i_block[5]);
-	printk("i_block[6] %d\n", inode->i_block[6]);
-	printk("i_block[7] %d\n", inode->i_block[7]);
-
 //初始化文件表
 	uint32_t fd_idx = 0;
 	while(fd_idx < MAX_FILE_OPEN){

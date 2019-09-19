@@ -44,11 +44,13 @@ void u_prog_b(void){
 
 void test_thread(){
 
-	process_execute(u_prog_a, "user_prog_a");
+	//process_execute(u_prog_a, "user_prog_a");
 	//process_execute(u_prog_b, "user_prog_b");
-//	thread_start("k_thread_a", 31, k_thread_a, NULL);
-//	thread_start("k_thread_b", 31, k_thread_b, NULL);
-//	thread_start("k_thread_c", 31, k_thread_c, NULL);
+	thread_start("k_thread_a", 31, k_thread_a, NULL);
+	//thread_start("k_thread_b", 31, k_thread_b, NULL);
+	//thread_start("k_thread_c", 31, k_thread_c, NULL);
 	
+	printk("ttt\n");
 	intr_enable();
+	printk("ttt\n");
 }

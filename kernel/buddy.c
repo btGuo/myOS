@@ -103,7 +103,7 @@ struct page_desc *buddy_alloc(struct buddy_sys *buddy, uint32_t order){
 	struct page_desc *pg_desc = list_entry(struct page_desc, cache_tag, lh);
 #ifdef DEBUG
 	printk("pg_desc->pos %d\n", pg_desc->pos);
-	printk("paddr %h\n", pgdesc_to_paddr(pg_desc));
+	printk("paddr %x\n", pgdesc_to_paddr(pg_desc));
 #endif
 	pg_desc->order = order;
 	pg_desc->free = false;
@@ -164,6 +164,7 @@ void buddy_free(struct buddy_sys *buddy, struct page_desc *pg_desc){
 	}
 #ifdef DEBUG
 	printk("\n");
+	printk("buddy free done\n");
 #endif
 }
 

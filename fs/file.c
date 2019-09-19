@@ -15,6 +15,50 @@
 
 struct file file_table[MAX_FILE_OPEN];   ///< 文件表
 
+static int dupfd(uint32_t fd, uint32_t arg){
+	
+	if(fd < 0 || fd >= MAX_FILES_OPEN_PER_PROC ||
+			curr->fd_table[fd] == -1){
+
+		return -1;
+	}
+	if(arg < 0 || arg >= MAX_FILES_OPEN_PER_PROC){
+
+		return -1;
+	}
+
+	while(arg < MAX_FILES_OPEN_PER_PROC){
+
+		if(curr->fd_table[arg] == -1){
+			
+			break;
+		}
+		arg++;
+	}
+
+	if(arg == MAX_FILES_OPEN_PER_PROC){
+		return -1;
+	}
+
+	curr->fd_table[arg] = curr->fd_table[fd];
+	file_table[curr->fd_table[fd]].fd_count++;
+	return arg;
+}
+
+
+
+int32_t sys_dup(int32_t fd){
+
+	return dupfd(fd, 0);
+}
+
+int32_t sys_dup2(int32_t oldfd, int32_t newfd){
+
+	sys_close(newfd);
+	return dupfd(oldfd, newfd);
+}
+
+
 /**
  * @brief 在文件表中找到空位
  */
