@@ -4,11 +4,11 @@
 #include <timer.h>
 #include <memory.h>
 #include <thread.h>
-#include <keyboard.h>
 #include <tss.h>
 #include <ide.h>
 #include <fs.h>
 #include <tty.h>
+#include <char_dev.h>
 
 extern void sys_call_init(void);
 

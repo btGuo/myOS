@@ -88,14 +88,19 @@ static void intr_keyboard_handler(void){
 /**
  * 从键盘读取cnt个字节到buf中
  */
-uint32_t kb_read(void *_buf, uint32_t cnt){
+int32_t kb_read(char *buf, uint32_t cnt){
 
-	char *buf = _buf;
 	uint32_t ret = cnt;
 	while(cnt--){
 		*buf++ = queue_getchar(&kb_que);
 	}
 	return ret;
+}
+
+int32_t kb_write(const char *buf, uint32_t cnt){
+
+	/** empty */
+	return 0;
 }
 
 

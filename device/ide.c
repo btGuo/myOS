@@ -43,8 +43,6 @@ uint8_t channel_cnt;     ///< 通道数 1或者2
 struct ide_channel channels[2];  ///< 两条ide通道
 struct partition *parts[MAX_PARTS] = {NULL};  ///< 所有分区信息
 
-#define DEBUG 1
-
 /**
  * @brief 分区表描述符 一个32字节
  */

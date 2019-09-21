@@ -171,7 +171,9 @@ struct fext_inode_m *inode_alloc(struct fext_fs *fs){
 	if(i_no < 0){
 		return NULL;
 	}
-	struct fext_inode_m *m_inode = (struct fext_inode_m *)kmalloc(sizeof(struct fext_inode_m));
+	struct fext_inode_m *m_inode = 
+		(struct fext_inode_m *)kmalloc(sizeof(struct fext_inode_m));
+
 	if(!m_inode){
 		inode_bmp_clear(fs, i_no);
 		return NULL;

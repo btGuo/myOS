@@ -433,5 +433,4 @@ done:
 	if(fs_opt.verbose){
 		printf("everything is ok!\n");
 	}
-	printf("%lu\n", sizeof(struct fext_inode));
 }

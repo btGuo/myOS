@@ -87,8 +87,6 @@ static void general_intr_handler(uint8_t vec_nr, uint32_t err_code){
 	while(1);
 }
 
-#define DEBUG 1
-
 static void page_fault_handler(uint8_t vec_nr, uint32_t err_code){
 
 	ASSERT(vec_nr == 0xe);

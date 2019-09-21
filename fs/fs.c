@@ -15,6 +15,8 @@
 #include <block.h>
 #include <inode.h>
 #include <ide.h>
+#include <pathparse.h>
+#include <fs_sys.h>
 
 #define FEXT_SUPER_SIZE sizeof(struct fext_super_block)
 #define MAX_FS 64
@@ -25,7 +27,6 @@ struct fext_fs *root_fs = NULL;                   ///< 根分区文件系统
 static struct fext_fs *fs_table[MAX_FS] = {NULL};   ///< 挂载文件系统表
 
 
-#define DEBUG 1
 //==========================================================================
 #ifdef DEBUG
 
@@ -128,6 +129,69 @@ void print_meta_info(){
 	printk("sizeof block : %d\n", root_fs->sb->block_size);
 }
 
+/**
+ * 创建设备文件
+ */
+int32_t devfile_create(const char *path, uint32_t type, mode_t mode){
+
+	char filename[MAX_FILE_NAME_LEN];
+	char dirname[MAX_PATH_LEN];
+	split_path(path, filename, dirname);
+	struct fext_inode_m *par_i = get_last_dir(dirname);
+	int32_t ret = 0;
+
+	if(par_i == NULL){
+
+		return -1;
+	}
+
+	struct fext_dirent dir_e;
+	bool found = _search_dir_entry(par_i, filename, &dir_e);
+
+	if(found){
+		//如果存在，直接返回
+		goto done;
+	}
+	
+	if(file_create(par_i, filename, type, mode) == -1){
+
+		ret = -1;
+	}
+done:	
+	inode_close(par_i);
+	
+	return ret;
+}
+
+/**
+ * 初始化设备文件
+ */
+static int32_t devfile_init(){
+
+	//可能不存在
+	sys_mkdir("/dev");
+	int32_t ret = 0;
+
+	//创建块设备文件
+	for(uint32_t i = 0; i < MAX_PARTS && parts[i]; i++){
+	
+		char path[MAX_PATH_LEN] = "/dev/";
+		strcat(path, parts[i]->name);
+
+		if(devfile_create(path, S_IFBLK, 0600) == -1){
+			
+			printk("devfile_create %s failed\n", path);
+			ret = -1;
+		}
+	}
+
+	//创建字符设备文件
+	if(devfile_create("/dev/tty0", S_IFCHR, 0666) == -1){
+
+		return -1;
+	}
+	return ret;
+}
 
 static void fext_set_blockarg(struct fext_fs *fs)
 {
@@ -451,6 +515,12 @@ void filesys_init(){
 	uint32_t fd_idx = 0;
 	while(fd_idx < MAX_FILE_OPEN){
 		file_table[fd_idx++].fd_inode = NULL;
+	}
+
+	
+	if(devfile_init() == -1){
+
+		printk("devfile init failure\n");
 	}
 
 #ifdef DEBUG

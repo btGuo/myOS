@@ -16,7 +16,6 @@ int32_t wait(int32_t status);
 void clear();
 void putchar(char ch);
 
-int32_t open(const char *path, uint8_t flags);
 int32_t close(int32_t fd);
 int32_t read(int32_t fd, void *buf, uint32_t count);
 int32_t write(int32_t fd, const void *buf, uint32_t count);
@@ -26,4 +25,6 @@ int32_t unlink(const char *path);
 int32_t rmdir(char *path);
 int32_t mkdir(char *path);
 int32_t stat(const char *path, struct stat *st);
+int32_t dup(int32_t fd);
+int32_t dup2(int32_t oldfd, int32_t newfd);
 #endif 

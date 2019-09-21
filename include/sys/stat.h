@@ -63,29 +63,29 @@
 //File mode bits:
 
 //Read, write, execute/search by owner.
-#define S_IRWXU  (7 << 16)
+#define S_IRWXU  (7 << 6)
 
 //Read permission, owner.
-#define S_IRUSR  (4 << 16)
+#define S_IRUSR  (4 << 6)
 
 //Write permission, owner.
-#define S_IWUSR  (2 << 16)
+#define S_IWUSR  (2 << 6)
 
 //Execute/search permission, owner.
-#define S_IXUSR  (1 << 16)
+#define S_IXUSR  (1 << 6)
 
 
 //Read, write, execute/search by group.
-#define S_IRWXG  (7 << 8)   
+#define S_IRWXG  (7 << 3)   
 
 //Read permission, group.
-#define S_IRGRP  (4 << 8)
+#define S_IRGRP  (4 << 3)
 
 //Write permission, group.
-#define S_IWGRP  (2 << 8)
+#define S_IWGRP  (2 << 3)
 
 //Execute/search permission, group.
-#define S_IXGRP  (1 << 8)
+#define S_IXGRP  (1 << 3)
 
 
 //Read, write, execute/search by others.

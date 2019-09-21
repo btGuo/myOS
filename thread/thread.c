@@ -7,10 +7,10 @@
 #include <fs.h>
 #include <file.h>
 
-struct task_struct *main_thread;
-struct task_struct *curr;
-struct task_struct *idle_thread;
-struct task_struct *init_prog;
+struct task_struct *main_thread = NULL;
+struct task_struct *curr = NULL;
+struct task_struct *idle_thread = NULL;
+struct task_struct *init_prog = NULL;
 
 LIST_HEAD(thread_all_list);
 LIST_HEAD(thread_ready_list);
@@ -115,13 +115,9 @@ void init_thread(struct task_struct *pthread, char *name, int prio){
 		pthread->cwd_i = root_fs->root_i;
 	}
 
-	pthread->fd_table[0] = stdin_fp;
-	pthread->fd_table[1] = stdout_fp;
-	pthread->fd_table[2] = stderr_fp;
-	uint8_t idx = 3;
-	while(idx < MAX_FILES_OPEN_PER_PROC){
-		pthread->fd_table[idx] = -1;
-		++idx;
+	for(uint32_t i = 0; i < MAXL_OPENS; 
+			i++){
+		pthread->fd_table[i] = NULL;
 	}
 	pthread->stack_magic = STACK_MAGIC;
 }
@@ -165,7 +161,7 @@ void thread_unblock(struct task_struct *nthread){
 static void make_main_thread(void){
 	main_thread = (struct task_struct *)MAIN_PCB;
 	init_thread(main_thread, "main", 31);
-	main_thread->pg_dir = 0xc0200000;
+	main_thread->pg_dir = (uint32_t *)0xc0200000;
 	//不需要加入read队列
 	list_add_tail(&main_thread->all_tag, &thread_all_list);
 	curr = main_thread;

@@ -255,15 +255,16 @@ bool add_dir_entry(struct fext_inode_m *inode, struct fext_dirent *dir_e){
 	struct fext_fs *fs = inode->fs;
 	uint32_t block_size = fs->sb->block_size;
 	struct buffer_head *bh = NULL;
-	//最后一块可用块，可能已经满了
-	//这里用有符号的,第一块时是-1
-	int32_t blk_idx = inode->i_blocks - 1;    
+
+	uint32_t blk_idx = inode->i_blocks ? 
+		inode->i_blocks - 1 : 0;
+
 	uint32_t off_byte = inode->i_size % block_size;
 
 	if(blk_idx >= fs->max_blocks)
 		return false;
 	//块内没有剩余，这里假定目录项不跨块
-	if(!off_byte){
+	if(!off_byte && blk_idx){
 		++blk_idx;
 		inode->i_blocks += 1;
 		if(blk_idx >= fs->max_blocks)

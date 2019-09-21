@@ -7,16 +7,34 @@
 #include <process.h>
 #include <sys_macro.h>
 #include <tty.h>
+#include <sys/utsname.h>
+
+#define OSNAME "myOS"
+#define NODENAME "k-1"
+#define RELEASE "0.10"
+#define VERSION "0.10"
+#define MACHINE "i386"
 
 extern void sys_exit(int32_t status);
 extern pid_t sys_wait(int32_t status);
 extern int32_t sys_execv(const char *path, const char **argv);
+extern int32_t sys_dup2(int32_t oldfd, int32_t newfd);
+extern int32_t sys_dup(int32_t fd);
 
 typedef void* syscall;
 syscall syscall_table[syscall_nr];
 
 uint32_t sys_getpid(void){
 	return curr->pid;
+}
+
+int sys_uname(struct utsname *name){
+
+	strcpy(name->sysname,  OSNAME);
+	strcpy(name->nodename, NODENAME);
+	strcpy(name->release,  RELEASE);
+	strcpy(name->version,  VERSION);
+	strcpy(name->machine,  MACHINE);
 }
 
 void sys_clear(){
@@ -54,6 +72,9 @@ void sys_call_init(void){
 	__SYS(wait);
 	__SYS(exit);
 	__SYS(getcwd);
+	__SYS(dup);
+	__SYS(dup2);
+	__SYS(uname);
 	printk("sys_call init done\n");
 }
 

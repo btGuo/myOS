@@ -79,8 +79,8 @@ static void release_prog_resource(struct task_struct *self){
 	vm_release(&self->vm_struct);
 	
 	uint8_t i = 3;
-	while(i < MAX_FILES_OPEN_PER_PROC){
-		if(self->fd_table[i] != -1)
+	while(i < MAXL_OPENS){
+		if(self->fd_table[i])
 			sys_close(i);
 		++i;
 	}

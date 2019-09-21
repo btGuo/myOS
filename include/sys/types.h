@@ -55,4 +55,10 @@ typedef uint32_t time_t;
 
 // Used for user IDs.
 typedef int32_t uid_t;
+//Used for sizes of objects.
+//
+typedef uint32_t size_t;
+
+//Used for a count of bytes or an error indication.
+typedef int32_t ssize_t;
 #endif

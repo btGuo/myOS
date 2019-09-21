@@ -5,7 +5,7 @@ OUT = $(BUILD_DIR)/_fs.o
 AS = nasm
 ASFLAGS = -f elf
 CC = gcc
-CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall -fno-stack-protector -D__TARGET -fno-pie
+CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall -fno-stack-protector -fno-pie
 LD = ld
 LDFLAGS = -m elf_i386 -r
 

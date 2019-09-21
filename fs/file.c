@@ -10,31 +10,27 @@
 #include <pathparse.h>
 #include <tty.h>
 #include <pipe.h>
-#include <keyboard.h>
+#include <char_dev.h>
+#include <stdarg.h>
 
 
 struct file file_table[MAX_FILE_OPEN];   ///< 文件表
-
-//TODO 初始化
-struct file *stdin_fp  = &file_table[0];
-struct file *stdout_fp = &file_table[1];
-struct file *stderr_fp = &file_table[2];
 
 int32_t sys_close(int32_t fd);
 
 static int dupfd(uint32_t fd, uint32_t arg){
 	
-	if(fd < 0 || fd >= MAX_FILES_OPEN_PER_PROC ||
+	if(fd < 0 || fd >= MAXL_OPENS ||
 			curr->fd_table[fd] == NULL){
 
 		return -1;
 	}
-	if(arg < 0 || arg >= MAX_FILES_OPEN_PER_PROC){
+	if(arg < 0 || arg >= MAXL_OPENS){
 
 		return -1;
 	}
 
-	while(arg < MAX_FILES_OPEN_PER_PROC){
+	while(arg < MAXL_OPENS){
 
 		if(curr->fd_table[arg] == NULL){
 			
@@ -43,7 +39,7 @@ static int dupfd(uint32_t fd, uint32_t arg){
 		arg++;
 	}
 
-	if(arg == MAX_FILES_OPEN_PER_PROC){
+	if(arg == MAXL_OPENS){
 		return -1;
 	}
 
@@ -61,6 +57,7 @@ int32_t sys_dup2(int32_t oldfd, int32_t newfd){
 	sys_close(newfd);
 	return dupfd(oldfd, newfd);
 }
+//TODO 修改相关调用
 
 /**
  * @brief 在文件表中找到空位
@@ -83,7 +80,7 @@ struct file *get_file(){
 int32_t get_fd(){
 	
 	int32_t idx = 0;
-	while(idx < MAX_FILES_OPEN_PER_PROC){
+	while(idx < MAXL_OPENS){
 
 		if(curr->fd_table[idx] == NULL){
 
@@ -99,11 +96,13 @@ int32_t get_fd(){
  *
  * @param par_dir 新建文件的父目录
  * @param filename 文件名
- * @param flag 文件标志位
+ * @param type 文件类型
+ * @param mode 访问权限
  *
  * @return 文件的inode号
  */
-int32_t file_create(struct fext_inode_m *par_i, char *filename, uint8_t flag){
+int32_t file_create(struct fext_inode_m *par_i, 
+		char *filename, uint32_t type, mode_t mode){
 
 	//先分配inode
 	struct fext_inode_m *m_inode = NULL;
@@ -116,11 +115,23 @@ int32_t file_create(struct fext_inode_m *par_i, char *filename, uint8_t flag){
 	uint32_t i_no = m_inode->i_no;
 	//申请并安装目录项
 	struct fext_dirent dir_entry;
-	init_dir_entry(filename, m_inode->i_no, S_IFREG, &dir_entry);
+	init_dir_entry(filename, m_inode->i_no, type, &dir_entry);
 	if(!add_dir_entry(par_i, &dir_entry)){
 		printk("add_dir_entry: sync dir_entry to disk failed\n");
 		inode_release(m_inode);
 		return -1;
+	}
+	
+	//注意磁盘中是16位的
+	m_inode->i_type = (uint16_t)type;
+	m_inode->i_mode = (uint16_t)mode;
+
+	if(curr){
+		m_inode->i_uid = curr->uid;
+		m_inode->i_gid = curr->gid;
+	}else {
+		m_inode->i_uid = 0;
+		m_inode->i_gid = 0;
 	}
 
 	//磁盘同步两个inode
@@ -132,6 +143,34 @@ int32_t file_create(struct fext_inode_m *par_i, char *filename, uint8_t flag){
 	return i_no;
 }
 
+//TODO debug
+/**
+ * 检查权限是否允许
+ */
+bool check_right(struct fext_inode_m *m_inode, int flags){
+
+	uint16_t mode = m_inode->i_mode;
+	mode &= 0777;
+	if(curr->uid == m_inode->i_uid){
+
+		mode >>= 6;
+
+	}else if(curr->gid == m_inode->i_gid){
+
+		mode &= 070;
+		mode >>= 3;
+	}else {
+		mode &= 07;
+	}
+
+	//取出rw位
+	mode  &= 06;
+	flags &= 06;
+
+	return (mode & flags);
+}
+
+
 /**
  * 打开文件
  * @param i_no 文件的inode号
@@ -140,20 +179,35 @@ int32_t file_create(struct fext_inode_m *par_i, char *filename, uint8_t flag){
  * @return 是否成功
  * 	@retval -1 失败
  */
-int32_t file_open(uint32_t i_no, uint8_t flag){
+int32_t file_open(uint32_t i_no, int32_t flag){
 
 	struct file *fp = get_file();
 	int32_t fd = get_fd();
+	int32_t ret = fd;
 
-	if(fp == NULL || fd == 0){
+	if(fp == NULL || fd == -1){
 
 	//达到全局最大文件打开数或者当前进程最大文件打开数
 		return -1;
 	}
-	
-	curr->fd_table[fd] = fp;
 
+	//注意设置这两项，标志已经用了
+	curr->fd_table[fd] = fp;
 	fp->fd_inode = inode_open(root_fs, i_no);
+
+	if(fp->fd_inode == NULL){
+		
+		curr->fd_table[fd] = NULL;
+		return -1;
+	}
+
+	if(!check_right(fp->fd_inode, flag)){
+		
+		printk("you have no right to open this file\n");
+		ret = -1;
+		goto error;
+	}
+
 	fp->fd_pos = 0;
 	fp->fd_flag = flag;
 	fp->fd_count = 1;
@@ -169,10 +223,18 @@ int32_t file_open(uint32_t i_no, uint8_t flag){
 		}else {
 			intr_set_status(old_stat);
 			printk("file can't be write now, try again later\n");
-			return -1;
+			
+			ret = -1;
+			goto error;
 		}
 	}
-	return fd;
+
+error:
+	inode_close(fp->fd_inode);
+	fp->fd_inode = NULL;
+	curr->fd_table[fd] = NULL;
+
+	return ret;
 }
 
 /**
@@ -298,6 +360,8 @@ int32_t file_read(struct file *file, void *buf, uint32_t count){
 
 #define MAX_PATH_LEN 128
 
+
+
 /**
  * 打开文件
  * @param path 文件路径
@@ -306,14 +370,14 @@ int32_t file_read(struct file *file, void *buf, uint32_t count){
  * @return 打开的文件号
  * 	@retval -1 失败
  */
-int32_t sys_open(const char *path, uint8_t flags){
+int sys_open(const char *path, int flags, mode_t mode){
 	
 	if(path[strlen(path) - 1] == '/'){
 		printk("can't open a directory %s\n", path);
 		return -1;
 	}
 
-	ASSERT(flags <= 7);
+	//ASSERT(flags <= 7);
 	int32_t fd = -1;
 
 	//创建或者打开文件都需要先搜索
@@ -337,40 +401,38 @@ int32_t sys_open(const char *path, uint8_t flags){
 	if(!found && !(flags & O_CREAT)){
 
 		printk("file %s isn't exist\n", filename);
-		inode_close(par_i);
-		return -1;
+		goto error;
 
 	}else if(found && (flags & O_CREAT)){
 
 		printk("file %s has already exist!\n", filename);
-		inode_close(par_i);
-		return -1;
+		goto error;
 	}
 	if(flags & O_CREAT){
 
-		printk("create file %s\n", filename);
-		//TODO 错误处理
-		int32_t i_no = file_create(par_i, filename, flags);
-		printk("i_no %d\n", i_no);
+		mode &= ~curr->umask;
+
+		//printk("create file %s\n", filename);
+		int32_t i_no = file_create(par_i, filename, S_IFREG, mode);
+
+		if(i_no == -1){
+
+			goto error;
+		}
+
 		fd = file_open(i_no, flags);
-		inode_close(par_i);
 
 	}else {
+
 		fd = file_open(dir_e.i_no, flags);
-		printk("open file fd %d name %s i_no %d\n", fd, dir_e.filename, dir_e.i_no);
+		printk("open file fd %d name %s i_no %d\n", 
+				fd, dir_e.filename, dir_e.i_no);
 	}
+
+error:
+	inode_close(par_i);
 	return fd;
 }	
-
-/*
-uint32_t to_global_fd(uint32_t fd){
-
-	ASSERT(fd >= 0 && fd < MAX_FILES_OPEN_PER_PROC);
-	int32_t g_fd = curr->fd_table[fd];
-	ASSERT(g_fd >= 0 && g_fd < MAX_FILE_OPEN);
-	return g_fd;
-}
-*/
 
 /**
  * 关闭文件
@@ -378,7 +440,7 @@ uint32_t to_global_fd(uint32_t fd){
  */
 int32_t sys_close(int32_t fd){
 
-	if(fd < 0 || fd >= MAX_FILES_OPEN_PER_PROC ||
+	if(fd < 0 || fd >= MAXL_OPENS ||
 		curr->fd_table[fd] == NULL){
 
 		return -1;
@@ -396,28 +458,22 @@ int32_t sys_close(int32_t fd){
 	return 0;
 }
 
-#define FD_LEGAL(fd)\
-do{\
-	if((fd) < 0 || (fd) >= MAX_FILES_OPEN_PER_PROC){\
-		printk("sys write: fd error\n");\
-		return -1;\
-	}\
-}while(0)
-
-
 /**
  * 文件写
  */
 int32_t sys_write(int32_t fd, const void *buf, uint32_t count){
 
-	if(fd < 0 || fd >= MAX_FILES_OPEN_PER_PROC ||
+	if(fd < 0 || fd >= MAXL_OPENS ||
 		curr->fd_table[fd] == NULL){
 
 		return -1;
 	}
+	printk("sys_write\n");
 
 	struct file *fp = curr->fd_table[fd];
 	struct fext_inode_m *inode = fp->fd_inode;
+	printk("i_type %x\n", inode->i_type);
+
 
 	if(S_ISREG(inode->i_type)){
 
@@ -431,9 +487,11 @@ int32_t sys_write(int32_t fd, const void *buf, uint32_t count){
 
 	if(S_ISCHR(inode->i_type)){
 
-		//TODO 
-		terminal_writestr(buf);
-		return count;
+		printk("write char dev\n");
+		//TODO 目前这里固定为0号
+		chdev_writef writep = chdev_wrtlb[0];
+		return writep(buf, count);
+
 	}
 
 	if(S_ISFIFO(inode->i_type)){
@@ -452,7 +510,7 @@ int32_t sys_write(int32_t fd, const void *buf, uint32_t count){
  */
 int32_t sys_read(int32_t fd, void *buf, uint32_t count){
 
-	if(fd < 0 || fd >= MAX_FILES_OPEN_PER_PROC ||
+	if(fd < 0 || fd >= MAXL_OPENS ||
 		curr->fd_table[fd] == NULL){
 
 		return -1;
@@ -468,8 +526,9 @@ int32_t sys_read(int32_t fd, void *buf, uint32_t count){
 
 	if(S_ISCHR(inode->i_type)){
 
-		//TODO 
-		return kb_read(buf, count);
+		//TODO 同上
+		chdev_readf readp = chdev_rdtlb[0];
+		return readp(buf, count);
 	}
 
 	if(S_ISFIFO(inode->i_type)){
@@ -492,8 +551,15 @@ int32_t sys_read(int32_t fd, void *buf, uint32_t count){
  */
 int32_t sys_lseek(int32_t fd, int32_t offset, uint8_t whence){
 
-	FD_LEGAL(fd);
-	ASSERT(whence > 0 && whence < 4);
+	if(fd < 0 || fd >= MAXL_OPENS ||
+		curr->fd_table[fd] == NULL){
+
+		return -1;
+	}
+	if(whence <= 0 || whence >= 4){
+
+		return -1;
+	}
 
 	struct file *file = curr->fd_table[fd];
 	uint32_t file_size = file->fd_inode->i_size;

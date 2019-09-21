@@ -48,15 +48,17 @@
 /** 超级块占用的块数   */
 #define SUPER_BLKS 1
 
+
 /**
  * 文件打开标志位
+ * @note 这里设置的值是为了和用户访问权限比较
  */
-enum oflags{
-	O_RDONLY,    ///< 只读  000b
-	O_WRONLY,    ///< 只写  001b
-	O_RDWR,      ///< 读写  010b
-	O_CREAT = 4  ///< 创建  100b
-};
+
+#define O_RDONLY 4  ///< 只读 
+#define O_WRONLY 2  ///< 只写 
+#define O_RDWR   6  ///< 读写 
+#define O_CREAT  8  ///< 创建 
+
 /**
  * 文件读写指针标志
  */

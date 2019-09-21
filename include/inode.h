@@ -52,7 +52,6 @@ struct fext_inode_m{
 	struct list_head hash_tag;   ///< 哈希表标签
 	struct list_head queue_tag;  ///< 队列标签
 	struct fext_fs *fs;         ///< 文件系统指针
-	
 };
 
 /**

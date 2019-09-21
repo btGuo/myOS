@@ -16,7 +16,7 @@ static struct mutex_lock tty_lock;  ///< 锁
 static uint16_t* terminal_buffer;
 
 static const uint32_t tab4 = 4;
-static const uint32_t tab8 = 8;
+//static const uint32_t tab8 = 8;
 
 /** 光标寄存器读写端口 */
 #define CUR_PORT(x) ((x) + 0x3d4)
@@ -154,10 +154,18 @@ void terminal_putchar(char c) {
 /**
  * 输出size个字符
  */
-void terminal_write(const char* data, uint32_t size) {
+int32_t terminal_write(const char* data, uint32_t size) {
 	uint32_t i;
 	for (i = 0; i < size; i++)
 		terminal_putchar(data[i]);
+
+	return (int32_t)size;
+}
+
+int32_t terminal_read(char *data, uint32_t size) {
+
+	/** empty */
+	return 0;
 }
 
 /**

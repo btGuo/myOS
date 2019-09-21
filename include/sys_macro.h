@@ -21,5 +21,8 @@
 #define __NR_exit      21
 #define __NR_wait      22
 #define __NR_getcwd    23
+#define __NR_dup       24
+#define __NR_dup2      25
+#define __NR_uname     26
 
 #define syscall_nr 72

@@ -11,7 +11,6 @@
 #include <pipe.h>
 #include <inode.h>
 
-#define DEBUG 1
 extern void intr_exit(void);
 //TODO 目前fork时vm_struct 是共享的，更新时会一起更新。
 
@@ -69,7 +68,7 @@ static void up_inode(struct task_struct *thread){
 	struct fext_inode_m *inode = NULL;
 	int32_t idx = 3;
 
-	while(idx < MAX_FILES_OPEN_PER_PROC){
+	while(idx < MAXL_OPENS){
 		
 		fp = curr->fd_table[idx];
 		if(fp){

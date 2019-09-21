@@ -8,10 +8,11 @@
 #define PG_SIZE 4096         ///< 页大小
 #define MAIN_PCB 0xc009e000     ///< 主线程pcb所在地址
 #define STACK_MAGIC 0x21436587     ///< 栈魔数，随便定义的
-#define MAX_FILES_OPEN_PER_PROC 6    ///< 每进程最大打开文件数
+#define MAXL_OPENS 6    ///< 每进程最大打开文件数
 #define MAX_PID 32768    ///< 最大进程数
 
 #define KPG_DIR_PADDR 0x00200000 
+#define KPG_DIR_VADDR (0xc0000000 + KPG_DIR_PADDR)
 
 typedef int32_t pid_t;
 typedef void thread_func(void*);
@@ -93,10 +94,13 @@ struct task_struct{
 	struct task_struct *par;        ///< 父进程
 	struct fext_inode_m *root_i;      ///< 所在根inode
 	struct fext_inode_m *cwd_i;      ///< 当前目录inode
-	struct file *fd_table[MAX_FILES_OPEN_PER_PROC];    ///< 文件号表
+	struct file *fd_table[MAXL_OPENS];    ///< 文件号表
 	struct vm_struct vm_struct;   		      ///< 内存区管理
-	int8_t exit_status;        
+	int8_t exit_status;                   ///< 退出状态
 	uint32_t stack_magic;                         ///< 魔数，标记是否越界
+	uint32_t umask;                         ///< 文件掩码
+	uint32_t uid;                      ///< 用户id
+	uint32_t gid;                    ///< 用户组id
 };
 
 /**
