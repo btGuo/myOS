@@ -1,3 +1,6 @@
+#ifndef __SYS_MACROS_H
+#define __SYS_MACROS_H
+
 #define __NR_getpid    1
 #define __NR_malloc    2
 #define __NR_free      3
@@ -24,5 +27,8 @@
 #define __NR_dup       24
 #define __NR_dup2      25
 #define __NR_uname     26
+#define __NR_sbrk      27
 
 #define syscall_nr 72
+
+#endif

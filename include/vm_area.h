@@ -30,6 +30,7 @@ struct vm_struct{
 	struct list_head *vm_list;  ///< 这里得用指针
 	struct vm_area *vm_stack;
 	struct vm_area *vm_heap;
+	uint32_t heap_ptr;       ///< 当前栈指针
 };	
 
 #endif
