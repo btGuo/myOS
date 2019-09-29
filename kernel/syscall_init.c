@@ -20,6 +20,7 @@ extern pid_t sys_wait(int32_t status);
 extern int32_t sys_execv(const char *path, const char **argv);
 extern int32_t sys_dup2(int32_t oldfd, int32_t newfd);
 extern int32_t sys_dup(int32_t fd);
+extern void *sys_sbrk(uint32_t incr);
 
 typedef void* syscall;
 syscall syscall_table[syscall_nr];
@@ -75,6 +76,7 @@ void sys_call_init(void){
 	__SYS(dup);
 	__SYS(dup2);
 	__SYS(uname);
+	__SYS(sbrk);
 	printk("sys_call init done\n");
 }
 

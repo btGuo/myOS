@@ -1,17 +1,38 @@
 #include <init.h>
+#include <debug.h>
+#include <interrupt.h>
+#include <timer.h>
+#include <memory.h>
+#include <thread.h>
+#include <tss.h>
+#include <ide.h>
+#include <fs.h>
+#include <tty.h>
+#include <char_dev.h>
 #include <test.h>
 #include <stdint.h>
-#include <debug.h>
-#include <syscall.h>
-#include <interrupt.h>
-#include <tty.h>
-#include <stdio.h>
-#include <clock.h>
 #include <multiboot.h>
-#include <fs.h>
-#include <fcntl.h>
 
-void init(void);
+extern void sys_call_init(void);
+
+void init_all(){
+	terminal_init();
+	printk("init_all start\n");
+
+	tss_init();
+	idt_init();
+	mem_init();
+	timer_init();
+
+	keyboard_init();
+	sys_call_init();
+	
+	ide_init();
+	filesys_init();
+	thread_init();
+		
+	printk("init_all done\n");
+}
 
 void kernel_main(struct multiboot_info *info) {
 	set_info(info);
@@ -31,43 +52,7 @@ void kernel_main(struct multiboot_info *info) {
 }
 
 void init(void){
-	printf("init proc start\n");
-	
-	open("/dev/tty0", O_RDWR);
-	dup(0);
-	dup(0);
-	
-	uint32_t pid = fork();
-	if(pid){
 
-		printf("I am father my pid is %d\n", getpid());
-		char *file = "/home/test.txt";
-		int fd = open(file, O_CREAT | O_RDONLY, S_IRUSR);
-		if(fd == -1){
-
-			printf("open file %s failed\n", file);
-		}else {
-			
-			close(fd);
-		}
-
-		if((fd = open(file, O_RDWR)) == -1){
-
-			printf("open file %s failed\n", file);
-		}
-
-		
-	}else {
-		printf("I am child my pid is %d\n", getpid());
-		int delay = 10000;
-		while(delay--);
-	}
-	
 	while(1);
-}
-
-void login(){
-
-	printf("username:");
 }
 
