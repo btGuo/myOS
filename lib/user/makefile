@@ -16,7 +16,7 @@ OBJS += $(BUILD_DIR)/start.o
 
 -include $(DEPS)
 
-all : mk_dir $(OUT)
+all : mk_dir $(OUT) install
 
 $(OUT):$(OBJS)
 	$(AR) rcs $(OUT) $(OBJS)
@@ -28,7 +28,7 @@ $(BUILD_DIR)/start.o:start.S
 	$(AS) $(ASFLAGS) $< -o $@
 
 
-.PHONY: clean mk_dir 
+.PHONY: clean mk_dir install
 
 clean:
 	rm $(OBJS) $(DEPS) 
@@ -36,3 +36,5 @@ clean:
 mk_dir:
 	if [ ! -d "$(BUILD_DIR)" ]; then mkdir $(BUILD_DIR); fi
 
+install:
+	cp ./build/libc.a ../../build

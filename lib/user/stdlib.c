@@ -14,27 +14,6 @@ static inline void check_mark(){
 	}
 }
 
-int atoi(const char *src){
-
-	uint32_t len = strlen(src);
-	bool neg = false;
-	if(*src == '-'){
-		neg = true;
-		++src;
-	}
-	if(*src == '+'){
-		++src;
-	}
-	int32_t ans = 0;
-	uint32_t i = 0;
-	for(; i < len; i++){
-		ans *= 10;
-		ans += src[i] - '0';
-	}
-	if(neg) ans = -ans;
-	return ans;
-}
-
 void *malloc(size_t size){
 	check_mark();
 	return mm_alloc(size);

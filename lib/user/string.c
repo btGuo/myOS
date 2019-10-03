@@ -8,15 +8,16 @@
 	#include <stdio.h>
 	#define ASSERT assert
 #elif __LIB_KERNEL
-	#include <debug.h>
+	#include <kernelio.h>
 	#include <global.h>
 #endif
 
 
-void *memset(void *dest, int value, size_t size){
+void *memset(void *dest, int _value, size_t size){
 
+	uint8_t value = (uint8_t)_value;
 	ASSERT(dest != NULL && size >= 0);
-	int *tmp = (int*)dest;
+	uint8_t *tmp = (uint8_t*)dest;
 	while(size--){
 		*tmp++ = value;
 	}
@@ -25,8 +26,8 @@ void *memset(void *dest, int value, size_t size){
 
 void *memcpy(void *dest, const void *src, size_t size){
 	ASSERT(dest != NULL && src != NULL && size >= 0);
-	int *_dest = (int*)dest;
-	const int *_src = (int*)src;
+	uint8_t *_dest = (uint8_t*)dest;
+	const uint8_t *_src = (uint8_t*)src;
 	while(size--)
 		*_dest++ = *_src++;
 	return dest;

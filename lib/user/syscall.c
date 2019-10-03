@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <stdarg.h>
 #include <sys/utsname.h>
+#include <sys/types.h>
 
 #define _syscall0(type, name)\
 type name(void)\
@@ -50,35 +51,48 @@ type name(type1 arg1, type2 arg2, type3 arg3)\
 
 
 //不需要分号
-_syscall0(uint32_t,getpid)
-_syscall1(void*,   malloc, uint32_t, size)
-_syscall1(void,    free, void *, ptr)
-_syscall0(int32_t, fork)
-_syscall1(int32_t, close, int32_t, fd)
-_syscall3(int32_t, read, int32_t, fd, void *, buf, uint32_t, count)
-_syscall3(int32_t, write, int32_t, fd, char*, str, uint32_t, count)
-_syscall3(int32_t, lseek, int32_t, fd, int32_t, offset, uint8_t, whence)
-_syscall1(int32_t, unlink, const char *, path)
-_syscall1(int32_t, rmdir, char *, path)
-_syscall1(struct dirent *, readdir, struct Dir *, dir)
-_syscall1(void , rewinddir, struct Dir *, dir)
-_syscall1(int32_t, mkdir, char *, path)
-_syscall1(int32_t, closedir, struct Dir *, dir)
-_syscall1(struct   Dir *, opendir, char *, path)
-_syscall2(int32_t, stat, const char *, path, struct stat *, st)
-_syscall2(int32_t, execv, const char *, path, const char **, argv)
-_syscall0(void, clear)
-_syscall1(void, putchar, char, ch)
-_syscall1(void, exit, int32_t, status)
-_syscall1(int32_t, wait, int32_t, status)
-_syscall2(char *, getcwd, char *, buf, uint32_t, size)
-_syscall1(int32_t, dup, int32_t, fd)
-_syscall2(int32_t, dup2, int32_t, oldfd, int32_t, newfd)
+
+//unistd.h
+_syscall0(pid_t, getpid)
+_syscall0(pid_t, fork)
+_syscall1(int,     close, int, fd)
+_syscall3(ssize_t, read,  int, fd, void *,       buf, size_t, count)
+_syscall3(ssize_t, write, int, fd, const void *, str, size_t, count)
+_syscall3(off_t,   lseek, int, fd, off_t,        off, int,    whence)
+_syscall1(int, unlink, const char *, path)
+_syscall1(int, dup,  int, fd)
+_syscall2(int, dup2, int, oldfd, int, newfd)
+_syscall3(int, execve, const char *, path, char *const *, argv, char *const *, envp)
+_syscall1(int, chdir,  const char *, path)
+_syscall2(char *, getcwd, char *, buf, size_t, size)
+_syscall1(int, rmdir, char *, path)
+_syscall1(void, _exit, int, status)
+_syscall1(void *, sbrk, size_t, incr)
+
+//dirent.h
+_syscall1(struct dirent *, readdir, struct DIR *, dir)
+_syscall1(void , rewinddir, struct DIR *, dir)
+_syscall1(int, closedir, struct DIR *, dir)
+_syscall1(struct   DIR *, opendir, const char *, path)
+
+//sys/stat.h
+_syscall2(int, stat,  const char *, path, struct stat *, st)
+_syscall2(int, mkdir, const char *, path, mode_t, mode)
+_syscall2(int, chmod, const char *, path, mode_t, mode)
+
+//sys/wait.h
+_syscall1(pid_t, wait, int *, status)
+
+//stdio.h
+_syscall1(int, putchar, int, ch)
+
+//sys/utsname.h
 _syscall1(int, uname, struct utsname *, name)
 
-/**
- * 这个有丶special
- */
+//stdlib.h
+_syscall1(void, exit, int, status)
+
+//fcntl.h，这个单独写出来，得解包参数
 int open(const char *path, int flag, ...){
 
 	va_list args;
@@ -95,4 +109,3 @@ int open(const char *path, int flag, ...){
 
 	return __res;
 }
-

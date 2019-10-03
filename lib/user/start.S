@@ -4,8 +4,6 @@ extern exit
 section .text
 global _start
 _start:
-	push ebx ;argc
-	push ecx ;argv
 	call main
 
 	push eax

@@ -1,6 +1,8 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "md5.h"
 
 #define A 0x67452301
@@ -201,15 +203,15 @@ void md5_update(struct md5_ctx *md5, const char *data, uint32_t size)
 void md5_print(struct md5_ctx *md5)
 {
 
-	printk("after encryption:\n");
+	printf("after encryption:\n");
 	for (int i = 0; i < 4; i++) {
 		uint8_t *p = (uint8_t *) & md5->res[i];
-		printk("%x", *(p + 0));
-		printk("%x", *(p + 1));
-		printk("%x", *(p + 2));
-		printk("%x", *(p + 3));
+		printf("%x", *(p + 0));
+		printf("%x", *(p + 1));
+		printf("%x", *(p + 2));
+		printf("%x", *(p + 3));
 	}
-	printk("\n");
+	printf("\n");
 }
 
 bool md5_check(struct md5_ctx *src, const char *data){

@@ -4,16 +4,39 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-static const char map[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8',\
-	'9', 'a', 'b', 'c', 'd', 'e', 'f'};
-
 #define isdigit(x) ((x) >= '0' && (x) <= '9')
 #define MAX_ALIGN 8
+
+int atoi(const char *src){
+
+	uint32_t len = strlen(src);
+	bool neg = false;
+	if(*src == '-'){
+		neg = true;
+		++src;
+	}
+	if(*src == '+'){
+		++src;
+	}
+	int32_t ans = 0;
+	uint32_t i = 0;
+	for(; i < len; i++){
+		ans *= 10;
+		ans += src[i] - '0';
+	}
+	if(neg) ans = -ans;
+	return ans;
+}
+
 
 /**
  * 数字转字符串, 可选十进制和十六进制
  */
 static void itoa(int num, char *dest, char mode){
+
+	const char map[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8',\
+	'9', 'a', 'b', 'c', 'd', 'e', 'f'};
+
 	char _tmp[1024];
 	//这里多加一, 后面while舒服点
 	char *tmp = _tmp + 1;

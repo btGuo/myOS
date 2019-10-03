@@ -1,5 +1,6 @@
-#include "memlib.h"
 #include <stdlib.h>
+#include <unistd.h>
+#include "memlib.h"
 
 static char *mem_heap = NULL;
 static char *mem_brk = NULL;
