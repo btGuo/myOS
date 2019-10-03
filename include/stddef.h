@@ -11,9 +11,11 @@ extern "C" {
 #define NULL ((void*)0)
 #endif
 
+#ifndef offsetof
 #define offsetof(TYPE, MEMBER) \
-((size_t) &((TYPE *)0)->MEMBER)
+	((size_t) &((TYPE *)0)->MEMBER)
 
+#endif
 
 #ifdef __cplusplus
 }

@@ -2,7 +2,8 @@
 #define __DIRENT_H
 
 #include <stdint.h>
-#include <global.h>
+#include <sys/types.h>
+#include <stdbool.h>
 #define DIRENT_NAME_LEN 24
 
 /** posix */
@@ -10,7 +11,7 @@
 /**
  * 目录，用于内存
  */
-struct Dir{
+struct DIR{
 	struct fext_inode_m *inode; ///< 对应的inode
 	struct dirent *buffer; ///< 缓冲区
 	uint32_t current;    ///< 当前遍历到的位置
@@ -21,12 +22,12 @@ struct Dir{
 
 struct dirent {
 	char filename[DIRENT_NAME_LEN];
-	uint32_t i_no;
+	ino_t i_no;
 };
 
-struct dirent *readdir(struct Dir *dir);
-void rewinddir(struct Dir *dir);
-int32_t closedir(struct Dir *dir);
-struct Dir *opendir(char *path);
+struct dirent *readdir(struct DIR *dir);
+void           rewinddir(struct DIR *dir);
+int            closedir(struct DIR *dir);
+struct DIR    *opendir(const char *path);
 
 #endif

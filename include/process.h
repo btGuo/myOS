@@ -8,6 +8,8 @@
 #include "thread.h"
 #include "vm_area.h"
 #define default_prio 32
+
+
 void process_execute(void *filename, char *name);
 void process_activate(struct task_struct *p_thread);
 uint32_t *create_page_dir(void);
@@ -20,5 +22,4 @@ void vm_release(struct vm_struct *vm_s);
 void vm_struct_init();
 
 pid_t sys_fork(void);
-int32_t sys_execv(const char *path, const char **argv);
 #endif

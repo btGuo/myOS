@@ -51,7 +51,7 @@ struct ide_channel{
 
 #define MAX_PARTS 64  ///< 最大分区数
 extern struct partition *parts[MAX_PARTS];  ///< 所有分区
-extern struct ide_channel channels[2];  ///< 两条ide通道
+//extern struct ide_channel channels[2];  ///< 两条ide通道
 
 struct partition *name2part(const char *device);
 void ide_read(struct disk *hd, uint32_t lba, void *buf, uint32_t cnt);

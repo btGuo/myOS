@@ -6,7 +6,7 @@
 #include "list.h"
 #include "buddy.h"
 #include "vm_area.h"
-#include "debug.h"
+#include "kernelio.h"
 
 #define PG_SIZE 4096
 
@@ -134,6 +134,14 @@ static inline uint32_t *PDE_PTR(uint32_t vaddr){
 	return (uint32_t*)(0xfffff000 + ((vaddr & 0xffc00000) >> 20));
 }
 
+/**
+ * 根据虚拟地址得到物理地址
+ */
+static inline uint32_t addr_v2p(uint32_t vaddr){
+	uint32_t *pte = PTE_PTR(vaddr);
+	return ((*pte & 0xfffff000) + (vaddr & 0x00000fff));
+}
+
 
 void mem_init(void);
 void *get_a_page(enum pool_flags pf, uint32_t vaddr);
@@ -141,9 +149,12 @@ uint32_t addr_v2p(uint32_t vaddr);
 
 void block_desc_init(struct mem_block_desc *blk_desc);
 
-void *sys_malloc(uint32_t size);
-void sys_free(void *ptr);
 void copy_page_table(uint32_t *pde);
+void page_table_add(uint32_t vaddr, uint32_t paddr);
+void page_table_pte_remove(uint32_t vaddr);
+
+uint32_t palloc(enum pool_flags pf, uint32_t pg_cnt);
+void pfree(uint32_t paddr);
 
 void *get_kernel_pages(uint32_t pg_cnt);
 void free_kernel_pages(void *vaddr);
@@ -151,7 +162,9 @@ void *kmalloc(uint32_t size);
 void kfree(void *ptr);
 void *vmalloc(uint32_t pg_cnt);
 void vfree(void *vaddr);
+void *vaddr_get(uint32_t pg_cnt);
 
+bool pg_try_free(uint32_t vaddr);
 void do_wp_page(uint32_t _vaddr);
 void do_page_fault(uint32_t vaddr);
 #endif

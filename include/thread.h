@@ -4,6 +4,7 @@
 #include "list.h"
 #include "memory.h"
 #include "vm_area.h"
+#include <stdbool.h>
 
 #define PG_SIZE 4096         ///< 页大小
 #define MAIN_PCB 0xc009e000     ///< 主线程pcb所在地址
@@ -103,6 +104,7 @@ struct task_struct{
 	uint32_t gid;                    ///< 用户组id
 };
 
+
 /**
  * pid池
  */
@@ -116,6 +118,16 @@ extern struct task_struct *curr;
 extern struct task_struct *init_prog;
 extern struct list_head thread_all_list;
 extern struct list_head thread_ready_list;
+
+/**
+ * 是否超级用户
+ */
+static inline bool is_super(){
+
+	return (curr->uid == 0 && 
+		curr->gid == 0 ?
+		true : false);
+}
 
 void schedule();
 void print_thread();

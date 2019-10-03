@@ -18,6 +18,7 @@ void *realloc(void *, size_t);
 void *calloc(size_t lens, size_t size);
 ///夹带私货，这个不是要求的
 ssize_t readline(int fd, char **buf, size_t *buflen);
+void          exit(int);
 
 #ifdef __cplusplus
 }

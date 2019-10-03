@@ -3,7 +3,10 @@
 #include"global.h"
 #include"stdint.h"
 
+#ifndef offsetof
 #define offsetof(type, member) ((int)(&((type*)0)->member))
+#endif
+
 #define list_entry(type, member, ptr)({ \
 	const typeof(((type*)0)->member) *__mptr = (ptr); \
 	(type *)((char *)__mptr - offsetof(type, member));})
