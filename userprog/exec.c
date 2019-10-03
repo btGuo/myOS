@@ -8,16 +8,22 @@
 #include <process.h>
 #include <elf32.h>
 #include <interrupt.h>
-#include <debug.h>
+#include <kernelio.h>
+
+#define DEBUG 1
+
+#ifdef DEBUG
 
 static void print_Elf32_phdr(struct Elf32_Phdr *prog_h){
 	printk("elf program header info :\n");
 	printk("offset      %d\n", prog_h->p_offset);
-	printk("vaddr       %h\n", prog_h->p_vaddr);
+	printk("vaddr       %x\n", prog_h->p_vaddr);
 	printk("file size   %d\n", prog_h->p_filesz);
 	printk("memory size %d\n", prog_h->p_memsz);
 	printk("\n");
 }
+
+#endif
 
 
 extern void intr_exit(void);
@@ -140,8 +146,194 @@ done:
 	printk("exec load done\n");
 	return ret;
 }
+
+#define MEM_CHECK \
+if(bytes % PG_SIZE == 0){ \
+	if(dest == svaddr){ \
+		ret = -1; \
+		goto error; \
+	} \
+	uint32_t paddr = palloc(PF_USER, 1); \
+	uint32_t vaddr = (uint32_t)dest - PG_SIZE; \
+	page_table_add(vaddr, paddr); \
+	bytes = 0; \
+}
+
+#define dest_off(dest) \
+((char *)0xc0000000 - (svaddr + MAX_ARG_PAGES * PG_SIZE - (dest)))
+
+#define MAX_ARG_PAGES 64
+
+static int32_t build_stack(
+		struct intr_stack *stack0, 
+		char *const argv[], 
+		char *const envp[])
+{
+	printk("build_stack start\n");
+
+	char *svaddr = (char *)vaddr_get(MAX_ARG_PAGES);
+	if(svaddr == NULL){
+
+		return -1;
+	}
+
+	int ret = 0;
+
+	//统计数量
+	uint32_t argc = 0;
+	uint32_t envc = 0;
+	while(argv[argc]) ++argc;
+	while(envp[envc]) ++envc;
+
+	//拉到最后，从后往前复制
+	char *dest = svaddr + MAX_ARG_PAGES * PG_SIZE;
+
+	//这里要加1，最后一个是NULL
+	uint32_t _envpsz = sizeof(char *) * (envc + 1);
+	uint32_t _argvsz = sizeof(char *) * (argc + 1);
+
+	//新的指针数组
+	char **_envp = kmalloc(_envpsz);
+	char **_argv = kmalloc(_argvsz);
+
+	//最后一项为空
+	_envp[envc] = NULL;
+	_argv[argc] = NULL;
+	
+	uint32_t bytes = 0;
+
+	//复制两组字符串
+	for(int i = 0; i < 2; i++){
+
+		char *const* arr = NULL;
+		char ** _arr = NULL;
+		uint32_t cnt = 0;
+		char * src = NULL;
+
+		if(i == 0){
+			cnt = envc; arr = envp; _arr = _envp;
+		}else {
+			cnt = argc; arr = argv; _arr = _argv;
+		}
+		
+		while(cnt--){
+	
+			src = arr[cnt];
+			uint32_t len = strlen(src) + 1;
+			src += len;
+
+			while(len--){
+
+				MEM_CHECK
+				//先减
+				*--dest = *--src;
+				++bytes;
+			}
+			_arr[cnt] = dest_off(dest);
+		}
+	}
+
+	printk("bytes %d\n", bytes);
+
+	uint32_t align = sizeof(char *) - 1;
+	//对齐
+	bytes += (uint32_t)dest & align;
+	dest = (char *)((uint32_t)dest & ~align);
+	
+	printk("bytes %d\n", bytes);
+	//记录指针数组位置
+	char *_envpp = NULL;
+	char *_argvp = NULL;
+
+	//复制两组指针数组
+	for(int i = 0; i < 2; i++){
+
+		char *src = NULL;
+		uint32_t len = 0;
+
+		if(i == 0){
+			src = (char *)_envp; len = _envpsz;
+		}else {
+			src = (char *)_argv; len = _argvsz;
+		}
+
+		src += len;
+		while(len--){
 			
-int32_t sys_execv(const char *path, const char **argv){
+			MEM_CHECK
+			*--dest = *--src;
+			++bytes;
+		}
+		if(i == 0){
+			_envpp = dest_off(dest);
+		}else{
+			_argvp = dest_off(dest);
+		}
+	}
+
+	//复制最后三个参数
+	for(int i = 0; i < 3; i++){
+
+		char *src = NULL;
+		uint32_t len = 0;
+
+		if(i == 0){
+			src = (char *)&_envpp; len = sizeof(_envpp);
+		}else if(i == 1){
+			src = (char *)&_argvp; len = sizeof(_argvp);
+		}else {
+			src = (char *)&argc;   len = sizeof(argc);
+		}
+
+		src += len;
+		while(len--){
+
+			MEM_CHECK
+			*--dest = *--src;
+			++bytes;
+		}
+	}
+	printk("bytes %d\n", bytes);
+
+	//释放原来栈页
+	uint32_t vaddr = 0xbffff000;
+
+	while(pg_try_free(vaddr)) vaddr -= PG_SIZE;
+
+	//直接更改映射
+	uint32_t top = (uint32_t)svaddr + MAX_ARG_PAGES * PG_SIZE;
+	uint32_t bottom = (uint32_t)dest & 0xfffff000;
+	uint32_t paddr = 0;
+	vaddr = 0xc0000000;
+
+	printk("top %x\n", top);
+	printk("bottom %x\n", bottom);
+	while(top != bottom){
+
+		top -= PG_SIZE;
+		vaddr -= PG_SIZE;
+
+		//拿到物理地址，重新映射
+		paddr = addr_v2p(top);
+		//删除旧项
+		page_table_pte_remove(top);
+		//重新映射
+		page_table_add(vaddr, paddr);
+	}
+
+	printk("bytes %d\n", bytes);
+
+	stack0->esp = (char *)0xc0000000 - (svaddr + MAX_ARG_PAGES * PG_SIZE - dest);
+	printk("esp %x\n", (uint32_t)stack0->esp);
+error:
+	kfree(_argv);
+	kfree(_envp);
+
+	printk("build stack done\n");
+	return ret;
+}	
+	
+int sys_execve(const char *path, char *const argv[], char *const envp[]){
 
 	printk("sys_execv start\n");
 	uint32_t argc = 0;
@@ -160,15 +352,23 @@ int32_t sys_execv(const char *path, const char **argv){
 	struct intr_stack *stack0 = (struct intr_stack *)\
 			((uint32_t)curr + PG_SIZE - sizeof(struct intr_stack));
 
+	if(build_stack(stack0, argv, envp) == -1){
+
+		printk("build stack wrong\n");
+		return -1;
+	}
+
 	//命令行参数
-	stack0->ebx = (int32_t)argv;
-	stack0->ecx = argc;
+	//stack0->ebx = (int32_t)argv;
+	//stack0->ecx = argc;
 
 	stack0->eip = (void *)entry;
-	stack0->esp = (void *)0xc0000000;
+	//stack0->esp = (void *)0xc0000000;
 
 	asm volatile("movl %0, %%esp; jmp intr_exit"::\
 			"g"(stack0): "memory");
 	return 0;
 }
+
+
 	

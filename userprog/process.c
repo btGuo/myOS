@@ -4,7 +4,7 @@
 #include <memory.h>
 #include <tss.h>
 #include <interrupt.h>
-#include <debug.h>
+#include <kernelio.h>
 #include <vm_area.h>
 
 extern void intr_exit(void);
@@ -12,9 +12,7 @@ extern struct task_struct *curr;
 extern struct list_head thread_ready_list;
 extern struct list_head thread_all_list;
 
-/**
- * 增加用户堆
- */
+/*
 bool try_expend_heap(){
 	struct vm_area *heap = curr->vm_struct.vm_heap;
 	struct vm_area *stack = curr->vm_struct.vm_stack;
@@ -24,6 +22,7 @@ bool try_expend_heap(){
 		return false;
 	return true;
 }
+*/
 
 /**
  * 增加用户栈
@@ -37,6 +36,27 @@ bool try_expend_stack(){
 	if(heap->start_addr + heap->size > stack->start_addr)
 		return false;
 	return true;
+}
+
+/**
+ * 增加用户堆
+ */
+void *sys_sbrk(uint32_t incr){
+
+	uint32_t *heap_ptr = &curr->vm_struct.heap_ptr;
+	struct vm_area *heap = curr->vm_struct.vm_heap;
+	struct vm_area *stack = curr->vm_struct.vm_stack;
+
+	//是否没有空间了，碰到栈底
+	if(*heap_ptr + incr >= stack->start_addr){
+
+		return (void *) -1;
+	}
+	uint32_t oldptr = *heap_ptr;
+	*heap_ptr += incr;
+	heap->size += incr;
+
+	return (void *)oldptr;
 }
 
 /**
@@ -115,6 +135,8 @@ void vm_release(struct vm_struct *vm_s){
  */
 void vm_struct_init(){
 
+	curr->vm_struct.heap_ptr = USER_HEAP_VADDR;
+
 	struct list_head **vm_list = &curr->vm_struct.vm_list;
 	*vm_list = (struct list_head *)kmalloc(sizeof(struct list_head));
 	LIST_HEAD_INIT_PTR(*vm_list);
@@ -123,7 +145,7 @@ void vm_struct_init(){
 	//堆线性区
 	area = curr->vm_struct.vm_heap = kmalloc(sizeof(struct vm_area));
 	area->start_addr = USER_HEAP_VADDR;
-	area->size = (1 << 20);
+	area->size = 0;
 	area->vm_type = VM_DOWNWARD;
 	area->ref_cnt = 1;
 	list_add(&area->vm_tag, *vm_list);

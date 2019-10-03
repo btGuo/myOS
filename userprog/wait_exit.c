@@ -1,20 +1,11 @@
 #include <stdint.h>
 #include <thread.h>
-#include <debug.h>
+#include <kernelio.h>
 #include <fs_sys.h>
 #include <process.h>
 #include <thread.h>
 
 
-/**
- * 如果虚拟地址对应页存在，则释放
- */
-void pg_try_free(uint32_t vaddr){
-	uint32_t *pde = PDE_PTR(vaddr);
-	uint32_t *pte = PTE_PTR(vaddr);
-	if((*pde & 0x1) && (*pte & 0x1))
-		pfree(*pte);
-}
 
 /**
  * 释放进程资源页
@@ -48,7 +39,7 @@ void release_prog_pages(struct task_struct *self){
 		++pde;
 	}
 	//释放页目录
-	pfree(self->pg_dir);
+	pfree((uint32_t)self->pg_dir);
 	printk("release prog pages done\n");
 }
 
@@ -86,7 +77,7 @@ static void release_prog_resource(struct task_struct *self){
 	}
 }
 
-void sys_exit(int32_t status){
+void sys__exit(int32_t status){
 	printk("sys_exit\n");
 
 	adopt_children(curr);
@@ -99,6 +90,12 @@ void sys_exit(int32_t status){
 	thread_block(TASK_HANGING);
 	printk("sys_exit done\n");
 }	
+
+void sys_exit(int32_t status){
+
+	//TODO:还有一些其他工作要做
+	sys__exit(status);
+}
 
 pid_t sys_wait(int32_t status){
 
