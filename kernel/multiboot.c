@@ -1,18 +1,24 @@
 #include <multiboot.h>
 #include <stdint.h>
 #include <string.h>
-#include <debug.h>
+#include <kernelio.h>
 
 #define DRIVE_MASK (1 << 7)
 static char *dri_mode[] = {
 	"CHS", "LBA",
 };
 
-struct multiboot_info info;
+static struct multiboot_info info;
 
 void set_info(struct multiboot_info *_info)
 {
 	memcpy(&info, _info, sizeof(struct multiboot_info));
+}
+
+void print_info()
+{
+	printk("%x\n", &info);
+	printk("%x\n", info.flags);
 }
 
 uint32_t get_mem_upper()

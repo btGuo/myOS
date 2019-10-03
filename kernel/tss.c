@@ -83,7 +83,7 @@ void tss_init(){
 	*((struct gdt_desc *)(gdt_base + 0x30)) = make_gdt_desc(\
 			0, 0x000fffff, 0xf2, 0xc0);
 
-	uint16_t *gdt_limit = &gdt_operand;
+	uint16_t *gdt_limit = (uint16_t *)&gdt_operand;
 	*gdt_limit = 8 * 7 - 1;
 
 	asm volatile("lgdt %0"::"m"(gdt_operand));

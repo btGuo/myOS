@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <global.h>
 #include <io.h>
-#include <debug.h>
+#include <kernelio.h>
 #include <thread.h>
 
 #define IDT_DESC_CNT 0x81

@@ -1,5 +1,4 @@
-#include <syscall.h>
-#include <debug.h>
+#include <kernelio.h>
 #include <thread.h>
 #include <string.h>
 #include <memory.h>
@@ -17,10 +16,11 @@
 
 extern void sys_exit(int32_t status);
 extern pid_t sys_wait(int32_t status);
-extern int32_t sys_execv(const char *path, const char **argv);
 extern int32_t sys_dup2(int32_t oldfd, int32_t newfd);
 extern int32_t sys_dup(int32_t fd);
 extern void *sys_sbrk(uint32_t incr);
+extern void sys__exit(int32_t status);
+extern int sys_execve(const char *path, char *const argv[], char *const envp[]);
 
 typedef void* syscall;
 syscall syscall_table[syscall_nr];
@@ -36,6 +36,8 @@ int sys_uname(struct utsname *name){
 	strcpy(name->release,  RELEASE);
 	strcpy(name->version,  VERSION);
 	strcpy(name->machine,  MACHINE);
+
+	return 0;
 }
 
 void sys_clear(){
@@ -51,8 +53,8 @@ void sys_putchar(char ch){
 void sys_call_init(void){
 	printk("sys_call init\n");
 	__SYS(getpid);
-	__SYS(malloc);
-	__SYS(free);
+	//__SYS(malloc);
+	//__SYS(free);
 	__SYS(fork);
 	__SYS(open);
 	__SYS(close);
@@ -66,17 +68,19 @@ void sys_call_init(void){
 	__SYS(mkdir);
 	__SYS(closedir);
 	__SYS(opendir);
-	__SYS(execv);
+	__SYS(execve);
 	__SYS(stat);
 	__SYS(clear);
 	__SYS(putchar);
 	__SYS(wait);
 	__SYS(exit);
+	__SYS(_exit);
 	__SYS(getcwd);
 	__SYS(dup);
 	__SYS(dup2);
 	__SYS(uname);
 	__SYS(sbrk);
+	__SYS(chmod);
 	printk("sys_call init done\n");
 }
 
