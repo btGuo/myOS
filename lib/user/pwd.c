@@ -1,4 +1,5 @@
 #include <pwd.h>
+#include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
@@ -89,14 +90,15 @@ int __getpwnX_r(const void *arg, struct passwd *pwd, char *buf,
 	if(rdl_buf == NULL){
 
 		*result = NULL;
+		close(fd);
 		return -1;
 	}
 
 	char *savep;
 	const char *delim = ":";
 
-	while((rlen = readline(fd, &rdl_buf, &rdl_len)) != 0){
-
+	while((rlen = readline(&rdl_buf, &rdl_len, fd)) != 0){
+ 	
 		if(comp(arg, rdl_buf, rdl_len) == 0){
 		
 			if(rlen > buflen){
@@ -115,6 +117,7 @@ int __getpwnX_r(const void *arg, struct passwd *pwd, char *buf,
 
 			*result = pwd;
 			free(rdl_buf);
+			close(fd);
 			return 0;
 		}
 		memset(rdl_buf, 0, rdl_len);
@@ -124,6 +127,7 @@ error:
 	memset(buf, 0, buflen);
 	*result = NULL;
 	free(rdl_buf);
+	close(fd);
 	return -1;
 }
 

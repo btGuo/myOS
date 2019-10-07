@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+int errno;  ///< 错误码
 static int mm_mark = 0; //这个应该是原子的
 
 static inline void check_mark(){
@@ -59,7 +60,7 @@ void rdline_set_bsz(size_t bsz){
  * @attention 这里用了一些特殊的操作，每次调用read都读取一定的字节数，
  * 而不是每次读取一个字节。
  */
-ssize_t readline(int fd, char **buf, size_t *buflen){
+ssize_t readline(char **buf, size_t *buflen, int fd){
 
 	if(*buf == NULL || *buflen == 0){
 
@@ -79,7 +80,7 @@ ssize_t readline(int fd, char **buf, size_t *buflen){
 	ssize_t rlen = 0;
 
 	char *bufp = *buf;
-	while((rlen = read(fd, bufp, batchsz))){
+	while((rlen = read(fd, bufp, batchsz)) != -1){
 
 		if(rlen < 0){
 			return -1;
@@ -115,3 +116,78 @@ ssize_t readline(int fd, char **buf, size_t *buflen){
 
 	return total;
 }
+
+#define MAX_ENVC 128
+#define BUF_SZ 1024
+
+int execvp(const char *file, char *const argv[]){
+
+	char   *envp[MAX_ENVC];
+
+	//从配置文件中读取环境变量
+	int fd = open("/etc/profile", O_RDONLY);
+	if(fd == -1){
+
+		envp[0] = NULL;
+	}else 
+	{
+
+		ssize_t rlen = 0;
+		size_t  buflen = BUF_SZ;
+		char   *buf = malloc(buflen);
+		int     envc = 0;
+	
+		while((rlen = readline(&buf, &buflen, fd)) != 0){
+			
+			if(buf[0] == '#')
+				continue;
+	
+			if((envp[envc] = malloc(rlen + 1)) == NULL)
+				continue;
+	
+			memcpy(envp[envc], buf, rlen);
+			envp[envc][rlen] = '\0';
+			envc++;
+		}
+		envp[envc] = NULL;
+		close(fd);
+	}
+	
+	//TODO 读取PATH变量，然后补全file
+	//这里默认加上/bin
+	char *path = (char *)file;
+	char *prefix = "/bin/";
+
+	if(file[0] != '/'){
+		int size = strlen(file) + strlen(prefix) + 1;
+		path = malloc(size);
+		memset(path, 0, size);
+		strcpy(path, prefix); 
+		strcat(path, file);
+	}
+
+	if(access(path, F_OK) == -1)
+		return -1;
+
+	execve(path, argv, envp);
+
+	//跑不到这里
+	return 0;
+}
+
+int access(const char *path, int amode){
+	
+	if(amode & F_OK){
+		//打开文件失败也可能是别的原因
+		int fd = open(path, O_RDONLY);
+		if(fd == -1){
+			return -1;
+		}
+		close(fd);
+		return 0;
+	}
+	//TODO 实现其他几个选项
+	
+	return 0;
+}
+

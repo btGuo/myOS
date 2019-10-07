@@ -92,6 +92,7 @@ void *find_fit(size_t size){
 	
 	while(1){
 		fit_size = GET_SIZE(HDRP(bp));
+		//printf("bp %x, fit_size %d---", bp, fit_size);
 		if(!GET_ALLOC(HDRP(bp)) && fit_size >= size){
 			return bp;
 		}else if(fit_size == 0){
@@ -141,8 +142,7 @@ void *mm_alloc(size_t size){
 		asize = DSIZE + ((size & 0x7) ? 
 			(size & ~0x7) + DSIZE : size);
 	}
-
-	//printf("asize : %lu\n", asize);
+	//printf("asize : %d\n", asize);
 	if((bp = find_fit(asize)) != NULL){
 		place(bp, asize);
 		return bp;
@@ -197,9 +197,13 @@ void *mm_calloc(size_t lens, size_t size){
 	return mm_alloc(lens * size);
 }
 
+void mm_print();
+
 int mm_init(void){
 
+	//TODO 这里判断有问题
 	if((headp_listp = mem_sbrk(4 * WSIZE)) == (void *)-1){
+		printf("mem_sbrk error\n");
 		return -1;
 	}
 
@@ -210,8 +214,10 @@ int mm_init(void){
 	headp_listp += (2 * WSIZE);
 
 	if(extend_heap(CHUNKSIZE / WSIZE) == NULL){
+		printf("extend_heap error\n");
 		return -1;
 	}
+	mm_print();
 	return 0;
 }
 
@@ -223,7 +229,6 @@ void mm_print(){
 	int idx = 0;
 	int status;
 	
-	printf("heap info\n");
 	while(1){
 		size = GET_SIZE(HDRP(bp));
 		status = GET_ALLOC(HDRP(bp));
@@ -231,7 +236,7 @@ void mm_print(){
 			break;
 		}
 		if(idx)
-			printf("block : %d size : %lu status : %s\t", idx, size, show[status]);
+			printf("block : %d size : %d status : %s\t", idx, size, show[status]);
 		bp = NEXT_BLKP(bp);
 		idx++;
 	}

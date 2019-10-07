@@ -46,6 +46,18 @@ int memcmp(const void *a, const void *b, size_t size){
 	return 0;
 }
 
+void *memchr(const void *_dest, int _ch, size_t size){
+
+	char ch = (char)_ch;
+	const char *dest = _dest;
+	while(size--){
+		if(*dest == ch)
+			return (void *)dest;
+		++dest;
+	}
+	return NULL;
+}
+
 char *strcpy(char *dest, const char *src){
 	ASSERT(dest != NULL && src != NULL);
 	char *_dest = dest;

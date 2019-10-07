@@ -68,12 +68,14 @@ _syscall2(char *, getcwd, char *, buf, size_t, size)
 _syscall1(int, rmdir, char *, path)
 _syscall1(void, _exit, int, status)
 _syscall1(void *, sbrk, size_t, incr)
+_syscall1(int, pipe, int *, fd)
+_syscall0(uid_t, getuid);
 
 //dirent.h
-_syscall1(struct dirent *, readdir, struct DIR *, dir)
-_syscall1(void , rewinddir, struct DIR *, dir)
-_syscall1(int, closedir, struct DIR *, dir)
-_syscall1(struct   DIR *, opendir, const char *, path)
+_syscall1(struct dirent *, readdir, DIR *, dir)
+_syscall1(void , rewinddir, DIR *, dir)
+_syscall1(int, closedir, DIR *, dir)
+_syscall1(DIR *, opendir, const char *, path)
 
 //sys/stat.h
 _syscall2(int, stat,  const char *, path, struct stat *, st)
