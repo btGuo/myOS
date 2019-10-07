@@ -1,13 +1,10 @@
 #include "ide.h"
 #include "global.h"
-#include "debug.h"
+#include "kernelio.h"
 #include "io.h"
 #include "interrupt.h"
-#include "syscall.h"
 #include "string.h"
 #include "tty.h"
-#include "debug.h"
-#include "stdio.h"
 
 #define reg_data(channel)	 (channel->port_base + 0)
 #define reg_error(channel)	 (channel->port_base + 1)
@@ -264,6 +261,8 @@ static void swap_copy(const char *src, char *buf, uint32_t size){
 	buf[size] = '\0';
 }
 
+#define DEBUG 1
+
 /**
  * 识别磁盘
  * @return 硬盘是否存在
@@ -388,6 +387,7 @@ static void partition_scan(struct disk *hd, uint32_t ext_lba){
 		}
 		++p;
 	}
+	printk("scan done\n");
 }
 
 /**
@@ -415,7 +415,7 @@ void ide_init(){
 	printk("ide_init start\n");
 #endif
 	uint8_t hd_cnt = *((uint8_t *)(0x475));
-	printk("total parts %d\n", hd_cnt);
+	printk("total channels %d\n", hd_cnt);
 	ASSERT(hd_cnt > 0);
 
 	channel_cnt =  DIV_ROUND_UP(hd_cnt, 2);
@@ -426,6 +426,8 @@ void ide_init(){
 	while(channel_no < channel_cnt){
 
 		sprintf(channels[channel_no].name, "ide%d", channel_no);
+		
+		printk("%s\n", channels[channel_no].name);
 		
 		if(channel_no == 0){
 			channels[0].port_base = 0x1f0;
@@ -444,11 +446,13 @@ void ide_init(){
 		int dev_no = 0;
 		while(dev_no < 2){
 
+			printk("ide_init %d\n", dev_no);
 			hd = &channels[channel_no].devices[dev_no];
 			hd->channel = &channels[channel_no];
 			hd->dev_no = dev_no;
 			sprintf(hd->name, "sd%c", 'a' + channel_no * 2 + dev_no);
 
+			printk("%s\n", hd->name);
 			if(identify_disk(hd)){
 
 				partition_scan(hd, 0);

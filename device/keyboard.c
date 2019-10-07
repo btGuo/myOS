@@ -2,8 +2,9 @@
 #include "io.h"
 #include "global.h"
 #include "interrupt.h"
-#include "debug.h"
+#include "kernelio.h"
 #include "ioqueue.h"
+#include "tty.h"
 
 #define KBD_BUF_PORT 0x60
 #define EXT_CODE 0xe0
@@ -38,6 +39,7 @@ static char keymap[0x3a][2] =
  * 键盘中断处理程序
  */
 static void intr_keyboard_handler(void){
+
 	uint8_t scancode = inb(KBD_BUF_PORT);
 	if(scancode == EXT_CODE){
 		//主键盘扩展码为两个字节, 只需要再读一个字节
@@ -81,7 +83,8 @@ static void intr_keyboard_handler(void){
 	char ch = keymap[(uint32_t)scancode][(uint32_t)shift];
 	//ascii 为0不处理
 	if(ch){
-		queue_putchar(&kb_que, ch);
+		terminal_putchar(ch);
+		queue_write(&kb_que, &ch, 1, IOQUEUE_NON_BLOCK);
 	}
 }
 
@@ -90,11 +93,7 @@ static void intr_keyboard_handler(void){
  */
 int32_t kb_read(char *buf, uint32_t cnt){
 
-	uint32_t ret = cnt;
-	while(cnt--){
-		*buf++ = queue_getchar(&kb_que);
-	}
-	return ret;
+	return queue_read(&kb_que, buf, cnt, IOQUEUE_BLOCK);
 }
 
 int32_t kb_write(const char *buf, uint32_t cnt){

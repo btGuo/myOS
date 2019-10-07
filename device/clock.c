@@ -1,7 +1,7 @@
 #include "clock.h"
 #include "io.h"
 #include "stdio.h"
-#include "debug.h"
+#include "kernelio.h"
 
 #define TM_SIZE 20  ///< 默认格式串长度
 static const char *tm_fmt_str = "%d/%02d/%02d %02d:%02d:%02d"; ///< 默认格式字符串

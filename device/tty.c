@@ -9,6 +9,8 @@ static const uint32_t VGA_WIDTH = 80;
 static const uint32_t VGA_HEIGHT = 25;
 static uint16_t* const VGA_MEMORY = (uint16_t*) 0xc00B8000;
 
+/// 默认颜色
+static uint8_t default_color = VGA_COLOR_LIGHT_GREY | VGA_COLOR_BLACK << 4;
 static uint32_t terminal_row;   ///< 当前行
 static uint32_t terminal_column; ///< 当前列
 static uint8_t terminal_color;   ///< 当前颜色
@@ -50,21 +52,13 @@ void update_cursor(uint32_t x, uint32_t y){
 	outb(CUR_PORT(1), (uint8_t)((pos >> 8) & 0xff));
 }
 
-
-
-
-
-
-
-
-
 /**
  * 终端初始化
  */
 void terminal_init(void) {
 	terminal_row = 0;
 	terminal_column = 0;
-	terminal_color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+	terminal_color = default_color;
 	terminal_buffer = VGA_MEMORY;
 	terminal_clear();
 	mutex_lock_init(&tty_lock);
@@ -127,15 +121,14 @@ void terminal_putchar(char c) {
 			++terminal_row;
 			break;
 		case '\b':
-			--terminal_column;
+			if(terminal_column > 0){
+				terminal_putentryat(' ', terminal_color, terminal_column, terminal_row);
+				--terminal_column;
+			}
 			break;
 		case '\t':
-			{
-				uint32_t i = tab4;
-				while(i--)
-					terminal_putchar(' ');
-				
-			}
+			for(int i = 0; i < tab4; i++)
+				terminal_putchar(' ');
 			break;
 		default:
 			terminal_putentryat(c, terminal_color, terminal_column, terminal_row);
@@ -151,13 +144,91 @@ void terminal_putchar(char c) {
 	}
 }
 
+#define update_fg(fg) (terminal_color = vga_entry_color((fg), VGA_BG_MASK(terminal_color)))
+#define update_bg(bg) (terminal_color = vga_entry_color(VGA_FG_MASK(terminal_color), (bg)))
+#define set_flickr()  (terminal_color &= 0x80)
+#define set_default() (terminal_color = default_color)
+
 /**
  * 输出size个字符
  */
 int32_t terminal_write(const char* data, uint32_t size) {
 	uint32_t i;
-	for (i = 0; i < size; i++)
+	for (i = 0; i < size; i++){
+		//vt100
+		
+		if(i + 1 < size && memcmp(&data[i], "\e[", 2) == 0){
+
+			i += 2;
+			//先试着找到第一个m
+			char *mp = memchr(&data[i], 'm', size - i);
+
+			//  \033[<数字>m 格式
+			if(mp)
+			{
+				uint32_t len = mp - &data[i];
+				const char *token = &data[i];
+				do{
+					//前景
+					if(memcmp(token, "30", 2) == 0)
+						update_fg(VGA_COLOR_BLACK);
+					else if(memcmp(token, "31", 2) == 0)
+						update_fg(VGA_COLOR_RED);
+					else if(memcmp(token, "32", 2) == 0)
+						update_fg(VGA_COLOR_GREEN);
+					else if(memcmp(token, "33", 2) == 0)
+						update_fg(VGA_COLOR_LIGHT_BROWN);
+					else if(memcmp(token, "34", 2) == 0)
+						update_fg(VGA_COLOR_BLUE);
+					else if(memcmp(token, "35", 2) == 0)
+						update_fg(VGA_COLOR_LIGHT_MAGENTA);
+					else if(memcmp(token, "36", 2) == 0)
+						update_fg(VGA_COLOR_CYAN);
+					else if(memcmp(token, "37", 2) == 0)
+						update_fg(VGA_COLOR_WHITE);
+
+					//背景
+					else if(memcmp(token, "40", 2) == 0)
+						update_bg(VGA_COLOR_BLACK);
+					else if(memcmp(token, "41", 2) == 0)
+						update_bg(VGA_COLOR_RED);
+					else if(memcmp(token, "42", 2) == 0)
+						update_bg(VGA_COLOR_GREEN);
+					else if(memcmp(token, "43", 2) == 0)
+						update_bg(VGA_COLOR_BROWN);
+					else if(memcmp(token, "44", 2) == 0)
+						update_bg(VGA_COLOR_BLUE);
+					else if(memcmp(token, "46", 2) == 0)
+						update_bg(VGA_COLOR_CYAN);
+					else if(memcmp(token, "47", 2) == 0)
+						update_bg(VGA_COLOR_LIGHT_GREY);
+
+					//其他特殊命令
+					else if(memcmp(token, "0", 1) == 0)
+						set_default();
+					else if(memcmp(token, "5", 1) == 0)
+					       	set_flickr();	
+
+
+				}while((token = memchr(token, ';', len)) && token++);
+
+				//这里到 'm'
+				i += len;
+
+			//  \033[字母 格式
+			}else if(i + 1 < size)
+			{
+				if(memcmp(&data[i], "2J", 2) == 0)
+					terminal_clear();
+				i++;
+			}else   i--;
+
+			continue;
+		}
+		
+
 		terminal_putchar(data[i]);
+	}
 
 	return (int32_t)size;
 }

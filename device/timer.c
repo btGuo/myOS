@@ -3,7 +3,7 @@
 #include "thread.h"
 #include "interrupt.h"
 #include "global.h"
-#include "debug.h"
+#include "kernelio.h"
 
 #define IRQ0_FREQUENCY 100
 #define INPUT_FREQUENCY 1193180
