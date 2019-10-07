@@ -5,6 +5,9 @@
 
 #define BUF_SIZE 4096
 
+#define IOQUEUE_BLOCK 0
+#define IOQUEUE_NON_BLOCK 1
+
 /**
  * io环形队列，生产者消费者模型
  */
@@ -19,8 +22,9 @@ struct ioqueue{
 };
 
 void ioqueue_init(struct ioqueue *que);
-char queue_getchar(struct ioqueue *que);
-void queue_putchar(struct ioqueue *que, char ch);
 uint32_t queue_len(struct ioqueue *que);
 void queue_release(struct ioqueue *que);
+
+uint32_t queue_write(struct ioqueue *que, const char *buf, uint32_t cnt, uint32_t type);
+uint32_t queue_read(struct ioqueue *que,  char       *buf, uint32_t cnt, uint32_t type);
 #endif

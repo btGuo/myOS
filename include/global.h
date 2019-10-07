@@ -27,6 +27,12 @@
 #define NULL (void*)0
 #endif
 
+#define st_sizeof(type, member) (sizeof(((type *)0)->member))
+
+#ifndef offsetof
+#define offsetof(type, member) ((int)(&((type*)0)->member))
+#endif
+
 #define UNUSED __attribute__((unused))
 
 #define MEMORY_OK(ptr) ({\

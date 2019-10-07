@@ -58,7 +58,7 @@ struct multiboot_info
     uint32_t mmap_length;
     uint32_t mmap_address;
     uint32_t drivers_length;
-    uint32_t dirves_addr;
+    uint32_t drives_addr;
 };
 
 /**

@@ -15,11 +15,16 @@ void process_activate(struct task_struct *p_thread);
 uint32_t *create_page_dir(void);
 
 bool is_in_vm_area(uint32_t vaddr);
-struct vm_area *vm_area_alloc(uint32_t saddr, uint32_t size);
-void vm_area_incref(struct list_head *head);
-void vm_area_add(struct vm_area *vm);
-void vm_release(struct vm_struct *vm_s);
-void vm_struct_init();
+struct vm_area *vm_area_alloc(uint32_t saddr, uint32_t size, enum vm_area_type vm_type);
+void vm_area_add(struct vm_struct *vm_s, struct vm_area *vm);
+
+int  vm_list_ctor(struct vm_struct *vm_s);
+void vm_list_dtor(struct vm_struct *vm_s);
+int  vm_list_copy(struct vm_struct *vm_s);
+
+void vm_struct_update(struct vm_struct *vm_s);
+int  vm_struct_ctor(struct vm_struct *vm_s);
+void vm_struct_dtor(struct vm_struct *vms);
 
 pid_t sys_fork(void);
 #endif

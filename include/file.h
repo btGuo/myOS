@@ -8,10 +8,16 @@
 #define MAX_FILE_OPEN 12
 
 struct file{
-	uint32_t fd_pos;    ///< 文件偏移
-	uint32_t fd_flag;   ///< 文件属性
-	struct fext_inode_m *fd_inode;   ///< 对应的i节点
-	uint32_t fd_count;   ///< 打开次数
+	union fu{
+		uint32_t        fu_pos; ///< 文件偏移
+		struct ioqueue *fu_que; ///< 管道队列
+	}fu;
+	uint32_t             fd_flag;   ///< 文件属性
+	uint32_t             fd_count;  ///< 打开次数
+	struct fext_inode_m *fd_inode;  ///< 对应的i节点
+
+	#define fd_pos  fu.fu_pos
+	#define fd_que  fu.fu_que
 };
 
 /**

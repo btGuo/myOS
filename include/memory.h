@@ -104,6 +104,15 @@ struct umem_manager{
 
 extern struct kmem_manager kmm;
 extern struct umem_manager umm;
+extern uint32_t max_mm;
+
+/**
+ * 物理地址是否合法
+ */
+static inline bool paddr_legal(uint32_t paddr){
+
+	return (paddr < max_mm ? true : false);
+}
 
 /**
  * 页描述符找到页物理地址
@@ -152,6 +161,7 @@ void block_desc_init(struct mem_block_desc *blk_desc);
 void copy_page_table(uint32_t *pde);
 void page_table_add(uint32_t vaddr, uint32_t paddr);
 void page_table_pte_remove(uint32_t vaddr);
+void page_table_remap(uint32_t vaddr, uint32_t paddr);
 
 uint32_t palloc(enum pool_flags pf, uint32_t pg_cnt);
 void pfree(uint32_t paddr);

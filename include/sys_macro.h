@@ -31,6 +31,8 @@
 #define __NR_chdir     28
 #define __NR__exit     29
 #define __NR_chmod     30
+#define __NR_pipe      31
+#define __NR_getuid    32
 
 #define syscall_nr 72
 

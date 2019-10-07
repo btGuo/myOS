@@ -5,17 +5,17 @@
 #include "memory.h"
 #include "vm_area.h"
 #include <stdbool.h>
+#include <sys/types.h>
 
 #define PG_SIZE 4096         ///< 页大小
 #define MAIN_PCB 0xc009e000     ///< 主线程pcb所在地址
 #define STACK_MAGIC 0x21436587     ///< 栈魔数，随便定义的
-#define MAXL_OPENS 6    ///< 每进程最大打开文件数
+#define MAXL_OPENS 16    ///< 每进程最大打开文件数
 #define MAX_PID 32768    ///< 最大进程数
 
 #define KPG_DIR_PADDR 0x00200000 
 #define KPG_DIR_VADDR (0xc0000000 + KPG_DIR_PADDR)
 
-typedef int32_t pid_t;
 typedef void thread_func(void*);
 /**
  * 中断栈，切换任务时保存上下文信息
@@ -100,8 +100,8 @@ struct task_struct{
 	int8_t exit_status;                   ///< 退出状态
 	uint32_t stack_magic;                         ///< 魔数，标记是否越界
 	uint32_t umask;                         ///< 文件掩码
-	uint32_t uid;                      ///< 用户id
-	uint32_t gid;                    ///< 用户组id
+	uid_t uid;                      ///< 用户id
+	gid_t gid;                    ///< 用户组id
 };
 
 
@@ -133,7 +133,7 @@ void schedule();
 void print_thread();
 void thread_block();
 void thread_unblock();
-struct tack_struct* thread_start(char *name, int prio, thread_func function, void *func_arg);
+struct task_struct* thread_start(char *name, int prio, thread_func function, void *func_arg);
 void init_thread(struct task_struct *pthread, char *name, int prio);
 void thread_yield(void);
 void thread_create(struct task_struct *pthread, thread_func function, void *func_arg);

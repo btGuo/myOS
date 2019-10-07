@@ -34,10 +34,10 @@ struct dirent_info {
 
 
 void dirent_info_init(struct dirent_info *dire_i);
-struct DIR* dir_open(struct fext_fs *fs, uint32_t i_no);
-struct DIR* dir_new(struct fext_inode_m *inode);
-void dir_close(struct DIR *dir);
-bool dir_read(struct DIR *dir, struct fext_dirent *dir_e);
+DIR* dir_open(struct fext_fs *fs, uint32_t i_no);
+DIR* dir_new(struct fext_inode_m *inode);
+void dir_close(DIR *dir);
+bool dir_read(DIR *dir, struct fext_dirent *dir_e);
 void init_dir_entry(char *filename, uint32_t i_no, uint32_t f_type,struct fext_dirent *dir_e);
 bool _search_dir_entry(struct fext_inode_m *m_inode, const char *name, struct fext_dirent *dir_e);
 

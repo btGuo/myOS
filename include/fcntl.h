@@ -7,6 +7,7 @@
 #define O_WRONLY 2  ///< 只写 
 #define O_RDWR   6  ///< 读写 
 #define O_CREAT  8  ///< 创建 
+#define O_APPEND 1  ///< 追加方式打开
 
 
 int creat(const char *, mode_t);
