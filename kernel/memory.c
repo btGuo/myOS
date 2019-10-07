@@ -13,6 +13,10 @@
 /**
  * 分配物理内存
  * @param pg_cnt 物理页数
+ * @param pf 内存池标志，内核或者用户
+ *
+ * @return 分配的物理地址
+ * 	@retval 0 分配失败
  */
 uint32_t palloc(enum pool_flags pf, uint32_t pg_cnt){
 
@@ -32,13 +36,22 @@ uint32_t palloc(enum pool_flags pf, uint32_t pg_cnt){
 				++order;
 			}
 			pg_desc = buddy_alloc(&kmm.buddy, order);
+
+			if(pg_desc == NULL){
+				PANIC("palloc no more kernel space\n");
+			}
 		}
+		++pg_desc->count;
 		return pgdesc_to_paddr(pg_desc);
 	}
 	
 	//用户内存每次只分配一页
 	ASSERT(pg_cnt == 1);
 	if(list_empty(&umm.page_caches)){
+
+		if(umm.free_pages == 0){
+			PANIC("palloc no more user space\n");
+		}
 
 		pg_desc = umm.page_table + (umm.pages - umm.free_pages);
 		--umm.free_pages;
@@ -48,6 +61,7 @@ uint32_t palloc(enum pool_flags pf, uint32_t pg_cnt){
 		pg_desc = list_entry(struct page_desc, cache_tag, lh);
 	}
 
+	//增加引用计数
 	++pg_desc->count;
 	return pgdesc_to_paddr(pg_desc);
 }
@@ -60,7 +74,16 @@ void pfree(uint32_t paddr){
 #ifdef DEBUG
 	printk("pfree %x\n", paddr);
 #endif
+	paddr &= 0xfffff000;
+
+	ASSERT(paddr_legal(paddr));
+
+	printk("pfree paddr %x\n", paddr);
 	struct page_desc *pg_desc = paddr_to_pgdesc(paddr);
+	printk("pg_desc->count %x\n", pg_desc->count);
+	ASSERT(pg_desc->count == 1);
+
+
 	if(paddr < umm.paddr_start){
 
 		if(paddr >= kmm.buddy_paddr_start)
@@ -79,8 +102,20 @@ bool pg_try_free(uint32_t vaddr){
 	uint32_t *pde = PDE_PTR(vaddr);
 	uint32_t *pte = PTE_PTR(vaddr);
 	if((*pde & 0x1) && (*pte & 0x1)){
-		pfree(*pte);
-		//对于exit来说是不必要的
+
+		//printk("pg_try_free vaddr %x\n", vaddr);
+		uint32_t paddr = *pte;
+		ASSERT(paddr_legal(paddr));
+		//检查是否共享页
+		struct page_desc *pg_desc = paddr_to_pgdesc(paddr);
+		if(pg_desc->count > 1){
+			--pg_desc->count;
+		}else {
+			//printk("in pfree count %x, %x\n", pg_desc->count, paddr);
+			pfree(paddr);
+		}
+
+		//删除映射，对于exit来说是不必要的
 		page_table_pte_remove(vaddr);
 		return true;
 	}
@@ -182,6 +217,7 @@ void page_table_add(uint32_t vaddr, uint32_t paddr){
 #ifdef DEBUG
 	printk("pde %x\n", (uint32_t)pde);
 #endif
+	ASSERT(paddr_legal(paddr));
 
 	if(*pde & 0x1){
 	//页表存在
@@ -194,6 +230,7 @@ void page_table_add(uint32_t vaddr, uint32_t paddr){
 		//这里拿user页
 		uint32_t pde_paddr = palloc(PF_USER, 1);
 		*pde = (pde_paddr | 0x7);
+		//这里必须清空
 		memset((void*)((int)pte & 0xfffff000), 0, PG_SIZE);
 		*pte = (paddr | 0x7);
 	}
@@ -202,10 +239,11 @@ void page_table_add(uint32_t vaddr, uint32_t paddr){
 /**
  * 重新映射虚拟地址
  */
-static void page_table_remap(uint32_t vaddr, uint32_t paddr){
+void page_table_remap(uint32_t vaddr, uint32_t paddr){
 	uint32_t *pte = PTE_PTR(vaddr);
 
 	ASSERT(*pte & 0x1);
+	ASSERT(paddr_legal(paddr));
 	*pte = (paddr | 0x7);
 	//这里得刷新
 	//flush_tlb_page(vaddr);
@@ -320,7 +358,7 @@ static void *kmalloc_page(uint32_t pg_cnt){
  */
 static void kfree_page(void *_vaddr){
 	
-	uint32_t paddr = (uint32_t)_vaddr - VADDR_OFF;
+	uint32_t paddr = addr_v2p((uint32_t)_vaddr);
 	pfree(paddr);
 	return;
 }
@@ -482,7 +520,7 @@ void copy_page_table(uint32_t *pde){
 
 		if(*pde_src & 0x1){
 
-			printk("hit addr %x\n", addr);
+			//printk("hit addr %x\n", addr);
 			//TODO 确认页是否脏
 			paddr = palloc(PF_USER, 1);
 			paddr |= 0x7;
@@ -543,11 +581,12 @@ void do_page_fault(uint32_t vaddr){
 	}
 
 	//地址合法
-	printk("legal vaddr\n");
+	//printk("legal vaddr\n");
 	vaddr &= 0xfffff000;
 	
 	uint32_t paddr = palloc(PF_USER, 1);
 	page_table_add(vaddr, paddr);
+	flush_tlb_all();
 
 	return;
 }

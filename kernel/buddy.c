@@ -97,6 +97,13 @@ struct page_desc *buddy_alloc(struct buddy_sys *buddy, uint32_t order){
 		++f_area;
 		++l_order;
 	}
+
+	if(l_order == MAX_ORDER + 1){
+
+		printk("buddy alloc no more memory\n");
+		return NULL;
+	}
+
 	--f_area->nr_free;
 	struct list_head *lh = f_area->free_list.next;
 	list_del(lh);

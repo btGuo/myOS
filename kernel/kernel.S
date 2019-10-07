@@ -104,15 +104,15 @@ VECTOR 0x24, ZERO 			;串口2
 
 VECTOR 0x25, ZERO 			;并口2 
 VECTOR 0x26, ZERO 			;软盘 
-VECTOR 0x27, ZERO 
-VECTOR 0x28, ZERO 
-VECTOR 0x29, ZERO 
+VECTOR 0x27, ZERO                       ;并口1
+VECTOR 0x28, ZERO                       ;实时时钟
+VECTOR 0x29, ZERO  			;重定向IRQ2
 
-VECTOR 0x2a, ZERO 
-VECTOR 0x2b, ZERO 
-VECTOR 0x2c, ZERO 
-VECTOR 0x2d, ZERO 
-VECTOR 0x2e, ZERO 
+VECTOR 0x2a, ZERO  			;保留
+VECTOR 0x2b, ZERO 			;保留
+VECTOR 0x2c, ZERO 			;ps/2鼠标
+VECTOR 0x2d, ZERO 			;FPU异常
+VECTOR 0x2e, ZERO 			;硬盘
 
 VECTOR 0x2f, ZERO
 VECTOR 0x30, ZERO

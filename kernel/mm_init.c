@@ -14,6 +14,7 @@
 
 struct kmem_manager kmm;
 struct umem_manager umm;
+uint32_t max_mm;
 
 /**
  * 初始化内核页表
@@ -155,10 +156,11 @@ static void mem_pool_init(uint32_t all_mem){
 void mem_init(){
 
 	printk("mem_init start\n");
-	//这里加了1M
-	uint32_t all_mem = get_mem_upper() + 0x100000;
-	printk("all_memory %d\n", all_mem);
-	mem_pool_init(all_mem);
+	//设置最大内存
+	max_mm = get_mem_upper() + 0x100000;
+
+	printk("all_memory %d\n", max_mm);
+	mem_pool_init(max_mm);
 	printk("mem_init done\n");
 }
 

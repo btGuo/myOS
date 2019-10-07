@@ -7,6 +7,7 @@
 #include <sys_macro.h>
 #include <tty.h>
 #include <sys/utsname.h>
+#include <sys/types.h>
 
 #define OSNAME "myOS"
 #define NODENAME "k-1"
@@ -21,6 +22,7 @@ extern int32_t sys_dup(int32_t fd);
 extern void *sys_sbrk(uint32_t incr);
 extern void sys__exit(int32_t status);
 extern int sys_execve(const char *path, char *const argv[], char *const envp[]);
+int32_t sys_pipe(int32_t pipefd[2]);
 
 typedef void* syscall;
 syscall syscall_table[syscall_nr];
@@ -38,6 +40,11 @@ int sys_uname(struct utsname *name){
 	strcpy(name->machine,  MACHINE);
 
 	return 0;
+}
+
+uid_t sys_getuid(){
+
+	return curr->uid;
 }
 
 void sys_clear(){
@@ -81,6 +88,8 @@ void sys_call_init(void){
 	__SYS(uname);
 	__SYS(sbrk);
 	__SYS(chmod);
+	__SYS(pipe);
+	__SYS(getuid);
 	printk("sys_call init done\n");
 }
 

@@ -15,12 +15,9 @@ void set_info(struct multiboot_info *_info)
 	memcpy(&info, _info, sizeof(struct multiboot_info));
 }
 
-void print_info()
-{
-	printk("%x\n", &info);
-	printk("%x\n", info.flags);
-}
-
+/**
+ * 高端内存总量，字节数
+ */
 uint32_t get_mem_upper()
 {
 	if(info.flags & 1){
@@ -30,6 +27,9 @@ uint32_t get_mem_upper()
 	return 0;
 }
 
+/**
+ * 低端内存总量，字节数
+ */
 uint32_t get_mem_lower()
 {
 	if(info.flags & 1){
@@ -48,7 +48,7 @@ void print_drive_info()
 	}
 
 	uint32_t len = info.drivers_length;
-	struct drive_info *d;
+	struct drive_info *d = (struct drive_info *)info.drives_addr;
 	uint32_t ports = 0;
 	while(len)
 	{

@@ -16,15 +16,30 @@
 #include <fs_sys.h>
 
 extern void sys_call_init(void);
-
 void init_all();
+
+void test_kmalloc(){
+
+	char *p[13];
+	for(int i = 0; i < 13; i++)
+		p[i] = kmalloc(i * 13 + 1);
+	
+	printk("alloc done\n");
+	for(int i = 0; i < 13; i++){
+
+		kfree(p[i]);
+		printk("%d\t", i);
+	}
+	printk("free done\n");
+}
 
 void kernel_main(struct multiboot_info *info) {
 	set_info(info);
-	init_all();
-	sys_chmod("/bin/init", 0555);
 
-//	PANIC("kernel main\n");
+	init_all();
+
+	//test_kmalloc();
+
 	//test_fmt();
 	//test_memory();
 	//test_hashtable();
@@ -34,7 +49,6 @@ void kernel_main(struct multiboot_info *info) {
 	intr_enable();
 
 	while(1);
-	//return 0;
 }
 
 void init_all(){
