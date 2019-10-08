@@ -29,7 +29,7 @@ static int32_t copy_pcb(struct task_struct *child, struct task_struct *parent){
 	list_add_tail(&child->par_tag, &parent->children);
 	LIST_HEAD_INIT(child->children);
 	//增加引用计数
-	vm_area_incref(child->vm_struct.vm_list);
+	vm_struct_update(&child->vm_struct);
 
 	return 0;
 }
@@ -66,19 +66,17 @@ static void up_inode(struct task_struct *thread){
 
 	struct file *fp = NULL;
 	struct fext_inode_m *inode = NULL;
-	int32_t idx = 3;
+	int32_t idx = 0;
 
 	while(idx < MAXL_OPENS){
 		
 		fp = curr->fd_table[idx];
 		if(fp){
+			++fp->fd_count;
 			inode = fp->fd_inode;
-			if(S_ISFIFO(inode->i_type)){
-				
-				fp->fd_pos++;
-			}else {
+
+			if(S_ISREG(inode->i_type))
 				inode->i_open_cnts++;
-			}
 		}
 		idx++;
 	}
@@ -94,7 +92,9 @@ static int32_t copy_process(struct task_struct *child, struct task_struct *paren
 	if(child->pg_dir == NULL)
 		return -1;
 
+#ifdef DEBUG
 	printk("child pg_dir %x\n", child->pg_dir);
+#endif
 	copy_page_table(child->pg_dir);		
 
 	build_child_stack0(child);

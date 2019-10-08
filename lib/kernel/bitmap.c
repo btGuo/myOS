@@ -1,6 +1,6 @@
 #include "bitmap.h"
 #include "string.h"
-#include "debug.h"
+#include "kernelio.h"
 
 /**
  * 初始化

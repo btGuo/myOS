@@ -3,7 +3,7 @@ ROOTFS = ../mkfext/root_fs/bin
 
 SRCS = $(wildcard *.c)
 OBJS = $(SRCS:.c=.o)
-OUTS = $(SRCS:.c=)
+OUTS = $(SRCS:.c=.bin)
 
 CC = gcc
 CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall -fno-stack-protector -fno-pie -DMYOS
@@ -12,16 +12,16 @@ LDFLAGS = -m elf_i386
 
 .PHONY: all install clean
 
-all:$(OBJS) $(OUTS)
+all: $(OUTS)
 
 %.o:%.c
 	$(CC) $(CFLAGS) $< -o $@
 
-%:%.o
+%.bin:%.o
 	$(LD) $(LDFLAGS) $^ -o $@ -L ../build -lc
 
 install:
-	cp $(OUTS) $(ROOTFS) 
+	@for file in $(OUTS); do cp $$file $(ROOTFS)/$${file%.*};done
 
 clean:
 	rm $(OUTS) $(OBJS)

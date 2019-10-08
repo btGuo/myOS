@@ -1,5 +1,5 @@
 #include "interrupt.h"
-#include "debug.h"
+#include "kernelio.h"
 
 void panic_spin(char *filename, int line, const char *func, const char *condition){
 

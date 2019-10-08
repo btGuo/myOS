@@ -10,7 +10,7 @@
 #include <group.h>
 #include <buffer.h>
 #include <file.h>
-#include <debug.h>
+#include <kernelio.h>
 #include <thread.h>
 #include <block.h>
 #include <inode.h>
@@ -379,7 +379,7 @@ static struct fext_fs *create_fextfs(struct partition *part){
 
 	//print_super_block(fs->sb);
 	//print_fext_group_m(fs->cur_gp, 1);
-	printk("mount fsition done\n");
+	printk("mount filesystem done\n");
 	return fs;
 }
 

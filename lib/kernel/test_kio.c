@@ -1,4 +1,5 @@
-#include "debug.h"
+#ifdef __TEST
+#include "kernelio.h"
 #include "tty.h"
 #include "stdint.h"
 
@@ -35,3 +36,4 @@ void test_fmt(){
 	test_printf();
 }
 
+#endif

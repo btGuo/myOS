@@ -12,24 +12,12 @@ extern struct task_struct *curr;
 extern struct list_head thread_ready_list;
 extern struct list_head thread_all_list;
 
-/*
-bool try_expend_heap(){
-	struct vm_area *heap = curr->vm_struct.vm_heap;
-	struct vm_area *stack = curr->vm_struct.vm_stack;
-	//这里比较暴力，直接扩大1M
-	heap->size += (1 << 20);
-	if(heap->start_addr + heap->size > stack->start_addr)
-		return false;
-	return true;
-}
-*/
-
 /**
  * 增加用户栈
  */
 bool try_expend_stack(){
-	struct vm_area *heap = curr->vm_struct.vm_heap;
-	struct vm_area *stack = curr->vm_struct.vm_stack;
+	struct vm_area *heap = &curr->vm_struct.vm_heap;
+	struct vm_area *stack = &curr->vm_struct.vm_stack;
 	//这里比较暴力，直接扩大1M
 	stack->start_addr -= (1 << 20);
 	stack->size += (1 << 20);
@@ -44,14 +32,16 @@ bool try_expend_stack(){
 void *sys_sbrk(uint32_t incr){
 
 	uint32_t *heap_ptr = &curr->vm_struct.heap_ptr;
-	struct vm_area *heap = curr->vm_struct.vm_heap;
-	struct vm_area *stack = curr->vm_struct.vm_stack;
+	struct vm_area *heap = &curr->vm_struct.vm_heap;
+	struct vm_area *stack = &curr->vm_struct.vm_stack;
 
 	//是否没有空间了，碰到栈底
 	if(*heap_ptr + incr >= stack->start_addr){
 
+		printk("sys_sbrk error\n");
 		return (void *) -1;
 	}
+
 	uint32_t oldptr = *heap_ptr;
 	*heap_ptr += incr;
 	heap->size += incr;
@@ -59,28 +49,46 @@ void *sys_sbrk(uint32_t incr){
 	return (void *)oldptr;
 }
 
+#define check_vm() (vaddr >= vm->start_addr && vaddr < vm->start_addr + vm->size)
+
 /**
- * 判断给定虚拟地址是否在线性区中
+ * 判断给定虚拟地址是否在线性区中，O(n)
  */
 bool is_in_vm_area(uint32_t vaddr){
+
+	struct vm_area *vm = NULL;
+
+	vm = &curr->vm_struct.vm_heap;
+	if(check_vm())
+		return true;
+
+	vm = &curr->vm_struct.vm_stack;
+	if(check_vm())
+		return true;
+
 	struct list_head *head = curr->vm_struct.vm_list;
 	struct list_head *walk = head->next;
-	struct vm_area *vm = NULL;
 	while(walk != head){
 		vm = list_entry(struct vm_area, vm_tag, walk);
-		if(vaddr >= vm->start_addr && vaddr < vm->start_addr + vm->size)
+		if(check_vm())
 			return true;
 		walk = walk->next;
 	}
+
 	return false;
 }
 
 /**
  * 分配虚拟内存区
- * @param saddr 起始地址
- * @param size  线性区大小
+ * @param saddr  起始地址
+ * @param size   线性区大小
+ * @param vm_tye 类型
  */
-struct vm_area *vm_area_alloc(uint32_t saddr, uint32_t size){
+struct vm_area *vm_area_alloc(
+		uint32_t saddr, 
+		uint32_t size, 
+		enum vm_area_type vm_type)
+{
 	struct vm_area *vm = (struct vm_area *)kmalloc(sizeof(struct vm_area));
 
 	if(!vm){
@@ -88,76 +96,147 @@ struct vm_area *vm_area_alloc(uint32_t saddr, uint32_t size){
 	}
 	//saddr &= 0xfffff000;
 	//默认fix
-	vm->vm_type = VM_FIX;
+	vm->vm_type = vm_type;
 	vm->size = size;
 	vm->start_addr = saddr;
-	vm->ref_cnt = 1;
+//	vm->ref_cnt = 1;
 	return vm;
 }
 
 /**
- * 增加虚拟内存区引用计数，fork时用到
- * @parma head 链表头
+ * 添加新的线性区
  */
-void vm_area_incref(struct list_head *head){
-	
-	struct list_head *walk = head->next;
-	struct vm_area *vm = NULL;
-	while(walk != head){
-		vm = list_entry(struct vm_area, vm_tag, walk);
-		++vm->ref_cnt;
-		walk = walk->next;
-	}
-}
+void vm_area_add(struct vm_struct *vm_s, struct vm_area *vm){
 
-void vm_area_add(struct vm_area *vm){
-	list_add_tail(&vm->vm_tag, curr->vm_struct.vm_list);
+	//引用计数大于1，不能修改，先复制
+	if(*vm_s->vml_refcnt > 1){
+		vm_list_copy(vm_s);
+	}
+	list_add_tail(&vm->vm_tag, vm_s->vm_list);
 }
 
 /**
- * 释放虚拟内存区
+ * 构造vm_list
  */
-void vm_release(struct vm_struct *vm_s){
+int vm_list_ctor(struct vm_struct *vm_s){
+
+	vm_s->vml_refcnt = kmalloc(sizeof(*(vm_s->vml_refcnt)));
+	if(vm_s->vml_refcnt == NULL){
+		return -1;
+	}
+
+	*vm_s->vml_refcnt = 1;
+
+	vm_s->vm_list = kmalloc(sizeof(struct list_head));
+	if(vm_s->vm_list == NULL){
+		kfree(vm_s->vml_refcnt);
+		return -1;
+	}
+
+	LIST_HEAD_INIT_PTR(vm_s->vm_list);
+
+	return 0;
+}
+
+/**
+ * 析构vm_list
+ */
+void vm_list_dtor(struct vm_struct *vm_s){
+	//引用计数为1才释放
+	if(*vm_s->vml_refcnt > 1){
+
+		(*(vm_s->vml_refcnt))--;
+		vm_s->vml_refcnt = NULL;
+		vm_s->vm_list = NULL;
+		return;
+	}
+
 	struct vm_area *vm = NULL;
 	struct list_head *head = vm_s->vm_list;
 	struct list_head *walk = head->next;
 	while(walk != head){
 		vm = list_entry(struct vm_area, vm_tag, walk);
-		//引用计数为0才释放
-		if(--vm->ref_cnt == 0)
-			kfree(vm);
 		walk = walk->next;
+		kfree(vm);
 	}
+
+	kfree(vm_s->vm_list);
+	kfree(vm_s->vml_refcnt);
+	vm_s->vml_refcnt = NULL;
+	vm_s->vm_list = NULL;
 }
 	
+
+/**
+ * 申请新的vm_list并且复制旧有的
+ */
+int vm_list_copy(struct vm_struct *vm_s){
+
+	if(vm_list_ctor(vm_s) == -1){
+
+		return -1;
+	}
+
+	struct list_head *head = vm_s->vm_list;
+	struct list_head *walk = head->next;
+	struct vm_area *src = NULL;
+	struct vm_area *new = NULL;
+
+	while(walk != head){
+		src = list_entry(struct vm_area, vm_tag, walk);
+
+		if((new = vm_area_alloc(
+				src->start_addr, 
+				src->size, 
+				src->vm_type)) == NULL)
+		{
+			//析构自身后返回
+			vm_list_dtor(vm_s);
+			return -1;
+		}
+
+		list_add_tail(&new->vm_tag, vm_s->vm_list);
+		walk = walk->next;
+	}
+	return 0;
+}
+
+void vm_struct_update(struct vm_struct *vm_s){
+
+	(*(vm_s->vml_refcnt))++;
+}
+
 /**
  * 初始化进程内存区
  */
-void vm_struct_init(){
+int vm_struct_ctor(struct vm_struct *vm_s){
 
-	curr->vm_struct.heap_ptr = USER_HEAP_VADDR;
+	vm_s->heap_ptr = USER_HEAP_VADDR;
 
-	struct list_head **vm_list = &curr->vm_struct.vm_list;
-	*vm_list = (struct list_head *)kmalloc(sizeof(struct list_head));
-	LIST_HEAD_INIT_PTR(*vm_list);
+	if(vm_list_ctor(vm_s) == -1){
+		return -1;
+	}
+
 	struct vm_area *area = NULL;
 
 	//堆线性区
-	area = curr->vm_struct.vm_heap = kmalloc(sizeof(struct vm_area));
+	area = &vm_s->vm_heap;
 	area->start_addr = USER_HEAP_VADDR;
 	area->size = 0;
 	area->vm_type = VM_DOWNWARD;
-	area->ref_cnt = 1;
-	list_add(&area->vm_tag, *vm_list);
 
 	//栈线性区
-	area = curr->vm_struct.vm_stack = kmalloc(sizeof(struct vm_area));
+	area = &vm_s->vm_stack;
 	area->start_addr = USER_STAKC_VADDR;
 	area->size = (1 << 20);
 	area->vm_type = VM_UPWARD;
-	area->ref_cnt = 1;
-	list_add(&area->vm_tag, *vm_list);
 
+	return 0;
+}
+
+void vm_struct_dtor(struct vm_struct *vm_s){
+
+	vm_list_dtor(vm_s);
 }
 
 /**
@@ -166,7 +245,7 @@ void vm_struct_init(){
 void start_process(void *filename_){
 	
 //	printk("start process\n");
-	vm_struct_init();
+	vm_struct_ctor(&curr->vm_struct);
 	void *function = filename_;
 
 	curr->self_kstack += sizeof(struct thread_stack);

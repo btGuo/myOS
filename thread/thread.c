@@ -15,16 +15,23 @@ struct task_struct *init_prog = NULL;
 LIST_HEAD(thread_all_list);
 LIST_HEAD(thread_ready_list);
 struct pid_pool pid_pool;
-extern void init(void);
 
+extern void init(void);
+extern void switch_to(struct task_struct *, struct task_struct *);
+
+
+#ifdef DEBUG
 void print_thread(struct task_struct *task){
 	printk("vaddr : %x\n", (uint32_t)task);
 	printk("priority : %d\n", task->priority);
 	printk("name : %s\n", task->name);
 }
+#endif
 
 static void kernel_thread(thread_func *function, void *func_arg){
+#ifdef DEBUG
 	printk("kernel thread\n");
+#endif
 	//这里打开中断
 	intr_enable();
 	function(func_arg);
@@ -67,7 +74,7 @@ void release_pid(pid_t pid){
 	mutex_lock_release(&pid_pool.lock);
 }
 
-static void idle(void UNUSED){
+static void idle(void *_unused){
 #ifdef DEBUG
 	printf("idle\n");
 #endif
@@ -109,6 +116,10 @@ void init_thread(struct task_struct *pthread, char *name, int prio){
 	pthread->self_kstack = (uint32_t*)((uint32_t)pthread + PG_SIZE);
 	pthread->pid = allocate_pid();
 
+	//这两个均是0
+	pthread->uid = 0;
+	pthread->gid = 0;
+
 	if(root_fs){
 
 		pthread->root_i = root_fs->root_i;
@@ -125,7 +136,7 @@ void init_thread(struct task_struct *pthread, char *name, int prio){
 /**
  * 创建新线程
  */
-struct tack_struct* thread_start(char *name, int prio, \
+struct task_struct* thread_start(char *name, int prio, 
 		thread_func function, void *func_arg){
 
 	struct task_struct *thread = (struct task_struct*)get_kernel_pages(1);
@@ -184,7 +195,7 @@ void thread_exit(struct task_struct *over, bool sched){
 
 	release_pid(over->pid);
 	if(over != main_thread){
-		pfree(addr_v2p(over));
+		pfree(addr_v2p((uint32_t)over));
 	}
 
 	if(sched){
@@ -220,12 +231,16 @@ void schedule(){
 }
 				
 void thread_init(){
+#ifdef DEBUG
 	printk("init_thread start\n");
+#endif
 	pid_pool_init();
 	
 	process_execute(init, "init");
 	make_main_thread();
 	idle_thread = thread_start("idle", 10, idle, NULL);
 
+#ifdef DEBUG
 	printk("init_thread done\n");
+#endif
 }

@@ -29,8 +29,8 @@ void dirent_info_init(struct dirent_info *dire_i){
 /**
  * 打开普通目录
  */
-struct Dir* dir_open(struct fext_fs *fs, uint32_t i_no){
-	struct Dir *dir = (struct Dir *)kmalloc(sizeof(struct Dir));
+DIR* dir_open(struct fext_fs *fs, uint32_t i_no){
+	DIR *dir = (DIR *)kmalloc(sizeof(DIR));
 	dir->inode = inode_open(fs, i_no);
 	dir->buffer = NULL;
 	dir->count = 0;
@@ -41,8 +41,8 @@ struct Dir* dir_open(struct fext_fs *fs, uint32_t i_no){
 /**
  * 新建目录
  */
-struct Dir* dir_new(struct fext_inode_m *inode){
-	struct Dir *dir = (struct Dir *)kmalloc(sizeof(struct Dir));
+DIR* dir_new(struct fext_inode_m *inode){
+	DIR *dir = (DIR *)kmalloc(sizeof(DIR));
 	dir->inode = inode;
 	dir->buffer = NULL;
 	dir->count = 0;
@@ -54,7 +54,7 @@ struct Dir* dir_new(struct fext_inode_m *inode){
 /**
  * 关闭目录
  */
-void dir_close(struct Dir *dir){
+void dir_close(DIR *dir){
 	if(dir->inode->i_mounted){
 		return;
 	}
@@ -412,15 +412,15 @@ static void swap_dirent(void *_dest, void *_src, uint32_t len){
 	struct dirent *dest = _dest;
 	uint32_t cnt = len / sizeof(struct fext_dirent);
 	for(; cnt--; src++, dest++){
-		strcpy(dest->filename, src->filename);
-		dest->i_no = src->i_no;
+		strcpy(dest->d_name, src->filename);
+		dest->d_ino = src->i_no;
 	}
 }
 	
 /**
  * 读取目录
  */
-struct dirent *sys_readdir(struct Dir *dir){
+struct dirent *sys_readdir(DIR *dir){
 	ASSERT(dir != NULL);
 	struct fext_inode_m *inode = dir->inode;
 	//第一次读
@@ -440,7 +440,6 @@ struct dirent *sys_readdir(struct Dir *dir){
 		
 		//全部读出来
 		for(; (blk_nr = get_block_num(inode, idx, M_SEARCH)) ; idx++){
-			printk("blknr %d\n", blk_nr);
 			bh = read_block(inode->fs, blk_nr);
 			swap_dirent(buffer + idx * batch_size, bh->data, block_size);
 			release_block(bh);
@@ -459,7 +458,7 @@ struct dirent *sys_readdir(struct Dir *dir){
 /**
  * 复位目录偏移
  */
-void sys_rewinddir(struct Dir *dir){
+void sys_rewinddir(DIR *dir){
 	dir->current = 0;
 }
 			
@@ -550,7 +549,7 @@ int32_t sys_mkdir(char *path){
 /**
  * 关闭目录
  */
-int32_t sys_closedir(struct Dir *dir){
+int32_t sys_closedir(DIR *dir){
 
 	if(!dir)
 		return -1;
@@ -561,7 +560,7 @@ int32_t sys_closedir(struct Dir *dir){
 /**
  * 打开目录
  */
-struct Dir *sys_opendir(char *path){
+DIR *sys_opendir(char *path){
 
 	if(path[0] == '/' && path[1] == 0){
 		return dir_new(root_fs->root_i);

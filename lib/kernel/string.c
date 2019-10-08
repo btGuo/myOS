@@ -1,35 +1,39 @@
-#include "string.h"
-#include "stdio.h"
+#include <string.h>
 
 /**
  * 编译两个版本，内核和用户
  */
 #ifdef __LIB_USER
-	#include "assert.h"
+	#include <assert.h>
+	#include <stdio.h>
 	#define ASSERT assert
 #elif __LIB_KERNEL
-	#include "debug.h"
+	#include <kernelio.h>
+	#include <global.h>
 #endif
 
 
-void memset(void *dest, uint8_t value, uint32_t size){
+void *memset(void *dest, int _value, size_t size){
 
+	uint8_t value = (uint8_t)_value;
 	ASSERT(dest != NULL && size >= 0);
 	uint8_t *tmp = (uint8_t*)dest;
 	while(size--){
 		*tmp++ = value;
 	}
+	return dest;
 }
 
-void memcpy(void *dest, void *src, uint32_t size){
+void *memcpy(void *dest, const void *src, size_t size){
 	ASSERT(dest != NULL && src != NULL && size >= 0);
 	uint8_t *_dest = (uint8_t*)dest;
 	const uint8_t *_src = (uint8_t*)src;
 	while(size--)
 		*_dest++ = *_src++;
+	return dest;
 }
 
-int memcmp(const void *a, const void *b, uint32_t size){
+int memcmp(const void *a, const void *b, size_t size){
 	ASSERT(a != NULL && b != NULL && size >= 0);
 	const char *_a = a;
 	const char *_b = b;
@@ -42,6 +46,18 @@ int memcmp(const void *a, const void *b, uint32_t size){
 	return 0;
 }
 
+void *memchr(const void *_dest, int _ch, size_t size){
+
+	char ch = (char)_ch;
+	const char *dest = _dest;
+	while(size--){
+		if(*dest == ch)
+			return (void *)dest;
+		++dest;
+	}
+	return NULL;
+}
+
 char *strcpy(char *dest, const char *src){
 	ASSERT(dest != NULL && src != NULL);
 	char *_dest = dest;
@@ -49,14 +65,14 @@ char *strcpy(char *dest, const char *src){
 	return _dest;
 }
 
-uint32_t strlen(const char *str){
+size_t strlen(const char *str){
 	ASSERT(str != NULL);
 	const char *_str = str;
 	while(*_str++);
 	return _str - str - 1;
 }
 
-int8_t strcmp(const char *str1, const char *str2){
+int strcmp(const char *str1, const char *str2){
 	ASSERT(str1 != NULL && str2 != NULL);
 	while(*str1 != 0 && *str1 == *str2)
 		++str1, ++str2;
@@ -64,7 +80,7 @@ int8_t strcmp(const char *str1, const char *str2){
 	return *str1 < *str2 ? -1 : *str1 > *str2;
 }
 
-char *strchr(const char *str, const uint8_t ch){
+char *strchr(const char *str, const int ch){
 	ASSERT(str != NULL);
 	while(*str){
 		if(*str == ch)
@@ -74,7 +90,7 @@ char *strchr(const char *str, const uint8_t ch){
 	return NULL;
 }
 
-char *strrchr(const char *str, const uint8_t ch){
+char *strrchr(const char *str, const int ch){
 	ASSERT(str != NULL);
 	const char *last_ch = NULL;
 	while(*str){
@@ -94,9 +110,9 @@ char *strcat(char *dest, const char *src){
 	return tmp;
 }
 
-uint32_t strchrs(const char *str, uint8_t ch){
+size_t strchrs(const char *str, int ch){
 	ASSERT(str != NULL);
-	uint32_t cnt = 0;
+	size_t cnt = 0;
 	const char *_str = str;
 	while(*_str){
 		if(*_str == ch)
@@ -105,4 +121,37 @@ uint32_t strchrs(const char *str, uint8_t ch){
 	}
 	return cnt;
 }
-		
+
+char *strtok_r(char *str, const char *delim, char **saveptr){
+
+        ASSERT(delim != NULL && saveptr != NULL);
+
+        if(str){
+                while(*str && strchr(delim, *str))str++;
+        }
+        if(str == NULL){
+                str = *saveptr;
+        }
+        if(str == NULL){
+                return NULL;
+        }
+        char *head = str;
+        while(*str){
+
+                if(strchr(delim, *str)){
+                        *str++ = '\0';
+                        while(*str && strchr(delim, *str))
+                                str++;
+                        if(*str == '\0')
+                                *saveptr = NULL;
+                        else
+                                *saveptr = str;
+                        return head;
+                }
+                str++;
+        }
+        *saveptr = NULL;
+        return head;
+}
+
+			

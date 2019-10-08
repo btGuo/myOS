@@ -1,10 +1,12 @@
-#include "debug.h"
-#include "fs_sys.h"
-#include "fs.h"
-#include "memory.h"
+#ifdef __TEST
+
+#include <kernelio.h>
+#include <fs_sys.h>
+#include <fs.h>
+#include <memory.h>
+#include <dir.h>
+#include <string.h>
 #include "data.h"
-#include "dir.h"
-#include "string.h"
 
 const uint32_t sz = 2384;
 const char *name = "/sdfii";
@@ -142,7 +144,7 @@ void wl_verify(){
 }
 
 void test_dir(){
-	struct Dir *root = sys_opendir("/");
+	DIR *root = sys_opendir("/");
 	struct dirent *de = NULL;
 	while((de = sys_readdir(root))){
 		printk("%s %d;\t", de->filename, de->i_no);
@@ -163,7 +165,6 @@ void test_dir(){
 	printk("read %d(byte) from %d\n", bytes, fd);
 	printk("content %s\n", buf);
 
-	/*
 	if(sys_mkdir("/test_dir") == -1){
 		printk("mkdir error\n");
 		return;
@@ -218,7 +219,6 @@ void test_dir(){
 	}
 	
 	printk("%s\n", buf);
-	*/	
 }
 
 void test_fs(){
@@ -230,3 +230,4 @@ void test_fs(){
 	//wl_verify();
 	test_dir();
 }
+#endif

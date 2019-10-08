@@ -1,19 +1,14 @@
-#include "stdarg.h"
-#include "string.h"
-#include "stdint.h"
-#include "global.h"
-#include "syscall.h"
-
-static const char map[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8',\
-	'9', 'a', 'b', 'c', 'd', 'e', 'f'};
+#include <stdarg.h>
+#include <string.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdlib.h>
 
 #define isdigit(x) ((x) >= '0' && (x) <= '9')
 #define MAX_ALIGN 8
 
-/**
- * 字符串转数字
- */
-int32_t atoi(char *src){
+int atoi(const char *src){
+
 	uint32_t len = strlen(src);
 	bool neg = false;
 	if(*src == '-'){
@@ -33,10 +28,15 @@ int32_t atoi(char *src){
 	return ans;
 }
 
+
 /**
  * 数字转字符串, 可选十进制和十六进制
  */
-void itoa(int num, char *dest, char mode){
+static void itoa(int num, char *dest, char mode){
+
+	const char map[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8',\
+	'9', 'a', 'b', 'c', 'd', 'e', 'f'};
+
 	char _tmp[1024];
 	//这里多加一, 后面while舒服点
 	char *tmp = _tmp + 1;
@@ -86,6 +86,7 @@ void itoa(int num, char *dest, char mode){
  * #parma ch 填充的字符
  */
 void str_align(char *str, char *dest, uint32_t width, bool left, char ch){
+
 	uint32_t len = strlen(str);
 	if(len >= width){
 		strcpy(dest, str);
@@ -187,6 +188,10 @@ int32_t sprintf(char *buf, const char *fmt, ...){
 	return 0;
 }
 
+#ifdef __LIB_USER
+
+#include <unistd.h>
+
 /**
  * 格式化输出
  */
@@ -200,3 +205,4 @@ int32_t printf(const char *fmt, ...){
 	//和printk区别在于系统调用
 	return write(1, buf, strlen(buf));
 }
+#endif

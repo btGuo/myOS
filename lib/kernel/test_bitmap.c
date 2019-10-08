@@ -1,5 +1,6 @@
-#include "bitmap.h"
-#include "debug.h"
+#ifdef __TEST
+#include <bitmap.h>
+#include <kernelio.h>
 
 #define MAX_BYTES 1024
 #define BITS (MAX_BYTES * 8)
@@ -27,4 +28,4 @@ void test_bitmap(){
 	printk("bit : %d\n", bit);
 }
 
-
+#endif

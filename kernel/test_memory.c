@@ -1,5 +1,6 @@
+#ifdef __TEST
 #include "memory.h"
-#include "debug.h"
+#include "kernelio.h"
 
 void test_k_pages(){
 
@@ -12,7 +13,6 @@ void test_k_pages(){
 	{
 		p[i] = i;
 	}
-	/*
 	p2 = get_kernel_pages(1);
 	printk("vaddr : %x\n", (uint32_t)p2);
 	free_kernel_pages(p);
@@ -30,7 +30,7 @@ void test_k_pages(){
 	
 	free_kernel_pages(p);
 	free_kernel_pages(p2);
-	*/
+
 	printk("test get_kernel_pages done, all right\n");
 }
 
@@ -79,6 +79,7 @@ void test_kmalloc(){
 	
 void test_memory(){
 	test_k_pages();
-//	test_v_pages();
-//	test_kmalloc();
+	test_v_pages();
+	test_kmalloc();
 }
+#endif

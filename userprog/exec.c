@@ -10,7 +10,6 @@
 #include <interrupt.h>
 #include <kernelio.h>
 
-#define DEBUG 1
 
 #ifdef DEBUG
 
@@ -45,20 +44,36 @@ static int32_t segmemt_load(int32_t fd, struct Elf32_Phdr *prog_header){
 	uint32_t size  = prog_header->p_filesz;
 	uint32_t sz    = 0;
 
-	struct vm_area *vm =  vm_area_alloc(prog_header->p_vaddr, size);
+	struct vm_area *vm =  vm_area_alloc(prog_header->p_vaddr, size, VM_FIX);
 	if(!vm){
 		printk("vm alloc failed\n");
 		return false;
 	}
-	vm_area_add(vm);
+	vm_area_add(&curr->vm_struct, vm);
 
+	struct page_desc *pg_desc = NULL;
 	while(sz < size){
 
+		//TODO 错误处理
 		uint32_t *pde = PDE_PTR(vaddr);
 		uint32_t *pte = PTE_PTR(vaddr);
+
 		if(!(*pde & 0x1) || !(*pte & 0x1)){
-			if(get_a_page(PF_USER, vaddr) == NULL){
+			//页表项不存在，直接分配
+
+			if(get_a_page(PF_USER, vaddr) == NULL)
 				return false;
+		}else{
+			//页表项存在，查看是否共享页，如果是，则重新分配
+			//TODO 释放旧的物理页
+
+			pg_desc = paddr_to_pgdesc(*pte);
+			if(pg_desc->count > 1){
+
+				--pg_desc->count;
+				uint32_t paddr = palloc(PF_USER, 1);
+				//重新映射
+				page_table_remap(vaddr, paddr);
 			}
 		}
 
@@ -67,6 +82,7 @@ static int32_t segmemt_load(int32_t fd, struct Elf32_Phdr *prog_header){
 			sz += off;
 		else sz += PG_SIZE;
 	}
+
 	sys_lseek(fd, prog_header->p_offset, SEEK_SET);
 	sys_read(fd, (void *)prog_header->p_vaddr, size);
 	return true;
@@ -81,7 +97,9 @@ static int32_t segmemt_load(int32_t fd, struct Elf32_Phdr *prog_header){
  */
 static int32_t load(const char *path){
 	
+#ifdef DEBUG
 	printk("exec load start\n");
+#endif
 	const uint32_t EH_SIZE = sizeof(struct Elf32_Ehdr);
 	const uint32_t PH_SIZE = sizeof(struct Elf32_Phdr);
 
@@ -143,7 +161,9 @@ static int32_t load(const char *path){
 	ret = elf_header.e_entry;
 done:
 	sys_close(fd);
+#ifdef DEBUG
 	printk("exec load done\n");
+#endif
 	return ret;
 }
 
@@ -164,12 +184,18 @@ if(bytes % PG_SIZE == 0){ \
 
 #define MAX_ARG_PAGES 64
 
+/**
+ * 构建新进程的用户栈，将环境变量，命令行参数等入栈，
+ * 并更新栈指针
+ */
 static int32_t build_stack(
 		struct intr_stack *stack0, 
 		char *const argv[], 
 		char *const envp[])
 {
+#ifdef DEBUG
 	printk("build_stack start\n");
+#endif
 
 	char *svaddr = (char *)vaddr_get(MAX_ARG_PAGES);
 	if(svaddr == NULL){
@@ -233,14 +259,14 @@ static int32_t build_stack(
 		}
 	}
 
-	printk("bytes %d\n", bytes);
+//	printk("bytes %d\n", bytes);
 
 	uint32_t align = sizeof(char *) - 1;
 	//对齐
 	bytes += (uint32_t)dest & align;
 	dest = (char *)((uint32_t)dest & ~align);
 	
-	printk("bytes %d\n", bytes);
+//	printk("bytes %d\n", bytes);
 	//记录指针数组位置
 	char *_envpp = NULL;
 	char *_argvp = NULL;
@@ -293,7 +319,7 @@ static int32_t build_stack(
 			++bytes;
 		}
 	}
-	printk("bytes %d\n", bytes);
+	//printk("bytes %d\n", bytes);
 
 	//释放原来栈页
 	uint32_t vaddr = 0xbffff000;
@@ -306,8 +332,6 @@ static int32_t build_stack(
 	uint32_t paddr = 0;
 	vaddr = 0xc0000000;
 
-	printk("top %x\n", top);
-	printk("bottom %x\n", bottom);
 	while(top != bottom){
 
 		top -= PG_SIZE;
@@ -321,31 +345,55 @@ static int32_t build_stack(
 		page_table_add(vaddr, paddr);
 	}
 
-	printk("bytes %d\n", bytes);
+	//printk("bytes %d\n", bytes);
 
 	stack0->esp = (char *)0xc0000000 - (svaddr + MAX_ARG_PAGES * PG_SIZE - dest);
+#ifdef DEBUG
 	printk("esp %x\n", (uint32_t)stack0->esp);
+#endif
 error:
 	kfree(_argv);
 	kfree(_envp);
 
+#ifdef DEBUG
 	printk("build stack done\n");
+#endif
 	return ret;
 }	
+
+/**
+ * 进程线性区地址区间得更新
+ */
+int update_vm_struct(struct vm_struct *vm_s){
+	
+#ifdef DEBUG
+	printk("update_vm_struct start\n");
+#endif
+	//先析构掉原来的
+	vm_list_dtor(vm_s);
+
+	//初始化新内存区
+	if(vm_struct_ctor(vm_s) == -1){
+
+		return -1;
+	}
+#ifdef DEBUG
+	printk("update_vm_struct done\n");
+#endif
+	return 0;
+}
 	
 int sys_execve(const char *path, char *const argv[], char *const envp[]){
 
+#ifdef DEBUG
 	printk("sys_execv start\n");
-	uint32_t argc = 0;
-	while(argv[argc])
-		++argc;
+#endif
 
-	int32_t entry = load(path);
-	if(entry == -1){
-		printk("entry wrong\n");
+	if(update_vm_struct(&curr->vm_struct) == -1){
+
+		printk("update_vm_struct wrong\n");
 		return -1;
 	}
-	printk("entry point ; %x\n", entry);
 
 	strcpy(curr->name, path);
 
@@ -358,12 +406,16 @@ int sys_execve(const char *path, char *const argv[], char *const envp[]){
 		return -1;
 	}
 
-	//命令行参数
-	//stack0->ebx = (int32_t)argv;
-	//stack0->ecx = argc;
+	int32_t entry = load(path);
+	if(entry == -1){
+		printk("entry wrong\n");
+		return -1;
+	}
+#ifdef DEBUG
+	printk("entry point ; %x\n", entry);
+#endif
 
 	stack0->eip = (void *)entry;
-	//stack0->esp = (void *)0xc0000000;
 
 	asm volatile("movl %0, %%esp; jmp intr_exit"::\
 			"g"(stack0): "memory");

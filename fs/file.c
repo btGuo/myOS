@@ -228,6 +228,7 @@ int32_t file_open(uint32_t i_no, int32_t flag){
 			goto error;
 		}
 	}
+	return ret;
 
 error:
 	inode_close(fp->fd_inode);
@@ -237,14 +238,17 @@ error:
 	return ret;
 }
 
+//TODO 
+/**  inode 和 file 都有引用计数，有点重复了 */
+
 /**
  * 关闭文件
  */
 void file_close(struct file *file){
 
-	inode_close(file->fd_inode);
+	if(--file->fd_count == 0){
 
-	if(file->fd_count-- == 0){
+		inode_close(file->fd_inode);
 		file->fd_inode = NULL;
 	}
 }
@@ -322,7 +326,11 @@ int32_t file_read(struct file *file, void *buf, uint32_t count){
 	struct fext_fs *fs = m_inode->fs;
 	uint32_t block_size = fs->sb->block_size;
 
-	ASSERT(file->fd_pos + count <= m_inode->i_size);
+	if(file->fd_pos + count > m_inode->i_size){
+
+		//读取剩下的字节
+		count = m_inode->i_size - file->fd_pos;
+	}
 
 	int32_t blk_idx = file->fd_pos / block_size;
 	int32_t off_byte = file->fd_pos % block_size;
@@ -450,7 +458,8 @@ int32_t sys_close(int32_t fd){
 	if(S_ISFIFO(type)){
 
 		pipe_close(fd);
-	}else {
+
+	}else if(S_ISREG(type)){
 
 		file_close(curr->fd_table[fd]);
 	}
@@ -468,11 +477,11 @@ int32_t sys_write(int32_t fd, const void *buf, uint32_t count){
 
 		return -1;
 	}
-	printk("sys_write\n");
+	//printk("sys_write\n");
 
 	struct file *fp = curr->fd_table[fd];
 	struct fext_inode_m *inode = fp->fd_inode;
-	printk("i_type %x\n", inode->i_type);
+	//printk("i_type %x\n", inode->i_type);
 
 
 	if(S_ISREG(inode->i_type)){
@@ -487,7 +496,7 @@ int32_t sys_write(int32_t fd, const void *buf, uint32_t count){
 
 	if(S_ISCHR(inode->i_type)){
 
-		printk("write char dev\n");
+		//printk("write char dev\n");
 		//TODO 目前这里固定为0号
 		chdev_writef writep = chdev_wrtlb[0];
 		return writep(buf, count);
@@ -496,6 +505,7 @@ int32_t sys_write(int32_t fd, const void *buf, uint32_t count){
 
 	if(S_ISFIFO(inode->i_type)){
 
+		//printk("write fifo\n");
 		return pipe_write(fd, buf, count);
 	}
 
@@ -513,6 +523,7 @@ int32_t sys_read(int32_t fd, void *buf, uint32_t count){
 	if(fd < 0 || fd >= MAXL_OPENS ||
 		curr->fd_table[fd] == NULL){
 
+		printk("wrong fd\n");
 		return -1;
 	}
 
@@ -521,6 +532,7 @@ int32_t sys_read(int32_t fd, void *buf, uint32_t count){
 
 	if(S_ISREG(inode->i_type)){
 
+		//printk("read regular\n");
 		return file_read(fp, buf, count);
 	}
 
@@ -624,4 +636,22 @@ int32_t sys_unlink(const char *path){
 	return 0;
 }
 
+int sys_chmod(const char *filename, mode_t mode){
+
+	struct fext_inode_m *inode = path2inode(filename);
+
+	if(inode == NULL){
+		return -1;
+	}
+	//不是文件所有者同时也不是超级用户
+	if(inode->i_uid != curr->uid && !is_super()){
+
+		return -1;
+	}
+	inode->i_mode = (mode & 07777) | (inode->i_mode & ~07777);
+	inode_sync(inode);
+	inode_close(inode);
+       		
+	return 0;
+}
 

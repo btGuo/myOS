@@ -39,6 +39,12 @@ struct fext_inode_m *file_create(const char *path)
 		return NULL;
 	}
 
+	//这四项一定要设置
+	m_inode->i_type = S_IFREG;
+	m_inode->i_mode = 0700;
+	m_inode->i_uid = 0;
+	m_inode->i_gid = 0;
+
 	//磁盘同步两个inode
 	inode_sync(par_i);
 	inode_sync(m_inode);

@@ -1,9 +1,10 @@
 BUILD_DIR = ../../build
 LIB = -I ../../include
-OUT = $(BUILD_DIR)/_lib_kernel.o
+OUT = $(BUILD_DIR)/libk.a
 
 CC = gcc
 CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall -D__LIB_KERNEL -fno-stack-protector -fno-pie
+AR = ar
 LD = ld
 LDFLAGS = -m elf_i386 -r
 
@@ -13,18 +14,19 @@ DEPS = $(SRCS:%.c=$(BUILD_DIR)/%.d)
 
 -include $(DEPS)
 
-all: copy $(OUT)
+all: comp $(OUT)
 
 $(OUT):$(OBJS)
-	$(LD) $(LDFLAGS) $^ -o $@
+	$(AR) rcs $(OUT) $(OBJS)
 
 $(BUILD_DIR)/%.o:%.c
 	$(CC) $(CFLAGS) $< -o $@ -MMD -MP
 
-.PHONY: clean copy
+.PHONY: clean comp
 
 clean:
 	rm $(OBJS) $(DEPS)
 
-copy:
-	cp ../user/syscall.c ../user/stdio.c ../user/string.c .
+comp:
+	./comp.sh
+

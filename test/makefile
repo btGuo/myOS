@@ -1,30 +1,27 @@
-BUILD_DIR = ../build
 LIB = -I ../include
-OUT = $(BUILD_DIR)/_test.o
+ROOTFS = ../mkfext/root_fs/bin
 
-AS = nasm
-ASFLAGS = -f elf
+SRCS = $(wildcard *.c)
+OBJS = $(SRCS:.c=.o)
+OUTS = $(SRCS:.c=.bin)
+
 CC = gcc
-CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall -fno-stack-protector -fno-pie
+CFLAGS = $(LIB) -c -fno-builtin -m32 -Wall -fno-stack-protector -fno-pie -DMYOS
 LD = ld
-LDFLAGS = -m elf_i386 -r
+LDFLAGS = -m elf_i386
 
-_SRCS = $(wildcard *.c)
-SRCS = $(_SRCS:main.c= )
-OBJS = $(SRCS:%.c=$(BUILD_DIR)/%.o)
-DEPS = $(SRCS:%.c=$(BUILD_DIR)/%.d)
+.PHONY: all install clean
 
--include $(DEPS)
+all: $(OUTS)
 
-all:$(OUT)
+%.o:%.c
+	$(CC) $(CFLAGS) $< -o $@
 
-$(OUT):$(OBJS)
-	$(LD) $(LDFLAGS) $^ -o $@
+%.bin:%.o
+	$(LD) $(LDFLAGS) $^ -o $@ -L ../build -lc
 
-$(BUILD_DIR)/%.o:%.c
-	$(CC) $(CFLAGS) $< -o $@ -MMD -MP
-
-.PHONY: clean
+install:
+	@for file in $(OUTS); do cp $$file $(ROOTFS)/$${file%.*};done
 
 clean:
-	rm $(OBJS) $(DEPS) 
+	rm $(OUTS) $(OBJS)

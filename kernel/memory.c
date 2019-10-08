@@ -78,9 +78,8 @@ void pfree(uint32_t paddr){
 
 	ASSERT(paddr_legal(paddr));
 
-	printk("pfree paddr %x\n", paddr);
 	struct page_desc *pg_desc = paddr_to_pgdesc(paddr);
-	printk("pg_desc->count %x\n", pg_desc->count);
+	//printk("pg_desc->count %x\n", pg_desc->count);
 	ASSERT(pg_desc->count == 1);
 
 

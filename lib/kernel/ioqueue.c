@@ -32,48 +32,94 @@ static bool queue_full(struct ioqueue *que){
 }
 
 /**
- * 从队列中换取字符
+ * 从队列中读取
+ * @param que 队列
+ * @param buf 输出缓冲
+ * @param cnt 读取字节数
+ * @param type 类型，是否阻塞
+ *
+ * @return 读取字节数
  */
-char queue_getchar(struct ioqueue *que){
+uint32_t queue_read(struct ioqueue *que, 
+		char *buf, 
+		uint32_t cnt,
+		uint32_t type)
+{
 	ASSERT(intr_get_status() == INTR_OFF);
-
-	while(queue_empty(que)){
-		mutex_lock_acquire(&que->lock);
-		que->consumer = curr;
-		thread_block(curr);
-		mutex_lock_release(&que->lock);
+	
+	if(type == IOQUEUE_BLOCK){
+		
+		while(queue_empty(que)){
+			mutex_lock_acquire(&que->lock);
+			que->consumer = curr;
+			thread_block(TASK_BLOCKED);
+			mutex_lock_release(&que->lock);
+		}
 	}
 
-	char ch = que->buf[que->tail];
-	que->tail = next_pos(que->tail);
+	uint32_t res = queue_len(que);
+
+	uint32_t bytes = cnt < res ? cnt : res;
+	uint32_t ret = bytes;
+	while(bytes--){
+		*buf++ = que->buf[que->tail];
+		que->tail = next_pos(que->tail);
+	}
 
 	if(que->producer != NULL){
+
 		thread_unblock(que->producer);
 		que->producer = NULL;
 	}
-	return ch;
-}
+
+	return ret;
+}	
 
 /**
- * 向队列中放字符
+ * 往队列写入
+ * @param que 队列
+ * @param buf 输入缓冲
+ * @param cnt 读取字节数
+ * @param type 类型，是否阻塞
+ *
+ * @return 写入字节数
  */
-void queue_putchar(struct ioqueue *que, char ch){
+uint32_t queue_write(struct ioqueue *que,
+		const char *buf,
+		uint32_t cnt,
+		uint32_t type)
+{
 	ASSERT(intr_get_status() == INTR_OFF);
-	
-	//这里得用while
-	while(queue_full(que)){
-		mutex_lock_acquire(&que->lock);
-		que->producer = curr;
-		thread_block(curr);
-		mutex_lock_release(&que->lock);
+
+	if(type == IOQUEUE_BLOCK){
+
+		while(queue_full(que)){
+			mutex_lock_acquire(&que->lock);
+			que->producer = curr;
+			thread_block(TASK_BLOCKED);
+			mutex_lock_release(&que->lock);
+		}
 	}
-	que->buf[que->head] = ch;
-	que->head = next_pos(que->head);
+	
+	uint32_t res = que->size - queue_len(que);
+
+	uint32_t bytes = cnt < res ? cnt : res;
+	uint32_t ret = bytes;
+
+	while(bytes--){
+		que->buf[que->head] = *buf++;
+		que->head = next_pos(que->head);
+	}
+
 	if(que->consumer != NULL){
 		thread_unblock(que->consumer);
 		que->consumer = NULL;
 	}
+
+	return ret;
 }
+
+
 
 /**
  * 队列长度

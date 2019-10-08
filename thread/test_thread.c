@@ -1,5 +1,6 @@
+#ifdef __TEST
 #include "thread.h"
-#include "debug.h"
+#include "kernelio.h"
 #include "interrupt.h"
 #include "string.h"
 #include "process.h"
@@ -54,3 +55,4 @@ void test_thread(){
 	intr_enable();
 	printk("ttt\n");
 }
+#endif

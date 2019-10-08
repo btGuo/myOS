@@ -1,6 +1,6 @@
 #include <sync.h>
 #include <interrupt.h>
-#include <debug.h>
+#include <kernelio.h>
 #include <thread.h>
 extern struct list_head thread_ready_list;
 extern struct task_struct *curr;

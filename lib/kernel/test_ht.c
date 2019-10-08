@@ -1,5 +1,6 @@
+#ifdef __TEST
 #include "hash_table.h"
-#include "debug.h"
+#include "kernelio.h"
 #include "string.h"
 #include "list.h"
 
@@ -80,3 +81,4 @@ void test_str(){
 void test_hashtable(){
 	test_str();
 }
+#endif

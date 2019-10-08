@@ -9,3 +9,4 @@ tmp
 *.d
 *.img
 root_fs
+rootfs
