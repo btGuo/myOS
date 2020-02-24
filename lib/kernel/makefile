@@ -14,7 +14,7 @@ DEPS = $(SRCS:%.c=$(BUILD_DIR)/%.d)
 
 -include $(DEPS)
 
-all: comp $(OUT)
+all: $(OUT)
 
 $(OUT):$(OBJS)
 	$(AR) rcs $(OUT) $(OBJS)
@@ -26,7 +26,4 @@ $(BUILD_DIR)/%.o:%.c
 
 clean:
 	rm $(OBJS) $(DEPS)
-
-comp:
-	./comp.sh
 
