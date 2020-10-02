@@ -14,14 +14,14 @@ extern "C" {
 #define EXIT_FAILURE -1
 #define EXIT_SUCCESS 0
 
-int atoi(const char *src);
+int  atoi(const char *src);
 void *malloc(size_t);
 void free(void *);
 void *realloc(void *, size_t);
 void *calloc(size_t lens, size_t size);
+void exit(int);
 ///夹带私货，这个不是要求的
 ssize_t readline(char **buf, size_t *buflen, int fd);
-void          exit(int);
 
 #ifdef __cplusplus
 }

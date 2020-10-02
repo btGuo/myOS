@@ -16,19 +16,12 @@ struct mutex_lock{
 };
 
 
-struct spin_lock{
-	uint8_t value;
-};
-
 void sema_init(struct semaphore *sema, uint8_t value);
 
 void mutex_lock_acquire(struct mutex_lock *lock);
 void mutex_lock_release(struct mutex_lock *lock);
 void mutex_lock_init(struct mutex_lock *lock);
 
-void spin_lock_acquire(struct spin_lock *lock);
-void spin_lock_release(struct spin_lock *lock);
-void spin_lock_init(struct spin_lock *lock);
 #endif
 
 

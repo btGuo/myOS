@@ -57,16 +57,3 @@ void mutex_lock_release(struct mutex_lock *lock){
 	lock->holder_repeat_nr = 0;
 	sema_up(&lock->semaphore);
 }
-
-void spin_lock_init(struct spin_lock *lock){
-	lock->value = 0;
-}
-
-void spin_lock_acquire(struct spin_lock *lock){
-	while(lock->value);
-	lock->value = 1;
-}
-
-void spin_lock_release(struct spin_lock *lock){
-	lock->value = 0;
-}

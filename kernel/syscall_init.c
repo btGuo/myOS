@@ -63,6 +63,7 @@ void sys_call_init(void){
 	//__SYS(malloc);
 	//__SYS(free);
 	__SYS(fork);
+
 	__SYS(open);
 	__SYS(close);
 	__SYS(read);
@@ -75,6 +76,7 @@ void sys_call_init(void){
 	__SYS(mkdir);
 	__SYS(closedir);
 	__SYS(opendir);
+
 	__SYS(execve);
 	__SYS(stat);
 	__SYS(clear);

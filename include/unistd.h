@@ -35,29 +35,29 @@ extern "C" {
 #define X_OK 1
 
 
-int          close(int);
-int          chdir(const char *);
-int          dup(int);
-int          dup2(int, int);
+int     close(int);
+int     chdir(const char *);
+int     dup(int);
+int     dup2(int, int);
 
-int          execl(const char *, const char *, ...);
-int          execle(const char *, const char *, ...);
-int          execlp(const char *, const char *, ...);
-int          execv(const char *, char *const []);
-int          execvp(const char *, char *const []);
-int          execve(const char *, char *const [], char *const []);
+int     execl(const char *, const char *, ...);
+int     execle(const char *, const char *, ...);
+int     execlp(const char *, const char *, ...);
+int     execv(const char *, char *const []);
+int     execvp(const char *, char *const []);
+int     execve(const char *, char *const [], char *const []);
 
-int 	     access(const char *path, int amode);
-pid_t        fork(void);
-pid_t        getpid(void);
-char        *getcwd(char *, size_t);
-off_t        lseek(int, off_t, int);
-ssize_t      read(int, void *, size_t);
-int          unlink(const char *);
-ssize_t      write(int, const void *, size_t);
-void        _exit(int);
-int          pipe(int [2]);
-uid_t        getuid(void);
+int     access(const char *path, int amode);
+pid_t   fork(void);
+pid_t   getpid(void);
+char    *getcwd(char *, size_t);
+off_t   lseek(int, off_t, int);
+ssize_t read(int, void *, size_t);
+int     unlink(const char *);
+ssize_t write(int, const void *, size_t);
+void    _exit(int);
+int     pipe(int [2]);
+uid_t   getuid(void);
 
 //这个不是posix
 void        *sbrk(size_t incr);
